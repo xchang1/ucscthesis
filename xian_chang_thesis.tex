@@ -655,8 +655,9 @@ This work was supported, in part, by the National Institutes of Health (award nu
 
 \chapter{Short read mapping}
 \section{Preface}
-This chapter contains the full main text of the paper "Pangenomics enables genotyping of known structural variants in $5202$ diverse genomes"\cite{sr_giraffe_2021}, published in Science in 2021.
-It also includes portions of the supplement that describe my contributions or that are referenced in the paper.
+This chapter contains the full text of the paper "Pangenomics enables genotyping of known structural variants in $5202$ diverse genomes"\cite{sr_giraffe_2021}, published in Science in 2021.
+It also includes portions of the supplement that describe or are pertinent to my contributions.
+The remainder of the supplement referenced by the main text can be found in the Appendix, Section \ref{sec:appendix_sr_giraffe}.
 The text contains minor edits to conform with the format of this thesis.
 
 I was a co-first author along with Jouni Sirén, Jean Monlong, Adam M. Novak, and Jordan M. Eizenga.
@@ -674,17 +675,26 @@ Jouni Sirén, Jean Monlong, Adam M. Novak, and I wrote the majority of the paper
 
 
 \section{Structured abstract}
-\subsection{Introduction}
+
+\noindent
+\textbf{Introduction}
+
 Modern genomics depends on inexpensive short-read sequencing.
 Sequenced reads up to a few hundred base pairs in length are computationally mapped to estimated source locations in a reference genome.
 These read mappings are used in myriad sequencing-based assays.
 For example, through a process called genotyping, mapped reads from a DNA sample can be used to infer the combination of alleles present at each site in the reference genome.
-\subsection{Rationale}
+
+\noindent
+\textbf{Rationale}
+
 A single reference genome cannot capture the diversity within even a single person (who gets a genome copy from each parent), let alone in the whole human population.
 Genomes differ not only by point variations, where one or a few bases are different, but also by structural variations, where differences can be much larger than an individual read.
 When a person’s genome differs from the reference by a structural variation, the reference may contain no location to correctly map the corresponding reads.
 Although newer long-read sequencing allows structural variation to be more directly observed in sequencing reads, short-read sequencing is still less expensive and more widely available.
-\subsection{Results}
+
+\noindent
+\textbf{Results}
+
 We present a short read–mapping tool, Giraffe.
 Giraffe maps to a pangenome reference that describes many genomes and the differences between them.
 Giraffe can accurately map reads to thousands of genomes embedded in a pangenome reference as quickly as existing tools map to a single reference genome.
@@ -703,7 +713,9 @@ Using mappings from Giraffe, we genotyped $167,000$ recently discovered structur
 We present estimates for the frequency of different versions of these structural variations in the human population as a whole and within individual subpopulations.
 We identify thousands of these structural variations as expression quantitative trait loci (eQTLs), which are associated with gene-expression levels.
 
-\subsection{Conclusion}
+\noindent
+\textbf{Conclusion}
+
 Giraffe demonstrates the practicality of a pangenomic approach to short-read mapping.
 This approach allows short-read data to genotype single-nucleotide variations, short insertions and deletions, and structural variations more accurately.
 For structural variations, this allowed the estimation of population frequencies across a diverse cohort of 5000 individuals.
@@ -1154,7 +1166,8 @@ This archive also includes vg, toil-vg, and toil source code and Docker containe
 The latest version of the vg toolkit, including the Giraffe mapper, is customarily distributed at https://github.com/vgteam/vg.
 The scripts used for the analysis presented in this study were developed at https://github.com/vgteam/giraffe-sv-paper, a git bundle of which is archived at Zenodo \cite{zenodocode}.
 Data used in the Giraffe read-mapping experiments—including the 1000GP, HGSVC, and yeast target graphs, the linear control graphs, the graphs used to simulate reads, and the simulated reads themselves—can be found at https://cgl.gi.ucsc.edu/data/giraffe/mapping/.
-The SV pangenomes and SV catalogs annotated with allele frequencies are hosted at https://cgl.gi.ucsc.edu/data/giraffe/calling/ and archived at Zenodo \cite{zenodocode}.
+The SV pangenomes and SV catalogs annotated with allele frequencies are hosted at 
+https://cgl.gi.ucsc.edu/data/giraffe/calling/ and archived at Zenodo \cite{zenodocode}.
 This repository also includes SVs with strong inter-superpopulation frequency patterns, SV-eQTLs, and SVs that overlap protein-coding genes.
 To build the 1000GP and HGSVC graphs, we used the GRCh38 no-alt analysis set (accession no. GCA\_000001405.15) and the hs38d1 decoy sequences (accession no. GCA\_000786075.2), both available from the National Center for Biotechnology Information (NCBI), in addition to the variant call files distributed by the respective projects. To train read simulation and evaluate speed, we used human read sets ERR3239454, ERR309934, and SRR6691663 and yeast read sets SRR4074256, SRR4074257, SRR4074394, SRR4074384, SRR4074413, SRR4074358, and SRR4074383, all available from Sequence Read Archive (SRA).
 The public high-coverage sequencing dataset from the 1000 Genomes Project \cite{1000gp_nygc_2021} is available at www.internationalgenome.org/data-portal/data-collection/30x-grch38, including European Nucleotide Archive (ENA) projects PRJEB31736 and PRJEB36890.
@@ -1679,6 +1692,443 @@ This strategy was chosen to restrict analysis to sites that we are confident are
 \texttt{mpileup} and \texttt{call} were run on each chromosome in parallel using GNU Parallel \cite{Tange2011a}.
 
 
+
+
+\newpage
+
+\subsection{Supplementary figures}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{aim2_supplement_graph_example.pdf}
+    \caption[Sequence graph example]{\textbf{Sequence graph example.}
+      (A) A sequence graph with three nodes $u$, $v$, and $w$, with labels $\nodelabel{u} =$ GAT, $\nodelabel{v} =$ TA, and $\nodelabel{w} =$ CA. Node sides $\leftside{x}$ and $\rightside{x}$ are marked for each node $x$.
+      (B) The same graph as a directed graph with each visit $\forwardnode{x}$ and $\reversenode{x}$ a separate node.
+    }
+    \label{fig:aim2_supplement_graph-example}
+    \label{fig:first}
+\end{figure}
+
+
+\begin{figure}[H]
+    \includegraphics[width=.5\linewidth]{aim2_supplement_regiondiagram.pdf}
+    \caption[Diagram of minimizers, agglomerations, and regions]{{\bf Diagram of minimizers, agglomerations, and regions.} In this example, we use a minimizer length of $k=3$, and a window size of $w=4$. (A) shows where three example minimizers fall in the read. (B) shows the agglomerations of these minimizers, if the minimizers happen to be minimal for all windows they appear in. For agglomeration $i=1$, we have $\aggstart{1}=1$, $\aggend{1}=5$, $\minstart{1}=2$, and $\minend{1}=4$. (C) shows the regions, which we use to decompose the part of the diagram covered by agglomerations, with breaks wherever an agglomeration begins or ends. For the region $r=3$, we have $\rtop{3}=1$, $\rbottom{3}=2$, $\rleft{3}=4$, and $\rright{3}=5$.
+  }
+  \label{fig:aim2_supplement_regions}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.6\linewidth]{aim2_supplement_novaseq6000-all.pdf}
+    \caption[Simulated read mapping with NovaSeq 6000 reads]{\textbf{Simulated read mapping with NovaSeq 6000 reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were simulated to match 150bp Illumina NovaSeq 6000 reads and were mapped either as single ended reads (A,B) or as paired end reads (C,D). We compared graph mappers (Giraffe, VG-MAP, GraphAligner, HISAT2) and linear mappers (BWA-MEM, Bowtie2, Minimap2) mapping to either the 1000GP graph and GRCh38 reference (A,C) or the HGSVC graph and GRCh38 reference (B,D). For Giraffe, we mapped to a 64 haplotype sampled GBWT for the 1000GP graph and to the full GBWT for the HGSVC graph. In addition to aligning to the 1000GP and HGSVC graphs, we also used Giraffe and VG-MAP to align to primary graphs containing only the GRCh38 reference. We also ran Giraffe and HISAT2 using different pre-defined parameterizations in addition to the default settings: fast Giraffe and HISAT2 sensitive and very sensitive. For a positive control, we aligned reads to our positive control graphs using Giraffe run with a more exhaustive parameterization.
+    Reads were stratified by their mapping quality. Each point in the plot represents to a mapping quality value and the size of a point corresponds the number of reads it represents. GraphAligner did not assign mapping qualities, so it is represented as a single point. For the remaining mappers, the mapping quality values varied from 0 to 60, except for Bowtie2, which had a maximum mapping quality of 42.}
+    \label{fig:aim2_supplement_novaseq_rocs}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseqxten-all.pdf}
+    \caption[Simulated read mapping with HiSeq X Ten reads]{\textbf{Simulated read mapping with HiSeq X Ten reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseqxten_rocs}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseq2500-all.pdf}
+    \caption[Simulated read mapping with HiSeq 2500 reads]{\textbf{Simulated read mapping with HiSeq 2500 reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseq2500_rocs}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_novaseq6000-qq.pdf}
+    \caption[QQ plot for simulated read mapping with NovaSeq 6000 reads]{\textbf{QQ plot for simulated read mapping with NovaSeq 6000 reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_novaseq6000_qq}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseqxten-qq.pdf}
+    \caption[QQ plot for simulated read mapping with HiSeq X Ten reads]{\textbf{QQ plot for simulated read mapping with HiSeq X Ten reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseqxten_qq}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseq2500-qq.pdf}
+    \caption[QQ plot for simulated read mapping with HiSeq 2500 reads]{\textbf{QQ plot for simulated read mapping with HiSeq 2500 reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseq2500_qq}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth]{aim2_haplotype_sampling.pdf}
+    \caption[Assessing haplotype sampling and path cover]{\textbf{Assessing haplotype sampling and path cover.} Each panel shows recall vs. FDR for a simulated read mapping experiment. (A,C) Haplotype sampling, for samplings from 1 to 128 using the 1000GP derived graph (Table \ref{tab:mapping_accuracy_1000gp_sampled_gbwt}). Includes for comparison a graph containing just the primary reference (here GRCh38) and, separately, the full 1000GP GBWT. For both (A) single-ended and (C) paired-end mapping, performance saturates at around 64x coverage of sampled haplotypes, and exceeds that of mapping to the full GBWT containing all haplotypes. (B,D) Analogous path cover experiments, using the HGSVC graph (Table \ref{tab:mapping_accuracy_hgsvc_cover_gbwt}). All GBWT indexes were evaluated with simulated NovaSeq 6000 reads.}
+    \label{fig:aim2_supplement_haplotype_sampling}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.7\linewidth]{speed_yeast.pdf}
+    \caption[Mapping speed on yeast data]{\textbf{Mapping speed on yeast data.} Each mapper was run on a dataset of 1 million real HiSeq 2500 reads from the DBVPG6044 strain on an AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
+    \label{fig:speed_yeast}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.75\linewidth]{aim2_supplement_speed.pdf}
+    \caption[Mapping speed on human data]{\textbf{Mapping speed on human data.} Each mapper was run on a dataset of 1 million real NovaSeq 6000 (A,B), HiSeq X Ten (C,D), or HiSeq 2500 (E,F) reads on a AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
+    \label{fig:aim2_supplement_speed}
+\end{figure}
+
+\subsection{Supplementary tables}
+
+
+\newcommand{\mapindexes}[1]{\indexurl{#1.xg} & \indexurl{#1.gcsa} & \indexurl{#1.gcsa.lcp} & & & &}
+\newcommand{\giraffeindexes}[1]{\indexurl{#1.xg} & & & \indexurl{#1.gbwt} & \indexurl{#1.min} & \indexurl{#1.gg} & \indexurl{#1.dist}}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and  \\
+              &         &            &            & MAPQ 60           \\
+        \hline
+        single  & Giraffe primary	    & 96.94     & 91.81     & 0.00195 \\
+                & VG-MAP primary        & 97.03     & 92.16     & 0.00125 \\
+                & Bowtie2	            & 96.84     & 82.85     & 0.00075 \\
+                & BWA-MEM	            & 97.05     & 91.07     & 0.00085 \\
+                & Minimap2	            & 96.82     & 90.32     & 0.00250 \\
+                & Giraffe	            & 97.00     & 92.29     & 0.00040 \\
+                & fast Giraffe	        & 96.86     & 89.82     & 0.00075 \\
+                & VG-MAP               	& 96.99     & 91.90     & 0.00005 \\
+                & GraphAligner	        & 88.95     & -         & - \\
+                & HISAT2	            & 96.69     & 95.83     & 0.20275 \\
+                & HISAT2 sens       	& 96.76     & 95.92     & 0.22765 \\
+                & HISAT2 vsens	        & 96.83     & 96.00     & 0.25985 \\
+                & Giraffe control	    & 97.12     & 93.14     & 0.00020 \\
+
+        \hline
+        paired  & Giraffe Primary	& 98.25     & 94.22     & 0.00135 \\
+                & VG-MAP Primary	& 98.28     & 94.47     & 0.00140 \\
+                & Bowtie2       	& 98.25     & 88.75     & 0.00150 \\
+                & BWA-MEM	        & 98.33     & 93.95     & 0.00120 \\
+                & Minimap2      	& 98.01     & 93.25     & 0.02710 \\
+                & Giraffe	        & 98.27     & 94.34     & 0.00015 \\
+                & fast Giraffe  	& 98.24     & 92.84     & 0.00015 \\
+                & VG-MAP           	& 98.29     & 94.41     & 0.00050 \\
+                & HISAT2        	& 97.95     & 97.50     & 0.31180 \\
+                & HISAT2 sens   	& 98.11     & 97.73     & 0.38640 \\
+                & HISAT2 vsens	    & 98.18     & 97.66     & 0.27780 \\
+                & Giraffe control	& 98.33     & 94.70     & 0.00000 \\
+ 
+ 
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on NovaSeq 6000 reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on NovaSeq 6000 reads mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_1kg_novaseq6000}
+    \label{tab:first}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 96.93     & 91.68     & 0.00260 \\
+                & VG-MAP primary	& 97.04     & 92.17     & 0.00085 \\
+                & Bowtie2       	& 96.75     & 83.73     & 0.00185 \\
+                & BWA-MEM	        & 97.03     & 91.06     & 0.00050 \\
+                & Minimap2	        & 96.80     & 90.28     & 0.00200 \\
+                & Giraffe	        & 97.00     & 92.19     & 0.00080 \\
+                & fast Giraffe	    & 96.83     & 90.02     & 0.00095 \\
+                & VG-MAP	        & 97.00     & 91.92     & 0.00020 \\
+                & GraphAligner 	    & 88.82     & -         & - \\
+                & HISAT2	        & 96.51     & 95.75     & 0.30710 \\
+                & HISAT2 sens	    & 96.62     & 95.89     & 0.33675 \\
+                & HISAT2 vsens  	& 96.71     & 95.93     & 0.32535 \\
+                & Giraffe control	& 97.11     & 93.04     & 0.00020 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.27     & 94.27     & 0.00155 \\
+                & VG-MAP primary   	& 98.29     & 94.48     & 0.00125 \\
+                & Bowtie2       	& 98.21     & 89.07     & 0.00245 \\
+                & BWA-MEM	        & 98.33     & 93.94     & 0.00095 \\
+                & Minimap2	        & 98.00     & 93.23     & 0.02785 \\
+                & Giraffe	        & 98.28     & 94.40     & 0.00025 \\
+                & fast Giraffe	    & 98.24     & 93.13     & 0.00010 \\
+                & VG-MAP	        & 98.30     & 94.41     & 0.00060 \\
+                & HISAT2        	& 97.71     & 97.33     & 0.37060 \\
+                & HISAT2 sens   	& 97.95     & 97.66     & 0.45725 \\
+                & HISAT2 vsens	    & 98.12     & 97.68     & 0.33825 \\
+                & Giraffe control	& 98.35     & 94.72     & 0.00010 \\
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq X Ten reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq X Ten reads mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_1kg_hiseqxten}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.80     & 94.95     & 0.00530 \\
+                & VG-MAP primary	& 97.90     & 93.99     & 0.00200 \\
+                & Bowtie2	        & 96.48     & 84.41     & 0.00435 \\
+                & BWA-MEM       	& 97.84     & 92.61     & 0.05120 \\
+                & Minimap2      	& 97.69     & 93.17     & 0.05120 \\
+                & Giraffe       	& 97.84     & 95.04     & 0.00295 \\
+                & fast Giraffe	    & 97.72     & 94.06     & 0.00285 \\
+                & VG-MAP           	& 97.90     & 93.90     & 0.00115 \\
+                & GraphAligner 	    & 92.93     & -         & - \\
+                & HISAT2        	& 94.94     & 95.03     & 0.72205 \\
+                & HISAT2 sens	    & 96.03     & 96.01     & 0.67535 \\
+                & HISAT2 vsens  	& 96.41     & 96.11     & 0.51385 \\
+                & Giraffe control	& 97.94     & 95.27     & 0.00110 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.68     & 95.84     & 0.00350 \\
+                & VG-MAP primary   	& 98.76     & 95.67     & 0.00225 \\
+                & Bowtie2	        & 97.30     & 87.87     & 0.00715 \\
+                & BWA-MEM       	& 98.71     & 94.64     & 0.05415 \\
+                & Minimap2      	& 98.39     & 92.68     & 0.08915 \\
+                & Giraffe	        & 98.69     & 95.87     & 0.00205 \\
+                & fast Giraffe  	& 98.65     & 95.25     & 0.00180 \\
+                & VG-MAP	        & 98.76     & 95.66     & 0.00130 \\
+                & HISAT2        	& 95.52     & 95.80     & 0.78575 \\
+                & HISAT2 sens	    & 96.84     & 97.16     & 0.81925 \\
+                & HISAT2 vsens	    & 97.32     & 97.27     & 0.56045 \\
+                & Giraffe control	& 98.78     & 95.91     & 0.00145 \\
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq 2500 reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq 2500 mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_1kg_hiseq2500}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and\\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.09     & 92.68     & 0.04840 \\
+                & VG-MAP primary   	& 97.17     & 92.62     & 0.04685 \\
+                & Bowtie2	        & 97.02     & 84.20     & 0.02645 \\
+                & BWA-MEM	        & 97.16     & 91.61     & 0.03925 \\
+                & Minimap2	        & 96.96     & 90.93     & 0.04220 \\
+                & Giraffe	        & 97.17     & 92.63     & 0.00070 \\
+                & fast Giraffe	    & 97.02     & 90.25     & 0.00070 \\
+                & VG-MAP	        & 97.24     & 92.57     & 0.00035 \\
+                & GraphAligner 	    & 91.94     & -      & - \\
+                & HISAT2	        & 97.10     & 96.36     & 0.20975 \\
+                & HISAT2 sens   	& 97.16     & 96.46     & 0.24702 \\
+                & HISAT2 vsens	    & 97.24     & 96.58     & 0.30368 \\
+                & Giraffe control	& 97.26     & 93.42     & 0.00005 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.29     & 94.65     & 0.05480 \\
+                & HISAT2	        & 96.51     & 95.75     & 0.30710 \\
+                & Bowtie2       	& 98.28     & 89.54     & 0.03220 \\
+                & BWA-MEM       	& 98.38     & 94.34     & 0.04275 \\
+                & Minimap2      	& 98.09     & 93.72     & 0.06800 \\
+                & Giraffe       	& 98.39     & 94.57     & 0.00040 \\
+                & fast Giraffe  	& 98.35     & 93.14     & 0.00040 \\
+                & VG-MAP	        & 98.41     & 94.74     & 0.00385 \\
+                & HISAT2	        & 98.24     & 97.95     & 0.35377 \\
+                & HISAT2 sens   	& 98.36     & 98.17     & 0.44951 \\
+                & HISAT2 vsens	    & 98.41     & 98.16     & 0.39059 \\
+                & Giraffe control	& 98.47     & 94.96     & 0.00005 \\
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on NovaSeq 6000 reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on NovaSeq 6000 reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_hgsvc_novaseq6000}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.10     & 92.57     & 0.04850 \\
+                & VG-MAP primary   	& 97.20     & 92.63     & 0.04585 \\
+                & Bowtie2       	& 96.94     & 85.15     & 0.02865 \\
+                & BWA-MEM       	& 97.19     & 91.61     & 0.03885 \\
+                & Minimap2	        & 96.96     & 90.86     & 0.04140 \\
+                & Giraffe	        & 97.16     & 92.52     & 0.00100 \\
+                & fast Giraffe  	& 97.01     & 90.43     & 0.00130 \\
+                & VG-MAP	        & 97.27     & 92.58     & 0.00035 \\
+                & GraphAligner   	& 91.88     & -         & - \\
+                & HISAT2	        & 96.92     & 96.32     & 0.30077 \\
+                & HISAT2 sens   	& 97.02     & 96.45     & 0.34180 \\
+                & HISAT2 vsens	    & 97.11     & 96.52     & 0.34185 \\
+                & Giraffe control	& 97.27     & 93.34     & 0.00015 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.29     & 94.76     & 0.05470 \\
+                & VG-MAP primary   	& 98.35     & 94.84     & 0.04750 \\
+                & Bowtie2       	& 98.25     & 89.98     & 0.03325 \\
+                & BWA-MEM        	& 98.40     & 94.36     & 0.04280 \\
+                & Minimap2      	& 98.07     & 93.69     & 0.06815 \\
+                & Giraffe	        & 98.38     & 94.68     & 0.00050 \\
+                & fast Giraffe	    & 98.34     & 93.43     & 0.00030 \\
+                & VG-MAP           	& 98.43     & 94.79     & 0.00420 \\
+                & HISAT2	        & 98.04     & 97.82     & 0.40337 \\
+                & HISAT2 sens   	& 98.23     & 98.13     & 0.51313 \\
+                & HISAT2 vsens	    & 98.36     & 98.16     & 0.42937 \\
+                & Giraffe control	& 98.48     & 95.01     & 0.00005 \\
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq X Ten reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq X Ten reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_hgsvc_hiseqxten}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.89     & 95.34     & 0.06980 \\
+                & VG-MAP primary	& 97.98     & 94.38     & 0.05715 \\
+                & Bowtie2	        & 96.56     & 85.74     & 0.03405 \\
+                & BWA-MEM	        & 97.93     & 93.08     & 0.09025 \\
+                & Minimap2	        & 97.78     & 93.59     & 0.09525 \\
+                & Giraffe	        & 97.97     & 95.30     & 0.00430 \\
+                & fast Giraffe	    & 97.87     & 94.35     & 0.00340 \\
+                & VG-MAP           	& 98.08     & 94.35     & 0.00170 \\
+                & GraphAligner 	    & 94.86     & -         & -0 \\
+                & HISAT2	        & 95.32     & 95.47     & 0.69207 \\
+                & HISAT2 sens   	& 96.36     & 96.41     & 0.66196 \\
+                & HISAT2 vsens  	& 96.73     & 96.58     & 0.54163 \\
+                & Giraffe control	& 98.07     & 95.53     & 0.00075 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.70     & 96.10     & 0.06465 \\
+                & VG-MAP primary	& 98.79     & 95.93     & 0.05845 \\
+                & Bowtie2       	& 97.33     & 88.71     & 0.03860 \\
+                & BWA-MEM       	& 98.75     & 94.97     & 0.09730 \\
+                & Minimap2      	& 98.44     & 93.02     & 0.12805 \\
+                & Giraffe       	& 98.80     & 96.04     & 0.00295 \\
+                & fast Giraffe  	& 98.78     & 95.44     & 0.00280 \\
+                & VG-MAP        	& 98.89     & 95.89     & 0.00280 \\
+                & HISAT2        	& 95.86     & 96.18     & 0.75739 \\
+                & HISAT2 sens   	& 97.09     & 97.51     & 0.82688 \\
+                & HISAT2 vsens	    & 97.55     & 97.72     & 0.63802 \\
+                & Giraffe control	& 98.91     & 96.13     & 0.00165 \\
+
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq 2500 reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq 2500 reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_hgsvc_hiseq2500}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & primary	& 97.09     & 92.68     & 0.04840 \\
+                & 1x	    & 97.13     & 92.65     & 0.01840 \\
+                & 2x	    & 97.15     & 92.64     & 0.01095 \\
+                & 4x	    & 97.16     & 92.63     & 0.00260 \\
+                & 8x	    & 97.17     & 92.63     & 0.00075 \\
+                & 16x	    & 97.17     & 92.63     & 0.00070 \\
+                & 32x	    & 97.17     & 92.63     & 0.00070 \\
+                & 64x   	& 97.17     & 92.63     & 0.00070 \\
+                & 128x	    & 97.17     & 92.63     & 0.00070 \\
+                & full  	& 97.17     & 92.64     & 0.00045 \\
+
+                
+                
+
+        \hline
+        paired  & primary	& 98.29     & 94.65     & 0.05480 \\
+                & 1x	    & 98.35     & 94.60     & 0.01820 \\
+                & 2x	    & 98.36     & 94.59     & 0.01105 \\
+                & 4x	    & 98.38     & 94.58     & 0.00240 \\
+                & 8x	    & 98.38     & 94.57     & 0.00060 \\
+                & 16x	    & 98.39     & 94.57     & 0.00040 \\
+                & 32x	    & 98.39     & 94.57     & 0.00040 \\
+                & 64x	    & 98.39     & 94.57     & 0.00040 \\
+                & 128x	    & 98.39     & 94.57     & 0.00040 \\
+                & full  	& 98.39     & 94.58     & 0.00035 \\
+                
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy using path cover GBWT]{\textbf{Mapping accuracy using path cover GBWT} GBWTs were generated using the path cover for the HGSVC graph, with between 1 and 128 haplotypes. For comparison, GBWTs with only the primary GRCh38 reference and with the full HGSVC set were used. Giraffe was run with each GBWT on 2 million simulated NovaSeq 6000 reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60.}
+    \label{tab:mapping_accuracy_hgsvc_cover_gbwt}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & primary   & 96.94     & 91.81     & 0.00195 \\
+                & 1x        & 96.97     & 91.98     & 0.00120 \\
+                & 2x        & 96.99     & 92.11     & 0.00075 \\
+                & 4x        & 97.00     & 92.19     & 0.00065 \\
+                & 8x        & 97.00     & 92.24     & 0.00050 \\
+                & 16x       & 97.00     & 92.27     & 0.00055 \\
+                & 32x       & 97.00     & 92.28     & 0.00045 \\
+                & 64x       & 97.00     & 92.29     & 0.00040 \\
+                & 128x      & 97.00     & 92.29     & 0.00035 \\
+                & full      & 96.94     & 92.10     & 0.00040 \\
+
+        \hline
+        paired  & primary   & 98.25     & 94.22     & 0.00135 \\
+                & 1x        & 98.26     & 94.28     & 0.00060 \\
+                & 2x        & 98.26     & 94.31     & 0.00025 \\
+                & 4x        & 98.26     & 94.33     & 0.00010 \\
+                & 8x        & 98.26     & 94.34     & 0.00010 \\
+                & 16x       & 98.26     & 94.34     & 0.00015 \\
+                & 32x       & 98.26     & 94.34     & 0.00015 \\
+                & 64x       & 98.27     & 94.34     & 0.00015 \\
+                & 128x      & 98.26     & 94.33     & 0.00010 \\
+                & full      & 98.25     & 94.25     & 0.00015 \\
+                
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy using haplotype sampled GBWT]{\textbf{Mapping accuracy using haplotype sampled GBWT} GBWTs were generated by sampling the 1000GP haplotypes, sampling between 1 and 128 haplotypes. For comparison, GBWTs with only the primary GRCh38 reference and with the full 1000GP set were used. Giraffe was run with each GBWT on 2 million simulated NovaSeq 6000 reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60.}
+    \label{tab:mapping_accuracy_1000gp_sampled_gbwt}
+\end{table}
+
+\chapter{Long read mapping}
+\section{Preface}
+
+\chapter{Discussion}
+
+\appendix
+\chapter{Additional short read giraffe materials}
+\label{sec:appendix_sr_giraffe}
+\section{Preface}
+This section contains materials from the supplement of short read giraffe paper \cite{sr_giraffe_2021} that are referenced in the main text but not related to my portion of the paper. 
+
+\section{Supplementary methods}
+
 \subsection{Genotyping and evaluating short variants with Dragen}
 \label{subsec:dragen}
 
@@ -1964,106 +2414,35 @@ Genes were split in 20 expression classes based on their quantiles.
 We then computed an empirical p-value for the proportion of eQTLs in each expression class using an empirical distribution derived from permuting the expression classes 10,000 times.
 The p-values were corrected for multiple testing using the Benjamini-Hochberg method.
 
-
-
-
-
-
-\subsection{Supplementary figures}
+\section{Supplementary figures}
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{aim2_supplement_graph_example.pdf}
-    \caption[Sequence graph example]{\textbf{Sequence graph example.}
-      (A) A sequence graph with three nodes $u$, $v$, and $w$, with labels $\nodelabel{u} =$ GAT, $\nodelabel{v} =$ TA, and $\nodelabel{w} =$ CA. Node sides $\leftside{x}$ and $\rightside{x}$ are marked for each node $x$.
-      (B) The same graph as a directed graph with each visit $\forwardnode{x}$ and $\reversenode{x}$ a separate node.
-    }
-    \label{fig:aim2_supplement_graph-example}
-    \label{fig:first}
-\end{figure}
-
-
-\begin{figure}[p]
-    \includegraphics[width=.5\linewidth]{aim2_supplement_regiondiagram.pdf}
-    \caption[Diagram of minimizers, agglomerations, and regions]{{\bf Diagram of minimizers, agglomerations, and regions.} In this example, we use a minimizer length of $k=3$, and a window size of $w=4$. (A) shows where three example minimizers fall in the read. (B) shows the agglomerations of these minimizers, if the minimizers happen to be minimal for all windows they appear in. For agglomeration $i=1$, we have $\aggstart{1}=1$, $\aggend{1}=5$, $\minstart{1}=2$, and $\minend{1}=4$. (C) shows the regions, which we use to decompose the part of the diagram covered by agglomerations, with breaks wherever an agglomeration begins or ends. For the region $r=3$, we have $\rtop{3}=1$, $\rbottom{3}=2$, $\rleft{3}=4$, and $\rright{3}=5$.
-  }
-  \label{fig:aim2_supplement_regions}
-\end{figure}
-
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.8\linewidth]{aim2_supplement_novaseq6000-all.pdf}
-    \caption[Simulated read mapping with NovaSeq 6000 reads]{\textbf{Simulated read mapping with NovaSeq 6000 reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were simulated to match 150bp Illumina NovaSeq 6000 reads and were mapped either as single ended reads (A,B) or as paired end reads (C,D). We compared graph mappers (Giraffe, VG-MAP, GraphAligner, HISAT2) and linear mappers (BWA-MEM, Bowtie2, Minimap2) mapping to either the 1000GP graph and GRCh38 reference (A,C) or the HGSVC graph and GRCh38 reference (B,D). For Giraffe, we mapped to a 64 haplotype sampled GBWT for the 1000GP graph and to the full GBWT for the HGSVC graph. In addition to aligning to the 1000GP and HGSVC graphs, we also used Giraffe and VG-MAP to align to primary graphs containing only the GRCh38 reference. We also ran Giraffe and HISAT2 using different pre-defined parameterizations in addition to the default settings: fast Giraffe and HISAT2 sensitive and very sensitive. For a positive control, we aligned reads to our positive control graphs using Giraffe run with a more exhaustive parameterization.
-    Reads were stratified by their mapping quality. Each point in the plot represents to a mapping quality value and the size of a point corresponds the number of reads it represents. GraphAligner did not assign mapping qualities, so it is represented as a single point. For the remaining mappers, the mapping quality values varied from 0 to 60, except for Bowtie2, which had a maximum mapping quality of 42.}
-    \label{fig:aim2_supplement_novaseq_rocs}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseqxten-all.pdf}
-    \caption[Simulated read mapping with HiSeq X Ten reads]{\textbf{Simulated read mapping with HiSeq X Ten reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
-    \label{fig:aim2_supplement_hiseqxten_rocs}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseq2500-all.pdf}
-    \caption[Simulated read mapping with HiSeq 2500 reads]{\textbf{Simulated read mapping with HiSeq 2500 reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
-    \label{fig:aim2_supplement_hiseq2500_rocs}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.8\linewidth]{aim2_supplement_novaseq6000-qq.pdf}
-    \caption[QQ plot for simulated read mapping with NovaSeq 6000 reads]{\textbf{QQ plot for simulated read mapping with NovaSeq 6000 reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
-    \label{fig:aim2_supplement_novaseq6000_qq}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseqxten-qq.pdf}
-    \caption[QQ plot for simulated read mapping with HiSeq X Ten reads]{\textbf{QQ plot for simulated read mapping with HiSeq X Ten reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
-    \label{fig:aim2_supplement_hiseqxten_qq}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseq2500-qq.pdf}
-    \caption[QQ plot for simulated read mapping with HiSeq 2500 reads]{\textbf{QQ plot for simulated read mapping with HiSeq 2500 reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
-    \label{fig:aim2_supplement_hiseq2500_qq}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.9\linewidth]{aim2_haplotype_sampling.pdf}
-    \caption[Assessing haplotype sampling and path cover]{\textbf{Assessing haplotype sampling and path cover.} Each panel shows recall vs. FDR for a simulated read mapping experiment. (A,C) Haplotype sampling, for samplings from 1 to 128 using the 1000GP derived graph (Table \ref{tab:mapping_accuracy_1000gp_sampled_gbwt}). Includes for comparison a graph containing just the primary reference (here GRCh38) and, separately, the full 1000GP GBWT. For both (A) single-ended and (C) paired-end mapping, performance saturates at around 64x coverage of sampled haplotypes, and exceeds that of mapping to the full GBWT containing all haplotypes. (B,D) Analogous path cover experiments, using the HGSVC graph (Table \ref{tab:mapping_accuracy_hgsvc_cover_gbwt}). All GBWT indexes were evaluated with simulated NovaSeq 6000 reads.}
-    \label{fig:aim2_supplement_haplotype_sampling}
-\end{figure}
-
-\begin{figure}[p]
     \centering
     \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_250bp.wgs.vcfevalroc.pdf}
     \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 250bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. The ROC curve discrimination threshold is based on variant call quality.}
     \label{fig:250bp_genotyping}
 \end{figure}
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_150bp.wgs.vcfevalroc.1000GP_only.pdf}
     \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers in 1000GP regions only]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 150bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions only within 1000GP variant regions. The ROC curve discrimination threshold is based on variant call quality.}
     \label{fig:150bp_genotyping_1000GP_only}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_150bp.wgs.vcfevalroc.1000GP_excluded.pdf}
     \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers in 1000GP excluded regions]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 150bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions with 1000GP variant regions excluded. The ROC curve discrimination threshold is based on variant call quality.}
     \label{fig:150bp_genotyping_1000GP_excluded}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{HG003_trained_deepvariant_genotyping.pdf}
     \caption[Genotyping evaluation for the DeepVariant genotyper with projected mappings from Giraffe and other mappers]{True positive and false positive genotypes made using the DeepVariant genotyper trained on alignments of 150bp paired-end reads from HG002 and HG004 GIAB samples and tested on 150bp paired-end reads from the HG003 GIAB sample and evaluated against the HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Dragen genotyper results are included for performance comparison. The ROC curve discrimination threshold is based on variant call quality.}
     \label{fig:trained_deepvariant_genotyping}
 \end{figure}
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=.9\linewidth, page=2]{fig-sveval.pdf}
     \caption[SV evaluation of vg and GraphTyper on HGSVC and GIAB]{{\bf SV evaluation of vg and GraphTyper on HGSVC and GIAB.}
@@ -2079,20 +2458,6 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
     \label{fig:graphtyper_eval}
 \end{figure}
 
-\begin{figure}[p]
-    \centering
-    \includegraphics[width=.7\linewidth]{speed_yeast.pdf}
-    \caption[Mapping speed on yeast data]{\textbf{Mapping speed on yeast data.} Each mapper was run on a dataset of 1 million real HiSeq 2500 reads from the DBVPG6044 strain on an AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
-    \label{fig:speed_yeast}
-\end{figure}
-
-\begin{figure}[p]
-    \centering
-    \includegraphics[width=.75\linewidth]{aim2_supplement_speed.pdf}
-    \caption[Mapping speed on human data]{\textbf{Mapping speed on human data.} Each mapper was run on a dataset of 1 million real NovaSeq 6000 (A,B), HiSeq X Ten (C,D), or HiSeq 2500 (E,F) reads on a AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
-    \label{fig:aim2_supplement_speed}
-\end{figure}
-
 \begin{figure}[htp]
     \centering
     \includegraphics[width=.9\linewidth]{aim2_supplement_wdl-sveval.pdf}
@@ -2104,7 +2469,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
     \label{fig:sv-wdl-graph}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=.9\linewidth, page=1]{fig-sveval.pdf}
     \caption[Minimal effect of down-sampling reads to 20x depth on the SV genotyping performance]{{\bf Minimal effect of down-sampling reads to 20x depth on the SV genotyping performance.}
@@ -2116,7 +2481,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 
 
 
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=.9\linewidth]{fig-sv-mesa-stats-2.pdf}
     \caption[SV alleles and SV sites in the MESA cohort]{{\bf SV alleles and SV sites in the MESA cohort.}
@@ -2128,7 +2493,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
     \label{fig:svsites_mesa}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
   \centering
   %~~~(A)\hfill{(B)~~~}
 
@@ -2147,7 +2512,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{fig:mesa-svsite-examples}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{fig-sv-1kgp-stats.pdf}
     \caption[Structural variants in 2,504 unrelated individuals from the 1000 Genomes Project]{\textbf{Structural variants in 2,504 unrelated individuals from the 1000 Genomes Project.}
@@ -2164,7 +2529,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 
 
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{fig-sv-trio-eval.pdf}
   \caption[SV evaluation using 602 trios from the 1000 Genomes Project]{{\bf SV evaluation using 602 trios from the 1000 Genomes Project}
     (A) Mendelian error (y-axis) for different minimum genotype quality thresholds (x-axis), i.e. considering all variants where the minimum genotype quality in the trio is X or higher.
@@ -2175,7 +2540,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{fig:sv-trio-eval}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{fig-sv-freq-comp.pdf}
   \caption[Allele frequency of SVs in this study and public studies]{{\bf Allele frequency of SVs in this study and public studies.}
     (A) Allele frequency distribution of common variants (frequency >1\%) in each dataset.
@@ -2184,14 +2549,14 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{fig:sv-freq-comp}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth, page=3]{fig-sv-mesa-pcs.pdf}
   \caption[Principal component analysis using the SV genotypes or SNVs in the MESA dataset]{{\bf Principal component analysis using the SV genotypes (y-axis) in the MESA dataset compared to the principal components derived from TOPMed-wide SNVs (x-axis).}
     (A), (B), (C) compare the first, second and third components.}
   \label{fig:mesa-topmed-pcs}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{fig-pops-freq-mesa.pdf}
   \caption[SV sites with population specific frequency patterns in the MESA cohort]{{\bf SV sites with population specific frequency patterns in the MESA cohort.}
     The two thousand MESA samples were clustered in 6 clusters based on the top 3 principal components (A-B).
@@ -2201,7 +2566,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{figure}
 
 
-\begin{figure}[htp]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{fig-sv-1kgp-pcs.pdf}
   \caption[PCA of SV genotypes in the 1000 Genomes Project]{{\bf Principal component analysis from structural variant genotypes across the 2,504 unrelated individuals in the 1000 Genomes Project dataset. }
     Principal component analysis was performed on the SV genotypes predicted by vg across the 166,199 SV loci.
@@ -2210,8 +2575,9 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   }
   \label{fig:1kgp-sv-pcs}
 \end{figure}
+\newpage
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{fig-pops-freq-kgp.pdf}
   \caption[SV sites with population specific frequency patterns in the 2,504 individuals from the 1000 Genomes Project]{{\bf SV sites with population specific frequency patterns in the 2,504 individuals from the 1000 Genomes Project. }
     (A) The range of frequency, i.e. the difference between the maximum and minimum frequencies, across the super-population was larger than expected (permutation) for thousands of SV sites.
@@ -2220,7 +2586,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{figure}
 
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth]{fig-sv-eqtl.pdf}
   \caption[P-value distribution of the SV vs gene expression tests in the GEUVADIS dataset]{{\bf P-value distribution of the SV vs gene expression tests in the GEUVADIS dataset.}
     Three analysis were performed: joint European and Yoruba populations (A-B), European populations only (C-D), and the Yoruba population (YRI) only (E-F).
@@ -2230,7 +2596,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{fig:eqtl_qc}
   \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth, page=2]{fig-sv-functional-summary.pdf}
   \caption[Location of the SV-eQTLs around the associated gene]{{\bf Location of the SV-eQTLs around the associated gene}
     The x-axis reports the proportion of SV-eQTLs overlapping each annotation group (panels).
@@ -2242,7 +2608,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{fig:eqtl_enr}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[H]
   \includegraphics[width=\linewidth, page=1]{fig-sv-snv-indel-eqtl.pdf}
   \caption[Enrichment of SV-eQTLs in highly expressed genes]{{\bf Enrichment of SV-eQTLs in highly expressed genes}
     Genes were split in 20 expression groups of equal size (quantiles).
@@ -2255,7 +2621,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{figure}
 
 
-\begin{figure}[p]
+\begin{figure}[H]
   \textsf{(A)} \hspace{15em} \textsf{(B)}
 
   \includegraphics[trim={0 0em 0 20em}, clip, width=\linewidth, page=2]{fig-sv-snv-indel-eqtl.pdf}
@@ -2270,346 +2636,11 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{figure}
 
 
-\subsection{Supplementary tables}
 
 
-\newcommand{\mapindexes}[1]{\indexurl{#1.xg} & \indexurl{#1.gcsa} & \indexurl{#1.gcsa.lcp} & & & &}
-\newcommand{\giraffeindexes}[1]{\indexurl{#1.xg} & & & \indexurl{#1.gbwt} & \indexurl{#1.min} & \indexurl{#1.gg} & \indexurl{#1.dist}}
+\section{Supplementary tables}
 
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and  \\
-              &         &            &            & MAPQ 60           \\
-        \hline
-        single  & Giraffe primary	    & 96.94     & 91.81     & 0.00195 \\
-                & VG-MAP primary        & 97.03     & 92.16     & 0.00125 \\
-                & Bowtie2	            & 96.84     & 82.85     & 0.00075 \\
-                & BWA-MEM	            & 97.05     & 91.07     & 0.00085 \\
-                & Minimap2	            & 96.82     & 90.32     & 0.00250 \\
-                & Giraffe	            & 97.00     & 92.29     & 0.00040 \\
-                & fast Giraffe	        & 96.86     & 89.82     & 0.00075 \\
-                & VG-MAP               	& 96.99     & 91.90     & 0.00005 \\
-                & GraphAligner	        & 88.95     & -         & - \\
-                & HISAT2	            & 96.69     & 95.83     & 0.20275 \\
-                & HISAT2 sens       	& 96.76     & 95.92     & 0.22765 \\
-                & HISAT2 vsens	        & 96.83     & 96.00     & 0.25985 \\
-                & Giraffe control	    & 97.12     & 93.14     & 0.00020 \\
-
-        \hline
-        paired  & Giraffe Primary	& 98.25     & 94.22     & 0.00135 \\
-                & VG-MAP Primary	& 98.28     & 94.47     & 0.00140 \\
-                & Bowtie2       	& 98.25     & 88.75     & 0.00150 \\
-                & BWA-MEM	        & 98.33     & 93.95     & 0.00120 \\
-                & Minimap2      	& 98.01     & 93.25     & 0.02710 \\
-                & Giraffe	        & 98.27     & 94.34     & 0.00015 \\
-                & fast Giraffe  	& 98.24     & 92.84     & 0.00015 \\
-                & VG-MAP           	& 98.29     & 94.41     & 0.00050 \\
-                & HISAT2        	& 97.95     & 97.50     & 0.31180 \\
-                & HISAT2 sens   	& 98.11     & 97.73     & 0.38640 \\
-                & HISAT2 vsens	    & 98.18     & 97.66     & 0.27780 \\
-                & Giraffe control	& 98.33     & 94.70     & 0.00000 \\
- 
- 
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy on NovaSeq 6000 reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on NovaSeq 6000 reads mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
-    \label{tab:mapping_accuracy_1kg_novaseq6000}
-    \label{tab:first}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & Giraffe primary	& 96.93     & 91.68     & 0.00260 \\
-                & VG-MAP primary	& 97.04     & 92.17     & 0.00085 \\
-                & Bowtie2       	& 96.75     & 83.73     & 0.00185 \\
-                & BWA-MEM	        & 97.03     & 91.06     & 0.00050 \\
-                & Minimap2	        & 96.80     & 90.28     & 0.00200 \\
-                & Giraffe	        & 97.00     & 92.19     & 0.00080 \\
-                & fast Giraffe	    & 96.83     & 90.02     & 0.00095 \\
-                & VG-MAP	        & 97.00     & 91.92     & 0.00020 \\
-                & GraphAligner 	    & 88.82     & -         & - \\
-                & HISAT2	        & 96.51     & 95.75     & 0.30710 \\
-                & HISAT2 sens	    & 96.62     & 95.89     & 0.33675 \\
-                & HISAT2 vsens  	& 96.71     & 95.93     & 0.32535 \\
-                & Giraffe control	& 97.11     & 93.04     & 0.00020 \\
-
-        \hline
-        paired  & Giraffe primary	& 98.27     & 94.27     & 0.00155 \\
-                & VG-MAP primary   	& 98.29     & 94.48     & 0.00125 \\
-                & Bowtie2       	& 98.21     & 89.07     & 0.00245 \\
-                & BWA-MEM	        & 98.33     & 93.94     & 0.00095 \\
-                & Minimap2	        & 98.00     & 93.23     & 0.02785 \\
-                & Giraffe	        & 98.28     & 94.40     & 0.00025 \\
-                & fast Giraffe	    & 98.24     & 93.13     & 0.00010 \\
-                & VG-MAP	        & 98.30     & 94.41     & 0.00060 \\
-                & HISAT2        	& 97.71     & 97.33     & 0.37060 \\
-                & HISAT2 sens   	& 97.95     & 97.66     & 0.45725 \\
-                & HISAT2 vsens	    & 98.12     & 97.68     & 0.33825 \\
-                & Giraffe control	& 98.35     & 94.72     & 0.00010 \\
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy on HiSeq X Ten reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq X Ten reads mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
-    \label{tab:mapping_accuracy_1kg_hiseqxten}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & Giraffe primary	& 97.80     & 94.95     & 0.00530 \\
-                & VG-MAP primary	& 97.90     & 93.99     & 0.00200 \\
-                & Bowtie2	        & 96.48     & 84.41     & 0.00435 \\
-                & BWA-MEM       	& 97.84     & 92.61     & 0.05120 \\
-                & Minimap2      	& 97.69     & 93.17     & 0.05120 \\
-                & Giraffe       	& 97.84     & 95.04     & 0.00295 \\
-                & fast Giraffe	    & 97.72     & 94.06     & 0.00285 \\
-                & VG-MAP           	& 97.90     & 93.90     & 0.00115 \\
-                & GraphAligner 	    & 92.93     & -         & - \\
-                & HISAT2        	& 94.94     & 95.03     & 0.72205 \\
-                & HISAT2 sens	    & 96.03     & 96.01     & 0.67535 \\
-                & HISAT2 vsens  	& 96.41     & 96.11     & 0.51385 \\
-                & Giraffe control	& 97.94     & 95.27     & 0.00110 \\
-
-        \hline
-        paired  & Giraffe primary	& 98.68     & 95.84     & 0.00350 \\
-                & VG-MAP primary   	& 98.76     & 95.67     & 0.00225 \\
-                & Bowtie2	        & 97.30     & 87.87     & 0.00715 \\
-                & BWA-MEM       	& 98.71     & 94.64     & 0.05415 \\
-                & Minimap2      	& 98.39     & 92.68     & 0.08915 \\
-                & Giraffe	        & 98.69     & 95.87     & 0.00205 \\
-                & fast Giraffe  	& 98.65     & 95.25     & 0.00180 \\
-                & VG-MAP	        & 98.76     & 95.66     & 0.00130 \\
-                & HISAT2        	& 95.52     & 95.80     & 0.78575 \\
-                & HISAT2 sens	    & 96.84     & 97.16     & 0.81925 \\
-                & HISAT2 vsens	    & 97.32     & 97.27     & 0.56045 \\
-                & Giraffe control	& 98.78     & 95.91     & 0.00145 \\
-
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy on HiSeq 2500 reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq 2500 mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
-    \label{tab:mapping_accuracy_1kg_hiseq2500}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and\\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & Giraffe primary	& 97.09     & 92.68     & 0.04840 \\
-                & VG-MAP primary   	& 97.17     & 92.62     & 0.04685 \\
-                & Bowtie2	        & 97.02     & 84.20     & 0.02645 \\
-                & BWA-MEM	        & 97.16     & 91.61     & 0.03925 \\
-                & Minimap2	        & 96.96     & 90.93     & 0.04220 \\
-                & Giraffe	        & 97.17     & 92.63     & 0.00070 \\
-                & fast Giraffe	    & 97.02     & 90.25     & 0.00070 \\
-                & VG-MAP	        & 97.24     & 92.57     & 0.00035 \\
-                & GraphAligner 	    & 91.94     & -      & - \\
-                & HISAT2	        & 97.10     & 96.36     & 0.20975 \\
-                & HISAT2 sens   	& 97.16     & 96.46     & 0.24702 \\
-                & HISAT2 vsens	    & 97.24     & 96.58     & 0.30368 \\
-                & Giraffe control	& 97.26     & 93.42     & 0.00005 \\
-
-        \hline
-        paired  & Giraffe primary	& 98.29     & 94.65     & 0.05480 \\
-                & HISAT2	        & 96.51     & 95.75     & 0.30710 \\
-                & Bowtie2       	& 98.28     & 89.54     & 0.03220 \\
-                & BWA-MEM       	& 98.38     & 94.34     & 0.04275 \\
-                & Minimap2      	& 98.09     & 93.72     & 0.06800 \\
-                & Giraffe       	& 98.39     & 94.57     & 0.00040 \\
-                & fast Giraffe  	& 98.35     & 93.14     & 0.00040 \\
-                & VG-MAP	        & 98.41     & 94.74     & 0.00385 \\
-                & HISAT2	        & 98.24     & 97.95     & 0.35377 \\
-                & HISAT2 sens   	& 98.36     & 98.17     & 0.44951 \\
-                & HISAT2 vsens	    & 98.41     & 98.16     & 0.39059 \\
-                & Giraffe control	& 98.47     & 94.96     & 0.00005 \\
-
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy on NovaSeq 6000 reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on NovaSeq 6000 reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
-    \label{tab:mapping_accuracy_hgsvc_novaseq6000}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & Giraffe primary	& 97.10     & 92.57     & 0.04850 \\
-                & VG-MAP primary   	& 97.20     & 92.63     & 0.04585 \\
-                & Bowtie2       	& 96.94     & 85.15     & 0.02865 \\
-                & BWA-MEM       	& 97.19     & 91.61     & 0.03885 \\
-                & Minimap2	        & 96.96     & 90.86     & 0.04140 \\
-                & Giraffe	        & 97.16     & 92.52     & 0.00100 \\
-                & fast Giraffe  	& 97.01     & 90.43     & 0.00130 \\
-                & VG-MAP	        & 97.27     & 92.58     & 0.00035 \\
-                & GraphAligner   	& 91.88     & -         & - \\
-                & HISAT2	        & 96.92     & 96.32     & 0.30077 \\
-                & HISAT2 sens   	& 97.02     & 96.45     & 0.34180 \\
-                & HISAT2 vsens	    & 97.11     & 96.52     & 0.34185 \\
-                & Giraffe control	& 97.27     & 93.34     & 0.00015 \\
-
-        \hline
-        paired  & Giraffe primary	& 98.29     & 94.76     & 0.05470 \\
-                & VG-MAP primary   	& 98.35     & 94.84     & 0.04750 \\
-                & Bowtie2       	& 98.25     & 89.98     & 0.03325 \\
-                & BWA-MEM        	& 98.40     & 94.36     & 0.04280 \\
-                & Minimap2      	& 98.07     & 93.69     & 0.06815 \\
-                & Giraffe	        & 98.38     & 94.68     & 0.00050 \\
-                & fast Giraffe	    & 98.34     & 93.43     & 0.00030 \\
-                & VG-MAP           	& 98.43     & 94.79     & 0.00420 \\
-                & HISAT2	        & 98.04     & 97.82     & 0.40337 \\
-                & HISAT2 sens   	& 98.23     & 98.13     & 0.51313 \\
-                & HISAT2 vsens	    & 98.36     & 98.16     & 0.42937 \\
-                & Giraffe control	& 98.48     & 95.01     & 0.00005 \\
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy on HiSeq X Ten reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq X Ten reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
-    \label{tab:mapping_accuracy_hgsvc_hiseqxten}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & Giraffe primary	& 97.89     & 95.34     & 0.06980 \\
-                & VG-MAP primary	& 97.98     & 94.38     & 0.05715 \\
-                & Bowtie2	        & 96.56     & 85.74     & 0.03405 \\
-                & BWA-MEM	        & 97.93     & 93.08     & 0.09025 \\
-                & Minimap2	        & 97.78     & 93.59     & 0.09525 \\
-                & Giraffe	        & 97.97     & 95.30     & 0.00430 \\
-                & fast Giraffe	    & 97.87     & 94.35     & 0.00340 \\
-                & VG-MAP           	& 98.08     & 94.35     & 0.00170 \\
-                & GraphAligner 	    & 94.86     & -         & -0 \\
-                & HISAT2	        & 95.32     & 95.47     & 0.69207 \\
-                & HISAT2 sens   	& 96.36     & 96.41     & 0.66196 \\
-                & HISAT2 vsens  	& 96.73     & 96.58     & 0.54163 \\
-                & Giraffe control	& 98.07     & 95.53     & 0.00075 \\
-
-        \hline
-        paired  & Giraffe primary	& 98.70     & 96.10     & 0.06465 \\
-                & VG-MAP primary	& 98.79     & 95.93     & 0.05845 \\
-                & Bowtie2       	& 97.33     & 88.71     & 0.03860 \\
-                & BWA-MEM       	& 98.75     & 94.97     & 0.09730 \\
-                & Minimap2      	& 98.44     & 93.02     & 0.12805 \\
-                & Giraffe       	& 98.80     & 96.04     & 0.00295 \\
-                & fast Giraffe  	& 98.78     & 95.44     & 0.00280 \\
-                & VG-MAP        	& 98.89     & 95.89     & 0.00280 \\
-                & HISAT2        	& 95.86     & 96.18     & 0.75739 \\
-                & HISAT2 sens   	& 97.09     & 97.51     & 0.82688 \\
-                & HISAT2 vsens	    & 97.55     & 97.72     & 0.63802 \\
-                & Giraffe control	& 98.91     & 96.13     & 0.00165 \\
-
-
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy on HiSeq 2500 reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq 2500 reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
-    \label{tab:mapping_accuracy_hgsvc_hiseq2500}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & primary	& 97.09     & 92.68     & 0.04840 \\
-                & 1x	    & 97.13     & 92.65     & 0.01840 \\
-                & 2x	    & 97.15     & 92.64     & 0.01095 \\
-                & 4x	    & 97.16     & 92.63     & 0.00260 \\
-                & 8x	    & 97.17     & 92.63     & 0.00075 \\
-                & 16x	    & 97.17     & 92.63     & 0.00070 \\
-                & 32x	    & 97.17     & 92.63     & 0.00070 \\
-                & 64x   	& 97.17     & 92.63     & 0.00070 \\
-                & 128x	    & 97.17     & 92.63     & 0.00070 \\
-                & full  	& 97.17     & 92.64     & 0.00045 \\
-
-                
-                
-
-        \hline
-        paired  & primary	& 98.29     & 94.65     & 0.05480 \\
-                & 1x	    & 98.35     & 94.60     & 0.01820 \\
-                & 2x	    & 98.36     & 94.59     & 0.01105 \\
-                & 4x	    & 98.38     & 94.58     & 0.00240 \\
-                & 8x	    & 98.38     & 94.57     & 0.00060 \\
-                & 16x	    & 98.39     & 94.57     & 0.00040 \\
-                & 32x	    & 98.39     & 94.57     & 0.00040 \\
-                & 64x	    & 98.39     & 94.57     & 0.00040 \\
-                & 128x	    & 98.39     & 94.57     & 0.00040 \\
-                & full  	& 98.39     & 94.58     & 0.00035 \\
-                
-
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy using path cover GBWT]{\textbf{Mapping accuracy using path cover GBWT} GBWTs were generated using the path cover for the HGSVC graph, with between 1 and 128 haplotypes. For comparison, GBWTs with only the primary GRCh38 reference and with the full HGSVC set were used. Giraffe was run with each GBWT on 2 million simulated NovaSeq 6000 reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60.}
-    \label{tab:mapping_accuracy_hgsvc_cover_gbwt}
-\end{table}
-
-\begin{table}[p]
-    \centering
-    \begin{tabular}{|l|l|r|r|r|}
-    \hline
-        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
-               &         &            &            & MAPQ 60          \\
-        \hline
-        single  & primary   & 96.94     & 91.81     & 0.00195 \\
-                & 1x        & 96.97     & 91.98     & 0.00120 \\
-                & 2x        & 96.99     & 92.11     & 0.00075 \\
-                & 4x        & 97.00     & 92.19     & 0.00065 \\
-                & 8x        & 97.00     & 92.24     & 0.00050 \\
-                & 16x       & 97.00     & 92.27     & 0.00055 \\
-                & 32x       & 97.00     & 92.28     & 0.00045 \\
-                & 64x       & 97.00     & 92.29     & 0.00040 \\
-                & 128x      & 97.00     & 92.29     & 0.00035 \\
-                & full      & 96.94     & 92.10     & 0.00040 \\
-
-        \hline
-        paired  & primary   & 98.25     & 94.22     & 0.00135 \\
-                & 1x        & 98.26     & 94.28     & 0.00060 \\
-                & 2x        & 98.26     & 94.31     & 0.00025 \\
-                & 4x        & 98.26     & 94.33     & 0.00010 \\
-                & 8x        & 98.26     & 94.34     & 0.00010 \\
-                & 16x       & 98.26     & 94.34     & 0.00015 \\
-                & 32x       & 98.26     & 94.34     & 0.00015 \\
-                & 64x       & 98.27     & 94.34     & 0.00015 \\
-                & 128x      & 98.26     & 94.33     & 0.00010 \\
-                & full      & 98.25     & 94.25     & 0.00015 \\
-                
-
-        \hline
-        
-    \end{tabular}
-    \caption[Mapping accuracy using haplotype sampled GBWT]{\textbf{Mapping accuracy using haplotype sampled GBWT} GBWTs were generated by sampling the 1000GP haplotypes, sampling between 1 and 128 haplotypes. For comparison, GBWTs with only the primary GRCh38 reference and with the full 1000GP set were used. Giraffe was run with each GBWT on 2 million simulated NovaSeq 6000 reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60.}
-    \label{tab:mapping_accuracy_1000gp_sampled_gbwt}
-\end{table}
-
-
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|r|r|r|l|l|l|}
      \hline
@@ -2629,7 +2660,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{table}
 
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|r|r|r|l|l|l|}
      \hline
@@ -2658,7 +2689,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:happy_high_conf_2x150_hg002_grch38}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|r|r|r|l|l|l|}
      \hline
@@ -2676,7 +2707,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:vcfeval_high_conf_2x250_hg002_grch38}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|r|r|r|l|l|l|}
      \hline
@@ -2705,7 +2736,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:happy_high_conf_2x250_hg002_grch38}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|r|r|r|l|l|l|}
      \hline
@@ -2723,7 +2754,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:vcfeval_high_conf_1000GP_only_2x150_hg002_grch38}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|r|r|r|l|l|l|}
      \hline
@@ -2742,7 +2773,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{table}
 
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|r|r|r|l|l|l|}
      \hline
@@ -2760,25 +2791,25 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{table}
 
 
-\begin{table}[p]
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|r|r|r|l|l|l|}
      \hline
     Pipeline                                     & Var Type & TP                & FN             & FP            & Recall            & Precision         & F1                \\
     \hline
-    \multirow{2}{*}{BWA-MEM + Dragen}           & INDELS    & 501,574           & 2,927          & 2,789         & 0.994198          & 0.994696      & 0.994447 \\
+    \multirow{2}{*}{BWA-MEM+Dragen}           & INDELS    & 501,574           & 2,927          & 2,789         & 0.994198          & 0.994696      & 0.994447 \\
                                                 & SNPS      & 3,306,162         & 21,331         & 20,642        & 0.993589          & 0.993797      & 0.993693 \\
     \hline
-    \multirow{2}{*}{Giraffe + Dragen}           & INDELS    & \textbf{501,993}  & \textbf{2,508} & 2,566         & \textbf{0.995029} & 0.995122      & 0.995075 \\
+    \multirow{2}{*}{Giraffe+Dragen}           & INDELS    & \textbf{501,993}  & \textbf{2,508} & 2,566         & \textbf{0.995029} & 0.995122      & 0.995075 \\
                                                 & SNPS      & \textbf{3,311,179}& \textbf{16,317}& 15,563        & \textbf{0.995096} & 0.995323      & 0.995210 \\
     \hline
-    \multirow{2}{*}{Dragen MAP + Dragen}        & INDELS    & 501,770           & 2,731          & 2,644         & 0.994587          & 0.994972      & 0.994780 \\
+    \multirow{2}{*}{DragenMAP+Dragen}        & INDELS    & 501,770           & 2,731          & 2,644         & 0.994587          & 0.994972      & 0.994780 \\
                                                 & SNPS      & 3,307,236         & 20,260         & 16,078        & 0.993911          & 0.995163      & 0.994537 \\
     \hline
-    \multirow{2}{*}{BWA-MEM + DeepVariant}      & INDELS    & 501,433           & 3,068          & \textbf{1,393}& 0.993919          & \textbf{0.997342} & 0.995627 \\
+    \multirow{2}{*}{BWA-MEM+DeepVariant}      & INDELS    & 501,433           & 3,068          & \textbf{1,393}& 0.993919          & \textbf{0.997342} & 0.995627 \\
                                                 & SNPS      & 3,306,484         & 21,012         & 5,268         & 0.993685          & 0.998410          & 0.996042 \\
     \hline
-    \multirow{2}{*}{Giraffe + DeepVariant}      & INDELS    & 501,919           & 2,582          & 1,851         & 0.994882          & 0.996476          & \textbf{0.995678} \\
+    \multirow{2}{*}{Giraffe+DeepVariant}      & INDELS    & 501,919           & 2,582          & 1,851         & 0.994882          & 0.996476          & \textbf{0.995678} \\
                                                 & SNPS      & 3,310,338         & 17,158         & \textbf{5,015}& 0.994844          & \textbf{0.998488} & \textbf{0.996662} \\
     \hline
     \end{tabular}
@@ -2786,7 +2817,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:deepvariant_happy_high_conf_2x150_50x_hg003_grch38}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
   \centering
   \begin{tabular}[t]{|r|l|r|r|}
     \hline
@@ -2817,7 +2848,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{table}
 
 
-\begin{table}[p]
+\begin{table}[H]
   \centering
   \begin{tabular}[t]{|l|c|c|c|l|}
     \hline
@@ -2846,7 +2877,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \end{table}
 
 
-\begin{table}[p]
+\begin{table}[H]
   \centering
   \begin{tabular}[t]{|l|l|r|r|r|}
     \hline
@@ -2868,7 +2899,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{tab:novel-sv}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
   {\href{https://www.science.org/doi/suppl/10.1126/science.abg8871/suppl_file/science.abg8871_table_s21.zip}{supptab-S18-sv-eqtl.xlsx}}
   \caption[Gene families enriched in SV-eQTLs and eGenes with only SV-eQTLs]{{\bf Gene families enriched in SV-eQTLs and eGenes with only SV-eQTLs.}
     Excel file containing two sheets.
@@ -2879,7 +2910,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{tab:file-sveqtl}
 \end{table}
 
-\begin{table}[p]
+\begin{table}[H]
   \centering
   \begin{tabular}[t]{|l|r|r|l|l|}
     \hline
@@ -2925,15 +2956,8 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{tab:vgruns_grch38}
   \label{tab:last}
 \end{table}
-\chapter{Long read mapping}
-\section{Preface}
 
-\chapter{Discussion}
 
-\appendix
-\chapter{Additional short read giraffe materials}
-\section{Preface}
-This section contains materials from the supplement of short read giraffe paper \cite{sr_giraffe_2021} that are referenced in the main text but not related to my portion of the paper. 
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
