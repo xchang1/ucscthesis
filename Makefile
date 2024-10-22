@@ -18,10 +18,10 @@
 # configuration parameters (BEGIN)
 ##############################################################################
 
-PAPER = uctest
+PAPER = xian_chang_thesis
 DIRNAME = thesis-phd
 GRAPHICS =
-BIBS = uctest.bib
+BIBS = xian_chang_thesis.bib
 BIBTEX = bibtex
 TEX = latex
 EPSGRAPHICSFILES =
