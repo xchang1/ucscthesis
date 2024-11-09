@@ -78,7 +78,7 @@
 \degree{DOCTOR OF PHILOSOPHY}
 \chair{Professor Benedict Paten}
 \committeememberone{Professor David Haussler}
-\committeemembertwo{Professor Russ Corbett-Detig}
+\committeemembertwo{Professor Russell Corbett-Detig}
 \committeememberthree{Professor Jian Ma}
 \numberofmembers{4} %% (including chair) possible: 3, 4, 5, 6
 \deanlineone{Dean Peter Biehl}
@@ -98,7 +98,17 @@
 \listofalgorithms
 
 \begin{abstract}
-Theses have elements.  Isn't that nice?
+The human reference genome is one of the most important foundational resources in biological research, but its utility as a reference for all people is limited due to its lack of diversity.
+Pangenomes are an alternative representation of genomes that incorporate genetic variations from a population of individuals.
+Using a pangenome as a reference can mitigate the bias incurred by using the current standard reference genome, but because of the increased size and complexity of pangenomes, tools that use them tend to be slower and less reliable than tools that use standard references.
+Mapping sequencing reads to a reference, the first step in many genomic pipelines, is a particularly challenging problem in a pangenome context. 
+In this dissertation I present my work developing data structures and algorithms to support read mapping to pangenome graphs.
+First, I present an index for finding minimum distances in pangenomes and use it to develop a clustering algorithm.
+I then describe a read mapping tool for short reads that incorporates the distance index and clustering algorithm.
+Finally, I describe extensions to the short read mapper for mapping long reads.
+The pangenomic read mapping tools that I helped develop over the course of my PhD are as efficient as linear mappers and improve variant calling results when used with standard tools.
+They are among the first practical pangenome mappers that are paving the way for the emerging field of pangenomics.% more accurate and unbiased genomic analyses.
+
 
 \end{abstract}
 
@@ -124,24 +134,234 @@ would have graduated so, so, very much faster.
 
 \chapter{Introduction}
 
-Every dissertation should have an introduction.  You might not realize
-it, but the introduction should introduce the concepts, background,
-and goals of the dissertation.
+The human reference genome is one of the most widely used resources in biological research.
+It is the basis for studying the functional biology of the human genome, genetic variations and their implications in disease, evolutionary relationships between humans and other species, and countless other basic biological and clinical questions.
+As a ``reference'', the reference genome serves as a standard scaffold against which new genomic data is compared.
+In order for a reference to be effective, it must be similar enough to the sample that they can be meaningfully compared and differences between them identified and interpreted.
+However, the human reference genome is a linear genome that represents a single haplotype copy of a genome with a limited number of alternate alleles.
+Because of its lack of diversity, the reference genome can differ significantly from an individual's genome and can bias new samples to appear more similar to the reference than they actually are.
+The human reference genome in its current iteration cannot represent the genetic diversity of the human population and is therefore limited in its utility as a reference for all humans.
+
+One emerging alternative to a linear reference genome is a pangenome reference that represents a collection of genomic sequences.
+A pangenome can better represent the genetic makeup of a population and has been shown to improve genomic analyses by mitigating the reference bias inherent in using a linear genome.
+Although pangenomes have shown promising results, there is a dearth of methods for working with them, in stark contrast to the myriad of linear genome methods.
+Pangenomes are often represented using sequence graphs.
+In a sequence graph, nodes represent nucleotide sequences and edges occur between sequences that are adjacent in the haplotypes of the pangenome.
+While this is an efficient method for representing the large amount of repetitive sequence present in a pangenome, the structure of the graph can become topologically complex as more variants are added.
+As a result, existing pangenome tools tend to be slow, memory intensive, and can be confounded by complex and repetitive regions of the genome.
+In order for pangenomes to reach their full potential as a standard reference, new methods must be developed to make them practical for common genomic tasks.
+
+Read mapping is one such fundamental task that is common to many modern genomic analyses.
+The goal of read mapping is to take a read, the nucleotide sequence of a DNA fragment that has been read by a sequencing machine, and find the location in the reference genome where the sequences most closely match.
+The alignment between sequencing reads and reference genomes can then be used in downstream analyses such as variant calling, which aims to detect variations between a sample and reference genome.
+
+Read mapping is a well studied problem in a linear context, but it becomes more difficult when mapping to a larger and more complex pangenome reference.
+In this dissertation, I present my work developing data structures and algorithms for mapping sequencing reads to pangenome graphs.
+I first describe an index for finding the minimum distance between positions in a pangenome graph and an algorithm that uses it to cluster positions on the graph (Chapter~\ref{chapter:distance}.
+Next, I describe a short read-to-pangenome mapper (Chapter~\ref{chapter:sr-giraffe}) and a long read-to-pangenome mapper (Chapter ~\ref{chapter:lr-giraffe}), and show how each improves variant calling relative to standard linear pipelines.
 
 \chapter{Background}
-\section{The human reference genome}
+\label{chapter:background}
+
+\section{Linear reference genomes and standard genomic analyses}
+\label{sec:background:linear-genomes}
+
+%The general goal of any genomic analysis is to understand the contents of a genome.
+%The scope of such an analysis can vary widely: from identifying a single single nucleotide variant (SNV) on a single gene, to finding the entire sequence of an individual's genome, to comparing the genetic makeup of populations. 
+The human reference genome is ingrained in nearly all modern genomic analyses.
+Resequencing experiments drive much of 
+Nearly all genomic analyses rely on a reference genome to provide a common language for describing and interpreting new samples.
+A reference genome is a high-quality, annotated genome assembly that is taken to be representative of a species.
+New samples are described relative to the reference genome in terms of variants where the sample's sequence differs from the reference, and the annotations from the reference are used to understand the functional impact of a sample's variants.
+
+The reference genome is frequently used to perform analyses as well.
+In 
+
+
+The initial copy of the human reference genome was assembled from the genetic sequences of eight people, primarily from a single individual \cite{lander_initial_2001}.
+This genome assembly is a ``linear'' genome that represents just one haplotype copy of a genome and no variations.
+Moreover, it is a mosaic of a few individuals and represents alleles that are unique to those individuals, and combinations of alleles that did not exist in any individual.
+The current reference genome, GRCh38 \cite{schneider_evaluation_2017}, has build upon the initial assembly by closing gaps, adding alternate loci, improving annotations, and generally improving the quality of the sequence.
+However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated\cite{schneider_evaluation_2017,nurk_complete_2022}.
+Furthermore, 93\% of the sequence in GRCh38 is derived from just eleven individuals and about 70\% is derived from a single individual.
+Recently, the first complete sequence of a human genome was found \cite{nurk_complete_2022}.
+Unlike the GRCh38 assembly, the CHM13 assembly is the sequence of a single individual (a haploid hydatidiform mole) and includes the 8\% of the genome that remained unsequenced in GRCh38, opening these region to analyses for the first time \cite{nurk_complete_2022}.
+Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haplotype sequence.
+Although the GRCh38 assembly contains some alternate loci, these are are limited to 176 genomic regions\cite{schneider_evaluation_2017} and it is still essentially a linear genome.
+
+%TODO Talk about chm13 
+
+Using a linear genome as a reference for analyzing new samples introduces a bias causing the new sample to appear more similar to the reference \cite{noauthor_computational_2016,eizenga_pangenome_2020}.
+This bias frequently arises when mapping to the reference genome, the first step of many common genomics pipelines.
+Mapping to a linear reference can fail when there are significant differences between the sample and the reference, particularly when using short read sequences.
+For example, if the sample contains a large insertion relative to the reference, the reference may not contain the sequence and a read originating from the insertion will remain unmapped (Figure \ref{fig:mapping_example}).
+If no mapped reads cover the insertion, it cannot be called as a variant and the sample will likely appear to have the reference allele.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{mapping_example.pdf}
+    \caption{(A) Mapping a read to a linear reference can fail if the sample has a large insertion relative to the reference. (B) Mapping to a pangenome that contains the variant sequence is more likely to succeed.}
+    \label{fig:mapping_example}
+\end{figure}
+
+
+This reference bias can be mitigated by using a reference genome containing sequences that more closely resemble the sample of interest.
+There have been many proposals for how a reference can accomplish this.
+Rather than using a linear reference that is a mosaic of several individuals, such as GRCh38, the reference could be an ancestral genome that contains the most recent common ancestral allele at each locus, or a consensus genome that contains the most common allele at each locus.
+Another alternative is to use a national or ethnic genome to represent a specific population \cite{ballouz_is_2019,chinese_national_genome_2023,korean_national_genome_2016,vietnamese_national_genome_2015,danish_national_genome_2015,swedish_national_genome_2018,kowal_race_2019}.
+But while a population-specific reference may better capture variations that are frequent in that population, the benefit of such a reference will be minimal.
+Most human genetic variation occurs across populations, rather than within populations \cite{nih_understanding_2007}, meaning that the majority of the genome will still be subject to the same reference bias as would stem from any randomly selected reference genome. 
+%Furthermore, most human genetic variations are rare so no single reference scaffold will be able to represent all people equally. 
+
+
 \section{Pangenomics}
+\label{sec:background:pangenomes}
+
+%TODO This should discuss HPRC, population pangenomes, etc
+
+A pangenome is an alternative to a standard linear genome.
+Pangenomes are collections of genomic sequences from a population.
+Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016}.
+Due to recent advances in genome sequencing and assembly, there has been a proliferation of large-scale sequencing projects producing large numbers of high-quality genomes and catalogues of variations from diverse populations\cite{1000gp_2015,audano_hgsvc,hapmap_consortium_second_2007}.
+These advances have made it increasingly feasible to produce reference pangenomes containing variations from thousands of reference genomes, including variants in regions of the genome that were previously uncharacterized.
+However, while the data to create a pangenome is becoming available, efficiently using a pangenome reference for genomic analysis requires data structures and algorithms that can deal with large amounts of sequence.
+
 \section{Variation graphs}
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{example_graph.pdf}
+    \caption{A sequence graph representing two input sequences. Variations between the two sequences (in bold) are represented as forks in the graph.}
+    \label{fig:example_graph}
+\end{figure}
+
+A popular method of representing pangenome is with sequence graphs (Figure \ref{fig:example_graph}).
+Nodes in a sequence graph are labeled with nucleotide sequences and longer sequences can be encoded as paths through the graph.
+Divergences in the graph represent variations in the sequences.
+Variation graphs are sequence graphs that additionally encode a set of reference paths through the graph.
+These paths typically correspond to reference and alternate scaffolds.
+
+Formally, a sequence graph is a bidirected graph $G = (V, E)$ where $V$ is the set of nodes and $E$ is the set of edges.
+A node $v$ in a bidirected graph has two node sides, $\{v^{-}, v^{+}\}$, which are arbitrarily designated as ``left'' and ``right'' respectively (Figure \ref{fig:example_graph}).
+Each node $v$ in a sequence graph is labeled with a nucleotide sequence, $s(v)$.
+Edges in sequence graphs connect node sides and traversals of nodes must enter and exit the node at opposite sides.
+A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
+The variation graph toolkit (vg) is a software suite for working with variation graphs.
+
 \section{Snarl decomposition}
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{snarl_tree.pdf}
+    \caption{(A) A sequence graph (left) and its corresponding snarl tree (right). Chains are represented by rectangular nodes in the snarl tree; snarls are represented by elliptical nodes.
+    (B) A view of the graph in (A) with snarl $\{a^+$,$k^-\}$ replaced by its netgraph. In this view, the chains $\{b^+$, $d^-\}$ and $\{e^+$, $j^-\}$ are represented by nodes.}
+    \label{fig:snarl_tree}
+\end{figure}
+To help find organization in a sequence graph, it is often useful to describe common topological motifs.
+A simple variation such as a SNP or indel will be represented by one or two nodes representing the variant sequences, flanked by two nodes representing conserved sequences.
+In Figure \ref{fig:snarl_tree}A, nodes $h$ and $i$ represent the alleles of a SNP while nodes $g$ and $j$ represent conserved sequence.
+The subgraph between node sides $g^+$ and $j^-$ is called a snarl.
+A snarl is defined by a pair of node sides, $\{x^{-/+}, y^{-/+}\}$, that delimit a subgraph between them.
+The nodes $x$ and $y$ are referred to as the boundary nodes of the snarl.
+Two node sides define a snarl if they are (i) separable: splitting the boundary nodes into the their two node sides disconnects the snarl from the rest of the graph, and (ii) minimal: there is no node $z$ within the snarl that is separable with the boundary nodes.
+I will use the term ``snarl'' to refer to the two boundary nodes and the subgraph between them.
+
+Snarls frequently occur successively with a shared boundary node between them.
+A sequence of consecutive snarls is called a ``chain''.
+In Figure \ref{fig:snarl_tree}A, the snarls $\{e^+$, $g^-$\} and $\{g^+$, $j^-\}$ are in a chain $\{e^+$, $j^-\}$.
+
+Snarls and chains may be nested within each other.
+Conceptually, this can occur when multiple variants affect the same locus, for example an insertion that contains a SNP.
+In a graph, a snarl contains another snarl if all of the nodes in the latter snarl are contained in the subgraph of the former.
+A snarl contains a chain if it contains all of the chain's component snarls.
+In Figure \ref{fig:snarl_tree}A, the chain $\{e^+$, $j^-\}$ is contained in the snarl $\{a^+$, $k^-\}$.
+
+%A sequence graph can be entirely decomposed into nested snarls and chains.
+The nesting relationship of snarls and chains of a graph is described by its ``snarl tree'' (Figure \ref{fig:snarl_tree} A).
+Each snarl and chain in the graph is represented as a node in the snarl tree.
+A chain is a child of a snarl if it is contained in the snarl and no other descendent of the snarl.
+A snarl is a child of a chain if it is a component of the chain.
+Every snarl is a child of a chain; a chain containing just one snarl is called a ``trivial chain''.
+Because of this, the snarl tree is composed of alternating layers of snarls and chains, starting with a top-level chain as the root.
+
+Nodes, snarls, and chains all have the property that they are connected to the rest of the graph by two node sides.
+Based on this property, snarls and chains can be treated as nodes within their parents, obscuring the presence of a subgraph between the boundaries of the child.
+A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
+In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
+For convenience, I will refer to nodes, snarls, and chains collectively as ``structures'' when referring to them as nested structures in a snarl tree.
+
+\section{Sequencing technologies}
+\label{sec:background:sequencing}
+
 \section{Read mapping}
+\label{sec:background:mapping}
+Most mapping algorithms, both linear and graph-based, follow a common seed-and-extend framework comprised of three main steps.
+In the first step, seeding, short ``seed'' alignments are found between the read and reference.
+Next, the seeds may be grouped together based on their locations in the reference to identify regions of the genome that are likely targets of mapping.
+This step is either done by clustering or chaining, and is omitted entirely by some mappers.
+In clustering, partitions of seeds are found such that seeds that are close to each other on the reference are placed in the same partition.
+Chaining finds ordered sets of co-linear seeds that occur in the same order in the read and reference. 
+Once a likely location is found on the reference, the final alignment step is done.
+In this step, the seed alignment is extended using a dynamic programming algorithm to find the final base-level alignment.
+
+Often in the literature, the terms ``mapping'' and ``alignment'' are used interchangeably.
+For the sake of clarity, I will use ``mapping'' to refer to the problem of finding the location of a read in a reference, and ``alignment'' to refer to the problem of finding the optimal base-level alignment.
+Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
+
 \subsection{Seeding}
+
 \subsection{Clustering}
+
 \subsection{Chaining}
+
 \subsection{Alignment}
+
 \subsection{Linear mappers}
+
+Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010}.
+%also Slider, which uses merge sorting
+Text indexes can be queried to find variable-length exact matches between a read and a reference; one common example of a text index is an FM-index, a low-memory index based on the Burrows Wheeler transform (BWT) \cite{li_bwa_mem_2013,langmead_bowtie2_2012,li_soap2_2009}.
+$k$-mer based algorithms use an index that stores the locations of $k$-mers (sequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
+Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2020}.
+For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
+
+I will be using minimizers for seeding; minimizers are a method for selecting $k$-mers that is used in several mappers.
+A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
+Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
+A minimizer index stores the locations of minimizers from all windows in a sequence.
+If two sequences share a subsequence of length at least $w+k-1$, then they will share a minimizer.
+
+
+After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
+Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
+Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
+These techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
+Chaining algorithms additionally require that seeds in a chain be co-linear\cite{li_bwa_mem_2013,li_minimap2_2018}.
+
+The final base-level alignment is found using dynamic programming, either by extending seed alignments or by aligning the entire reads to a region of the reference that is found by clustering.
+Standard dynamic programming algorithms, such as Smith-Waterman for local alignment, have prohibitive runtimes, so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
+Some mappers use Single-Instruction Multiple-Data (SIMD) microprocessors to accelerate dynamic programming by parallelizing computation of independent cells in the dynamic programming matrix \cite{farrar_striped_2007,rognes_six-fold_2000}.
+Banded alignment algorithms restrict the dynamic programming matrix to a diagonal ``band'' of a specified width, preventing large insertions or deletions that would exceed the width \cite{chao_aligning_1992}.
+BLAST's X-drop algorithm fills in the matrix row by row, and stops extending each row when the best possible score is a given value X less than the best score seen in the previous row \cite{altschul_blast_1990}.
+This has a similar effect to banded alignment in that it forces the alignment to remain close to the diagonal, preventing large insertions or deletions that could align the start of one sequence to the end of another.
+
 \subsection{Graph mappers}
 
+Mapping reads to graph references is a much newer and far less well studied problem than mapping to linear references.
+In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
+Existing graph mappers generally follow the same seed-and-extend structure as linear mappers\cite{eizenga_pangenome_2020}.
+Most graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}; others use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019}.
+
+Clustering or chaining seeds in a graph is more difficult than in a linear genome due to the added ambiguity of calculating distance in a graph.
+Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_variation_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
+
+Alignment is also more challenging in a graph context, particularly for cyclic graphs.
+Many mappers use linear dynamic programming algorithms that have been extended to a graph context.
+One such example is partial order alignment (POA), an algorithm for aligning to directed acyclic graphs (DAGs) \cite{lee_multiple_2002}.
+Most mappers are restricted to aligning to DAGs \cite{schneeberger_simultaneous_2009,kim_hisat2_2019,rakocevic_fast_2019}.
+VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_variation_2018}.
+GraphAligner maps to cyclic graphs using a graph extension of Myers' bit parallel alignment algorithm \cite{rautiainen_bit-parallel_2019}
+
 \chapter{Distance Indexing}
+\label{chapter:distance}
 
 \section{Preface}
 This chapter is the full text of my paper "Distance Indexing and Seed Clustering in Sequence Graphs" \cite{chang_distance_2020}, which I presented and ISMB in 2020 and was published in Bioinformatics.
@@ -654,6 +874,7 @@ We believe this is an important step in generalizing efficient mapping algorithm
 This work was supported, in part, by the National Institutes of Health (award numbers: 5U54HG007990, 5T32HG008345-04, 1U01HL137183, R01HG010053, U01HL137183, 2U41HG007234).
 
 \chapter{Short read mapping}
+\label{chapter:sr-giraffe}
 \section{Preface}
 This chapter contains the full text of the paper "Pangenomics enables genotyping of known structural variants in $5202$ diverse genomes"\cite{sr_giraffe_2021}, published in Science in 2021.
 It also includes portions of the supplement that describe or are pertinent to my contributions.
@@ -779,7 +1000,7 @@ Computing gapped alignments, in which sequences are allowed to gain or lose base
 Most Illumina sequencing errors are substitutions\cite{schirmer2016illumina}, and common true indels relative to the traditional linear reference should already be present in the haplotypes; therefore, almost all reads will have a gapless alignment to some stored haplotype.
 Hence, we try to align each read without gaps before resorting to dynamic programming.
 
-Giraffe follows the common seed-and-extend approach used by most existing mappers (Section \ref{subsec:giraffe-methods}.
+Giraffe follows the common seed-and-extend approach used by most existing mappers (Section \ref{subsec:aim2:giraffe-methods}.
 In this framework, short seed matches between a sequencing read and a genomic reference are found with minimal work, and then only good seeds are extended into mappings of the entire read \cite{langmead_bowtie2_2012,li_bwa_mem_2013,li_minimap2_2018}.
 A visual overview of Giraffe’s operation is given in (Figure \ref{fig:aim2_fig1}, B to F).
 The Giraffe algorithm uses several heuristics for prioritizing alignments.
@@ -801,8 +1022,8 @@ The HGSVC graph contained data from three individuals sequenced with long reads:
 The HGSVC graph contained 78,106 larger SVs ($\leq$50 bp). Both graphs are available for reuse (see Data and materials availability in the Acknowledgments).
 
 \subsection{Giraffe and VG-MAP map accurately to human pangenomes}
-We evaluated Giraffe for mapping human data by simulating paired-end reads for two individuals (Section \ref{subsec:readsim}): NA19240, who has available genotypes for the HGSVC variants \cite{chaisson_sv_2019}, and NA19239, who has available genotypes for the 1000GP variants\cite{1000gp_2015}.
-Simulated read sets were mapped using Giraffe and competing tools (Section \ref{subsec:readmapping}).
+We evaluated Giraffe for mapping human data by simulating paired-end reads for two individuals (Section \ref{subsec:aim2:readsim}): NA19240, who has available genotypes for the HGSVC variants \cite{chaisson_sv_2019}, and NA19239, who has available genotypes for the 1000GP variants\cite{1000gp_2015}.
+Simulated read sets were mapped using Giraffe and competing tools (Section \ref{subsec:aim2:readmapping}).
 We examined the accuracy of single- and paired-end mapping (Figure \ref{fig:aim2_fig2}).
 We looked at a variety of input read sets and evaluated the calibration of reported mapping quality, which is a standard measure of mapping uncertainty (Figures.\ref{fig:aim2_supplement_novaseq_rocs},\ref{fig:aim2_supplement_hiseqxten_rocs},\ref{fig:aim2_supplement_hiseq2500_rocs},\ref{fig:aim2_supplement_novaseq6000_qq},\ref{fig:aim2_supplement_hiseqxten_qq},\ref{fig:aim2_supplement_hiseq2500_qq} and Tables \ref{tab:mapping_accuracy_1kg_novaseq6000},\ref{tab:mapping_accuracy_1kg_hiseqxten},\ref{tab:mapping_accuracy_1kg_hiseq2500},\ref{tab:mapping_accuracy_hgsvc_novaseq6000},\ref{tab:mapping_accuracy_hgsvc_hiseqxten},\ref{tab:mapping_accuracy_hgsvc_hiseq2500}).
 Relative to other tools, at the highest reported mapping quality, VG-MAP and default Giraffe consistently have either higher precision or higher recall across all simulated read technologies and graphs.
@@ -812,7 +1033,7 @@ This suggests that the gains from using a genome graph are higher when the graph
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{aim2_fig2.pdf}
-    \caption[Simulated read mapping]{\textbf{Simulated read mapping} (A to F) Each panel shows recall versus false discovery rate (or 1 minus precision) for a simulated read-mapping experiment, comparing Giraffe with linear genome mappers (BWA-MEM, Bowtie2, and Minimap2) and other genome graph mappers (VG-MAP, GraphAligner, and HISAT2). Reads were simulated to match $\sim150$-bp Illumina NovaSeq (for human) or HiSeq 2500 (for yeast) reads, either as single-end reads [(A) to (C)] or as paired-end reads [(D) to (F)] (Section \ref{subsec:readsim}). Results for each mapper are shown stratified by reported read-mapping quality; the size of each point represents the log-scaled number of reads with the corresponding mapping quality. Three different mapping scenarios are assessed: [(A) and (D)] Comparing mapping to a graph derived from the 1000GP data to mapping to the linear reference genome assembly upon which it is based (GRCh38); [(B) and (E)] comparing mapping to a graph containing larger structural variants from the HGSVC project to mapping to the GRCh38 assembly upon which it is based; and [(C) and (F)] comparing mapping to a multiple sequence alignment–based yeast graph to mapping to the single S.c. S288C linear reference, for reads from the DBVPG6044 strain. For mapping with Giraffe, we used the full GBWT that contains six haplotypes to map to the HGSVC graph and the 64-haplotype sampled GBWT to map to the 1000GP graph. “Giraffe primary” represents mapping with Giraffe to the linear reference.}
+    \caption[Simulated read mapping]{\textbf{Simulated read mapping} (A to F) Each panel shows recall versus false discovery rate (or 1 minus precision) for a simulated read-mapping experiment, comparing Giraffe with linear genome mappers (BWA-MEM, Bowtie2, and Minimap2) and other genome graph mappers (VG-MAP, GraphAligner, and HISAT2). Reads were simulated to match $\sim150$-bp Illumina NovaSeq (for human) or HiSeq 2500 (for yeast) reads, either as single-end reads [(A) to (C)] or as paired-end reads [(D) to (F)] (Section \ref{subsec:aim2:readsim}). Results for each mapper are shown stratified by reported read-mapping quality; the size of each point represents the log-scaled number of reads with the corresponding mapping quality. Three different mapping scenarios are assessed: [(A) and (D)] Comparing mapping to a graph derived from the 1000GP data to mapping to the linear reference genome assembly upon which it is based (GRCh38); [(B) and (E)] comparing mapping to a graph containing larger structural variants from the HGSVC project to mapping to the GRCh38 assembly upon which it is based; and [(C) and (F)] comparing mapping to a multiple sequence alignment–based yeast graph to mapping to the single S.c. S288C linear reference, for reads from the DBVPG6044 strain. For mapping with Giraffe, we used the full GBWT that contains six haplotypes to map to the HGSVC graph and the 64-haplotype sampled GBWT to map to the 1000GP graph. “Giraffe primary” represents mapping with Giraffe to the linear reference.}
     \label{fig:aim2_fig2}
 \end{figure}
 
@@ -821,16 +1042,16 @@ Having rare variants or errors in the graph and haplotypes may reduce mapping ac
 Mapping reads to regions with many distinct local haplotypes can also be slow.
 Additionally, Giraffe needs a mechanism to synthesize haplotypes for graph components where no haplotype variation is known.
 To overcome these issues, Giraffe includes mechanisms for creating synthetic haplotype paths.
-When real haplotypes are available, these synthetic haplotype paths represent local haplotype variation sampled according to haplotype frequency, and we call the result a sampled GBWT (Section~\ref{subsec:downsampling}).
+When real haplotypes are available, these synthetic haplotype paths represent local haplotype variation sampled according to haplotype frequency, and we call the result a sampled GBWT (Section~\ref{subsec:aim2:downsampling}).
 When no haplotypes are available, we call the result a path cover GBWT.
-In this case, the synthetic haplotypes represent random walks through the graph. We evaluated the effects of running our mapping evaluations with sampled and path cover GBWTs (Figure \ref{fig:aim2_supplement_haplotype_sampling} and Tables \ref{tab:mapping_accuracy_1000gp_sampled_gbwt} and \ref{tab:mapping_accuracy_hgsvc_cover_gbwt}; Section~\ref{subsec:downsamplingeval}).
+In this case, the synthetic haplotypes represent random walks through the graph. We evaluated the effects of running our mapping evaluations with sampled and path cover GBWTs (Figure \ref{fig:aim2_supplement_haplotype_sampling} and Tables \ref{tab:mapping_accuracy_1000gp_sampled_gbwt} and \ref{tab:mapping_accuracy_hgsvc_cover_gbwt}; Section~\ref{subsec:aim2:downsamplingeval}).
 The mapping benefit of sampling more haplotypes plateaued at 64 haplotypes for the 1000GP graph (which contains around 5000 haplotypes), with higher accuracy than that achieved by mapping to the full haplotype set.
 We used the HGSVC graph (which contains just six haplotypes) for an experiment on generating path covers without known haplotypes.
 Path covers alone did not outperform the full underlying haplotype set for the HGSVC graph but came close to matching its performance.
 We selected the 64-haplotype sampled GBWT for the 1000GP graph and the full GBWT for the HGSVC graph as the best-performing GBWTs, which we use in the rest of the analysis.
 
 \subsection{Giraffe improves pangenome mapping speed}
-We measured the runtime (Figure \ref{fig:aim2_fig3}, A and B) and memory usage (Figure \ref{fig:aim2_fig3}, C and D) of Giraffe and competing tools when mapping real reads (Section \ref{subsec:srgiraffe_speed}).
+We measured the runtime (Figure \ref{fig:aim2_fig3}, A and B) and memory usage (Figure \ref{fig:aim2_fig3}, C and D) of Giraffe and competing tools when mapping real reads (Section \ref{subsec:aim2:srgiraffe_speed}).
 Giraffe was more than an order of magnitude faster than VG-MAP in all conditions.
 It was also faster at aligning to human graphs than Bowtie2 or BWA-MEM were at aligning to the corresponding linear reference.
 For the 1000GP graph, using the 64-haplotype sampled GBWT for mapping instead of the full $\sim$5000-haplotype GBWT was much faster in every case.
@@ -847,7 +1068,7 @@ However, it can map to the 1000GP graph with the full GBWT in $\sim$80 gigabytes
 \end{figure}
 
 \subsection{Giraffe reduces allele mapping bias}
-We assessed Giraffe’s reference bias (Section \ref{subsec:srgiraffe_allelebias}).
+We assessed Giraffe’s reference bias (Section \ref{subsec:aim2:srgiraffe_allelebias}).
 We expected Giraffe to be able to use the extra variation information contained in the graph reference to achieve a lower level of bias than a linear mapper.
 For variants that were heterozygous in NA19239, we found the fraction of reads supporting alternate versus reference alleles at each indel length (Figure \ref{fig:aim2_fig4} A).
 Giraffe and VG-MAP both show less bias toward the reference allele than a linear mapper, and this difference becomes more pronounced as indel length increases, particularly for larger insertions.
@@ -861,7 +1082,7 @@ Giraffe and VG-MAP both show less bias toward the reference allele than a linear
 
 \subsection{Giraffe genotyping outperforms best practices}
 We used Illumina’s Dragen platform \cite{illumina_dragen_2019} to genotype SNVs and short indels using Giraffe mappings to the 1000GP graph, projected onto the linear reference assembly.
-We compared these results with results using competing graph and linear reference mappers (Section \ref{subsec:dragen}).
+We compared these results with results using competing graph and linear reference mappers (Section \ref{subsec:aim2:dragen}).
 No training or optimization was performed for any of the mappings other than those performed by default by Dragen itself. We evaluated the calls using the Genome in a Bottle (GIAB) v4.2.1 HG002 high-confidence variant-calling benchmark \cite{wagner_benchmarking_2020}.
 
 Out of the examined pipelines, Giraffe mappings to the 1000GP graph produce the highest overall F1 score (harmonic mean of precision and recall) at 0.9953 (Figure \ref{fig:aim2_fig4}B and Tables \ref{tab:vcfeval_high_conf_2x150_hg002_grch38}, \ref{tab:happy_high_conf_2x150_hg002_grch38}).
@@ -871,16 +1092,16 @@ Restricting comparison only to confident regions that overlap variant calls from
 Perhaps surprisingly, Giraffe maintains the highest F1 score (0.9528) when performing the converse analysis, restricting the comparison to confident regions that do not overlap 1000GP variant calls (Table~\ref*{tab:vcfeval_high_conf_1000GP_excluded_2x150_hg002_grch38} and Figure~\ref*{fig:150bp_genotyping_1000GP_excluded}).
 
 DeepVariant is a highly accurate genotyping tool that requires training \cite{poplin_universal_2018}.
-We trained DeepVariant to use Giraffe mappings and evaluated it on the held-out sample HG003 (see \ref{subsec:genotyping-accuracy-methods}).
+We trained DeepVariant to use Giraffe mappings and evaluated it on the held-out sample HG003 (see \ref{subsec:aim2:genotyping-accuracy-methods}).
 We compared it with the Dragen pipelines tested and DeepVariant using BWA-MEM with the BWA-MEM trained model that the developers provide.
 The Giraffe-DeepVariant pipeline (F1: 0.9965) outperforms all other tested pipelines (Tables~\ref*{tab:deepvariant_vcfeval_high_conf_2x150_50x_hg003_grch38}, \ref*{tab:deepvariant_happy_high_conf_2x150_50x_hg003_grch38} and Figure~\ref*{fig:trained_deepvariant_genotyping}).
 
 Previously, when we used VG-MAP to map reads to SV pangenomes, we found it to perform better than other methods for SV genotyping \cite{hickey_vgsv_2020}.
-We replicated that evaluation on the HGSVC and GIAB datasets \cite{zook_robust_2020,chaisson_sv_2019} to confirm that the quality of the SV genotypes from Giraffe was competitive (Section \ref{subsec:svgenotyping}).
+We replicated that evaluation on the HGSVC and GIAB datasets \cite{zook_robust_2020,chaisson_sv_2019} to confirm that the quality of the SV genotypes from Giraffe was competitive (Section \ref{subsec:aim2:svgenotyping}).
 We observed similar SV genotyping accuracy across SV types, genomic regions, and datasets (Figure \ref{fig:aim2_fig4} C). Of note, GraphTyper \cite{eggertsson2019}, which was published after our earlier benchmarking analysis \cite{hickey_vgsv_2020}, was also compared with vg as a variant caller but showed lower genotyping performance across SV types, genomic regions, and datasets  (Figure \ref{fig:graphtyper_eval}).
 
 \subsection{Giraffe generalizes beyond human}
-We assessed Giraffe’s performance mapping to a yeast pangenome for five strains of the Saccharomyces cerevisiae and Saccharomyces paradoxus yeasts (Section \ref{subsec:yeast-methods}).
+We assessed Giraffe’s performance mapping to a yeast pangenome for five strains of the Saccharomyces cerevisiae and Saccharomyces paradoxus yeasts (Section \ref{subsec:aim2:yeast-methods}).
 This graph was substantially different from the human graphs.
 It proved challenging because it contains the cycles and duplications typical of graphs generated from genome-wide alignments of more divergent sequences.
 Using a graph decomposition technique \cite{paten_superbubbles_2018}, we find it contains 1,459,769 variant sites, four times the density of variation in the 1000GP graph.
@@ -896,11 +1117,11 @@ This lends further support to the hypothesis that graph-mapping methods have the
 
 \subsection{Genotyping the SVs of the 5202 samples}
 Building on our previous work to genotype SVs \cite{hickey_vgsv_2020}, we demonstrate the value of Giraffe by performing population-scale genotyping of an expanded compendium of SVs in large cohorts of samples sequenced with short reads.
-We built a comprehensive pangenome containing SVs that combines variants from three catalogs of SVs that were discovered using long-read sequencing \cite{zook_robust_2020,chaisson_sv_2019,audano2019c}.
-The combined catalog represents 16 samples from diverse human populations and is estimated to cover most of the common insertions and deletions in the human population \cite{audano2019c}.
+We built a comprehensive pangenome containing SVs that combines variants from three catalogs of SVs that were discovered using long-read sequencing \cite{zook_robust_2020,chaisson_sv_2019,audano_hgsvc}.
+The combined catalog represents 16 samples from diverse human populations and is estimated to cover most of the common insertions and deletions in the human population \cite{audano_hgsvc}.
 Near-duplicate versions of variants (i.e., SVs with slightly different breakpoints) are often present within and across SV catalogs.
 A naïve integration of all these variants can lead to redundancy in the graph that can affect read mapping and variant genotyping.
-We remapped sequencing data and integrated variants iteratively into the graph to progressively build a nonredundant, compact SV graph (Section \ref{subsec:svpangenome}).
+We remapped sequencing data and integrated variants iteratively into the graph to progressively build a nonredundant, compact SV graph (Section \ref{subsec:aim2:svpangenome}).
 The final SV graph was constructed from 123,785 SVs from the original catalogs: 53,663 deletions and 70,122 insertions.
 Overall, the graph contained 26.2 Mbp of nonreference sequences in the form of insertions. Using a graph decomposition \cite{paten_superbubbles_2018}, we identified 228,405 subgraphs that represent variant sites.
 Some of these correspond to smaller variants nested inside larger ones. After combining these cases, there were 96,644 non-nested, nonoverlapping SV subgraphs.
@@ -911,7 +1132,7 @@ Thanks to Giraffe and improvements in the variant calling approach, the genotypi
 SV genotyping was run using the NHLBI BioData Catalyst ecosystem \cite{bdc2020} (Figure \ref{fig:sv-wdl-graph}D).
 We genotyped samples from the Multi-Ethnic Study of Atherosclerosis (MESA) cohort within the Trans-Omics for Precision Medicine (TOPMed) program.
 The MESA cohort is a longitudinal cohort study consisting of 6814 participants at baseline (between the years 2000 and 2002).
-Participants were ascertained from six sites in the United States and identified themselves as “Spanish/Hispanic/Latino” (22$\%$ at baseline) and/or “African American or Black” (28$\%$), “Chinese” (12$\%$), and “Caucasian or White” (39$\%$) \cite{mesa_2008}. Two-thousand samples from the MESA cohort \cite{mesa_2008} were selected, using a criterion to maximize the sample diversity (Section \ref{subsec:mesaselection}).
+Participants were ascertained from six sites in the United States and identified themselves as “Spanish/Hispanic/Latino” (22$\%$ at baseline) and/or “African American or Black” (28$\%$), “Chinese” (12$\%$), and “Caucasian or White” (39$\%$) \cite{mesa_2008}. Two-thousand samples from the MESA cohort \cite{mesa_2008} were selected, using a criterion to maximize the sample diversity (Section \ref{subsec:aim2:mesaselection}).
 Using the graph described above and fast Giraffe, it took around 4 days to genotype 2000 samples from the MESA cohort.
 We used the same workflow to genotype the 3202 diverse samples from the high-coverage 1000GP dataset \cite{1000gp_nygc_2021} in around 6 days.
 On average, genotyping a sample took 194.4 central processing unit (CPU)–hours of compute and cost between $1.11 and $1.56 (Figure \ref{fig:sv-wdl-graph}D, Tables \ref{tab:svwdl-corehours} and \ref{tab:svwdl-task}).
@@ -935,12 +1156,12 @@ The existence of these potentially recombining subvariants implies the possibili
 
 We genotyped a total of about 1.7 million alleles clustered in 167,858 SV sites across the 2000 MESA samples.
 In most SV sites, we only observed one or a few alleles ($\sim90\%$ of SV sites with five or fewer alleles; Figure \ref{fig:aim2_fig5} A).
-Additionally, most of the SV sites ($\sim151,000, 90\%$) contained SV alleles that differed by only small variants (Section \ref{subsec:svclustering}), whereas the rest of the sites showed size variation from polymorphic VNTR regions (Figure \ref{fig:svsites_mesa}A).
+Additionally, most of the SV sites ($\sim151,000, 90\%$) contained SV alleles that differed by only small variants (Section \ref{subsec:aim2:svclustering}), whereas the rest of the sites showed size variation from polymorphic VNTR regions (Figure \ref{fig:svsites_mesa}A).
 Examples of SV sites that illustrate these different profiles are given in Figure \ref{fig:aim2_fig5} B and C, and Figure \ref{fig:mesa-svsite-examples}.
 Figure \ref{fig:aim2_fig5}, D and E, shows the size and frequency distributions of the most common allele at each site.
 SVs spanned the size spectrum (50 bp up to 125 kbp), with $89.8\%$ shorter than 500 bp.
 For $84\%$ of the SVs, simple repeats or low-complexity regions overlapped at least $50\%$ of the SV region.
-Hence, the SVs genotyped in this study match the original SVs discovered in long-read sequencing studies \cite{zook_robust_2020,chaisson_sv_2019,audano2019c} in terms of number, size distribution, and sequence context.
+Hence, the SVs genotyped in this study match the original SVs discovered in long-read sequencing studies \cite{zook_robust_2020,chaisson_sv_2019,audano_hgsvc} in terms of number, size distribution, and sequence context.
 
 We observed similar patterns in the 1000 Genomes Project dataset.
 We identified 1.9 million alleles clustered in 167,188 SV sites, with a size and frequency distribution similar to that of the MESA cohort (Figure \ref{fig:sv-1kgp-stats}).
@@ -953,12 +1174,12 @@ The transmission rate of heterozygous alleles was close to the expected $50\%$: 
 \subsection{Comprehensive SV frequency estimates}
 The genotyped SVs were originally discovered with long-read sequencing technology, and many are absent from the population scale SV catalogs that could provide frequency information.
 Of the SV sites genotyped using our pangenome approach, $93\%$ are missing from the 1000 Genomes Project SV catalog \cite{1000gp_sv_2015}, and $67\%$ were missing from the Genome Aggregation Database (gnomAD)–SV catalog \cite{gnomadsv_2020} (Table \ref{tab:novel-sv}).
-This is consistent with the amount of previously unidentified structural variation described in the three studies from which our SV graph is derived \cite{zook_robust_2020, chaisson_sv_2019,audano2019c}.
+This is consistent with the amount of previously unidentified structural variation described in the three studies from which our SV graph is derived \cite{zook_robust_2020, chaisson_sv_2019,audano_hgsvc}.
 Our results provide frequency estimates across a large and diverse cohort for these SVs.
 
 The frequency distribution resembled the allele frequency distributions in the 1000 Genomes Project SV and gnomAD-SV catalogs (Figure \ref{fig:sv-freq-comp}A).
 The frequencies of the subset of variants present in both our catalog and the mentioned public catalogs were largely concordant (Figure \ref{fig:sv-freq-comp}B-C).
-Our frequency distribution looks rather different than that of SVPOP \cite{audano2019c}.
+Our frequency distribution looks rather different than that of SVPOP \cite{audano_hgsvc}.
 However, we note that SVPOP’s frequency distribution is markedly different than the 1000 Genomes Project and gnomAD-SV (Figure \ref{fig:sv-freq-comp}A) and has very different frequency estimates on matched variants (Figure \ref{fig:sv-freq-comp}D,F).
 
 \subsection{Fine-tuning SVs with frequencies}
@@ -968,17 +1189,17 @@ The other alleles at these sites are either rare or erroneous.
 In either case, it is useful to identify the major alleles.
 In 7520 SV sites, only one allele was called in more than $1\%$ of the population, whereas other alleles from the original catalogs were not.
 Further, the major allele was at least three times more frequent than the second most frequent allele in 6175 of these sites (Figure \ref{fig:svsites_mesa}B).
-As a quality control, we verified that these alleles were more likely to match exactly with the alleles in the GIAB truth set \cite{zook_robust_2020}, which is the SV catalog with the highest base-level confidence [permutation p < 0.0001; Section \ref{subsec:svfinetuning}].
+As a quality control, we verified that these alleles were more likely to match exactly with the alleles in the GIAB truth set \cite{zook_robust_2020}, which is the SV catalog with the highest base-level confidence [permutation p < 0.0001; Section \ref{subsec:aim2:svfinetuning}].
 Our results thus help fine-tune the sequence resolution of these SVs.
 More generally, our results identify one major allele for 39,699 multiallelic SV sites.
 
 \subsection{SV frequency population signatures}
-\label{subsec:inter-super-pop}
+\label{subsec:aim2:inter-super-pop}
 Principal components analysis (PCA) of the allele counts at the 166,959 SV sites in the MESA cohort produces a low-dimensional embedding of the samples.
 This embedding appears similar to the TOPMed consortium’s PCA of SNV genotype data from all samples (Pearson correlation of 0.96 to 0.99 for the top three components; Figure \ref{fig:mesa-topmed-pcs}.
 This result is expected and provides confirmatory support for the accuracy of our SV genotypes.
 
-We clustered samples with PCA, taking each cluster to be a population (Section \ref{subsec:sv-pop-freq}).
+We clustered samples with PCA, taking each cluster to be a population (Section \ref{subsec:aim2:sv-pop-freq}).
 Allele frequencies vary across these populations for thousands of SV sites (Figure \ref{fig:mesa-pop-freq}A-C).
 For example, we found 21,069 SV sites with strong intercluster frequency patterns, defined by a frequency in any population differing by more than $10\%$ from the median frequency across all populations (Figure \ref{fig:mesa-pop-freq}D).
 The existence of SVs with different frequencies across populations supports the need to develop and test genomic tools and references across multiple populations.
@@ -986,7 +1207,7 @@ The existence of SVs with different frequencies across populations supports the 
 Because there is a risk of circularity when using the same genotype data to define populations and look for patterns across them, we replicated these observations in the high-coverage 1000 Genomes Project dataset \cite{1000gp_nygc_2021}.
 Here, again, the PCA of the allele counts organized the samples in a way consistent with the known history of the 1000 Genomes Project “superpopulation” groups (Figure \ref{fig:1kgp-sv-pcs}).
 In this analysis, we found 25,960 SV sites with strong inter-superpopulation frequency patterns, defined as for the MESA analysis, but with the 1000 Genomes superpopulations as the sample categories (Figure \ref{fig:1kgp-pop-freq}).
-As a comparison, when the samples were randomly grouped into superpopulations, we observed only 14 SV sites with strong intergroup frequency patterns (Section \ref{subsec:sv-pop-freq}).
+As a comparison, when the samples were randomly grouped into superpopulations, we observed only 14 SV sites with strong intergroup frequency patterns (Section \ref{subsec:aim2:sv-pop-freq}).
 More than 17,000 SV sites with strong inter-superpopulation frequency patterns were enriched or depleted in the African Ancestry (AFR) superpopulation, followed by about 10,000 sites enriched or depleted in the East Asian Ancestry (EAS) superpopulation.
 
 As an example of a newly annotated variant, a deletion of the RAMACL gene was genotyped with frequency $46.6\%$ in the AFR super population, $4\%$ in American Ancestry (AMR), and less than $1\%$ in other superpopulations.
@@ -1012,7 +1233,7 @@ Of these SVs, 10,640 show strong inter-superpopulation frequency patterns in the
 
 We searched for associations between SVs and gene expression across 445 samples from the 1000 Genomes Project that have been RNA sequenced by the Genetic European Variation in Disease (GEUVADIS) consortium \cite{geuvadis_2013}.
 These samples span four European-ancestry populations [Utah residents (CEPH) with Northern and Western European ancestry (CEU), Finnish in Finland (FIN), British in England and Scotland (GBR), and Toscani in Italy (TSI)], and the Yoruba in Ibadan, Nigeria (YRI) population \cite{geuvadis_2013}.
-A pooled analysis identified 2761 expression quantitative trait loci (eQTLs) across 1270 genes [false discovery rate of $1\%$; Section \ref{subsec:eqtldiscovery})].
+A pooled analysis identified 2761 expression quantitative trait loci (eQTLs) across 1270 genes [false discovery rate of $1\%$; Section \ref{subsec:aim2:eqtldiscovery})].
 Of those genes, 878 are protein-coding genes. We note that $58\%$ of the SV-eQTLs are located within simple repeats or low-complexity regions.
 The distribution of the p values across all tests showed the expected patterns for genome-wide association studies (Figure \ref{fig:eqtl_qc}).
 
@@ -1022,7 +1243,7 @@ This gene family is involved in the regulation of multiple processes, including 
 Other families enriched included the survival motor neuron (SMN) complex family (3 out of 10 genes with an SV-eQTL, adjusted p = 0.0012) and aldehyde dehydrogenases genes (3 out of 19 genes with an SV-eQTL, adjusted p = 0.008).
 As expected, SV-eQTLs were strongly enriched in coding, intronic, promoter, untranslated, and regulatory regions (Figure \ref{fig:eqtl_enr}).
 Interestingly, SVs associated with decreased gene expression drove most of the enrichment in coding regions.
-Separate analysis of the four European-ancestry populations together and the YRI population alone identified, respectively, 44 and 139 SVs where an association with the expression of protein-coding genes was detected only in the smaller analysis (Section \ref{subsec:eqtldiscovery}).
+Separate analysis of the four European-ancestry populations together and the YRI population alone identified, respectively, 44 and 139 SVs where an association with the expression of protein-coding genes was detected only in the smaller analysis (Section \ref{subsec:aim2:eqtldiscovery}).
 As expected, a number of these population-specific SV-eQTLs had shown strong inter-superpopulation frequency patterns (see above).
 
 Finally, we performed a joint analysis with available SNV and indel calls. 
@@ -1070,8 +1291,8 @@ We expect that unlocking this latent information will ultimately aid with diseas
 To evaluate Giraffe for mapping human data, we obtained paired-end sequencing reads from a parent-child pedigree.
 Reads were obtained from an Illumina NovaSeq 6000 machine for parent NA19239 (accession ERR3239454) and from Illumina HiSeq 2500 and HiSeq X Ten machines for child NA19240 (accession nos. ERR309934 and SRR6691663, respectively).
 These samples were selected because NA19240 has genotypes for the HGSVC variants \cite{chaisson_sv_2019}, whereas NA19239 has genotypes for the 1000GP variants \cite{1000gp_2015}.
-NA19239 was excluded from the 1000GP graph (Section \ref{subsec:graphconstruction}).
-We simulated 1 million read pairs (2 million reads) from each individual’s haplotypes (Section \ref{subsec:readsim}).
+NA19239 was excluded from the 1000GP graph (Section \ref{subsec:aim2:graphconstruction}).
+We simulated 1 million read pairs (2 million reads) from each individual’s haplotypes (Section \ref{subsec:aim2:readsim}).
 
 \subsubsection{Read mapping accuracy}
 Simulated read sets were mapped to the graphs using Giraffe, VG-MAP \cite{garrison_variation_2018}, HISAT2 \cite{kim_hisat2_2019}, and GraphAligner \cite{rautiainen_graphaligner_2020}.
@@ -1084,32 +1305,32 @@ We compared mapping runtime, speed, and memory usage on an AWS EC2 i3.8xlarge no
 To estimate real-world runtime and memory usage, we aligned a shuffled read set of 600 million NovaSeq 6000 reads from NA19239.
 We mapped reads to the 1000GP graph, the HGSVC graph, and the GRCh38 linear reference for comparison and measured runtime and memory usage.
 For each tool, we also separately measured reads mapped per thread per second, ignoring the start-up time of the mapper (Fig.\ref*{fig:aim2_supplement_speed}).
-This measure gives an estimate of speed that is invariant to read-set size or thread count, except for the effects of long-running work batches and thread synchronization overhead (Section \ref{subsec:srgiraffe_speed}).
+This measure gives an estimate of speed that is invariant to read-set size or thread count, except for the effects of long-running work batches and thread synchronization overhead (Section \ref{subsec:aim2:srgiraffe_speed}).
 
 \subsubsection{Read-mapping bias}
 To assess reference allele mapping bias, we mapped 600 million real paired-end NovaSeq 6000 reads for NA19239 to the 1000GP graph using default Giraffe and VG-MAP.
 For comparison, we mapped the same reads to GRCh38 with BWA-MEM.
 
 \subsubsection{Genotyping accuracy}
-\label{subsec:genotyping-accuracy-methods}
+\label{subsec:aim2:genotyping-accuracy-methods}
 We compared the performance of Giraffe, VG-MAP, Illumina’s Dragen platform, and BWA-MEM for genotyping SNVs and short indels.
-The design of each calling pipeline is described in section \ref{subsec:dragen} and the parameters and indexes for each experiment are described in Table \ref{tab:vgruns_grch38}.
+The design of each calling pipeline is described in section \ref{subsec:aim2:dragen} and the parameters and indexes for each experiment are described in Table \ref{tab:vgruns_grch38}.
 The variants produced by each pipeline were compared against the GIAB v4.2.1 HG002 high-confidence variant-calling benchmark \cite{wagner_benchmarking_2020} using the RealTimeGenomics vcfeval tool \cite{cleary2015comparing} and Illumina’s hap.py tool \cite{happy_2020}.
 This benchmark set covers $92.2\%$ of the GRCh38 sequence.
 
-We also evaluated a DeepVariant \cite{poplin_universal_2018} pipeline that uses Giraffe mappings (Section \ref{subsec:deepvariant_calling}).
+We also evaluated a DeepVariant \cite{poplin_universal_2018} pipeline that uses Giraffe mappings (Section \ref{subsec:aim2:deepvariant_calling}).
 Using the default DeepVariant 1.1.0–trained model, we tested genotyping of the HG003 sample across the entire genome.
 This sample was not used in training the model.
 
 \subsubsection{Generalization to yeast}
-\label{subsec:yeast-methods}
+\label{subsec:aim2:yeast-methods}
 To evaluate Giraffe’s performance on more diverged, nonhuman data, we used a yeast graph built from a Cactus multiple sequence alignment for five strains of the S. cerevisiae and S. paradoxus yeasts \cite{hickey_vgsv_2020}.
 For the corresponding negative-control primary graph, we used the S.c. S288C assembly.
 We collected basic statistics about the yeast graph and decomposed the graph for analysis using the method of \cite{paten_superbubbles_2018}.
-We simulated 500,000 read pairs from a held-out S. cerevisiae yeast strain, DBVPG6044, not included in the yeast graph, using an error and length model for Illumina HiSeq 2500 reads (Section \ref{subsec:readsim}).
+We simulated 500,000 read pairs from a held-out S. cerevisiae yeast strain, DBVPG6044, not included in the yeast graph, using an error and length model for Illumina HiSeq 2500 reads (Section \ref{subsec:aim2:readsim}).
 
 \subsubsection{SV genotyping}
-We built an SV pangenome from the HGSVC \cite{chaisson_sv_2019}, GIAB \cite{zook_robust_2020}, and SVPOP \cite{audano2019c} sequence-resolved catalogs.
+We built an SV pangenome from the HGSVC \cite{chaisson_sv_2019}, GIAB \cite{zook_robust_2020}, and SVPOP \cite{audano_hgsvc} sequence-resolved catalogs.
 After filtering out erroneous duplicates using a remapping approach, the SVs were iteratively inserted in the genome graph to minimize the effect of errors and redundancy in the catalog.
 The SVs were then genotyped across 5202 genomes by aligning short-read sequencing data using Giraffe with a workflow description language (WDL) workflow that we deposited in Dockstore \cite{vgsv_dockstore}.
 Two-thousand samples were selected from the MESA cohort to maximize sample diversity.
@@ -1117,7 +1338,7 @@ The remaining 3202 samples are from the 1000 Genomes Project and include 2504 un
 
 The different SV alleles observed in the population were clustered into SV sites based on their reciprocal overlap (for deletions) and sequence similarity (for insertions).
 We used the frequency profile across alleles within an SV site to identify the major allele and to fine-tune variants with near duplicates in the combined catalog that may have been due to errors.
-Each variant was then annotated with its presence in existing SV databases \cite{audano2019c,1000gp_sv_2015,gnomadsv_2020}, its repeat content, and its location relative to gene annotations.
+Each variant was then annotated with its presence in existing SV databases \cite{audano_hgsvc,1000gp_sv_2015,gnomadsv_2020}, its repeat content, and its location relative to gene annotations.
 We also compared the frequency distributions across the SV databases and how well the frequency estimates matched for variants shared across databases.
 
 PCA was performed on the SV genotypes, and principal components were compared with those produced from SNV-indel genotypes.
@@ -1157,7 +1378,7 @@ Project design: D.H., E.G., B.P. Giraffe implementation: J.S., X.C., A.M.N., J.M
  P.-C.C. and A.C. are employees of Google and own Alphabet stock as part of the standard compensation package. The remaining authors declare no competing interests.
 
 subsection{Data and materials availability}
-\label{sec:code-data}
+\label{sec:aim2:code-data}
 An overview of the data generated for this paper, and key input data to reproduce the analyses, is available at https://cglgenomics.ucsc.edu/giraffe-data/.
 The dataset is available through InterPlanetary File System (IPFS) at https://ipfs.io/ipfs/QmVo4Q5hCKqUGJJZyYLGJTaiHZdK9JWhJtGJbKa9ojrSjh.
 Archived copies of the code and final reusable work products have been deposited at Zenodo \cite{zenodocode}.
@@ -1179,7 +1400,7 @@ Data in dbGaP can be downloaded by controlled access with an approved applicatio
 
 \section{Supplementary materials and methods}
 \subsection{Giraffe Algorithm}
-\label{subsec:giraffe-methods}
+\label{subsec:aim2:giraffe-methods}
 \subsubsection{Definitions}
 
 We work in the \vocab{sequence graph} model, as defined in the vg toolkit\cite{garrison_variation_2018}.
@@ -1240,7 +1461,7 @@ We use an application-specific per-thread cache in Giraffe, where eviction consi
 
 
 \subsubsection{Downsampling the haplotypes}
-\label{subsec:downsampling}
+\label{subsec:aim2:downsampling}
 
 Mapping to a GBWT with too many haplotypes can be slow in regions with a high density of variations, and can be inaccurate due to rare variants creating false positive mappings.
 Conversely, there may be regions not covered by the haplotypes in the GBWT, especially unplaced or unlocalized contigs, decoy contigs, and other contigs that might not appear in input VCF files.
@@ -1268,7 +1489,7 @@ Otherwise, we use $w(X, v) = 1$ and try to sample all length-$k$ subpaths as equ
 When we supplement input haplotypes with path covers for components of the graph without them (such as decoy sequences), we call the resulting GBWT a \vocab{full} GBWT.
 
 \subsubsection{Downsampling evaluation}
-\label{subsec:downsamplingeval}
+\label{subsec:aim2:downsamplingeval}
 
 To evaluate the effect of haplotype downsampling on read mapping, we generated GBWT indexes containing different numbers of haplotypes.
 The \vocab{full} 1000GP GBWT index contains the 5,006~input haplotypes (real haplotypes from 2,503~samples, which were restricted to the autosomes and sex chromosomes) and an additional 16~path covers over connected components not containing input haplotypes.
@@ -1281,7 +1502,7 @@ Similar results were seen for both experiments in paired end mapping mode (Figur
 
 
 \subsubsection{Minimizer seeds}
-\label{subsec:minimizers}
+\label{subsec:aim2:minimizers}
 Giraffe maps reads using the common seed-and-extend approach.
 We use a minimizer index\cite{Roberts2004} for finding seeds.
 We define a $(w,k)$-\vocab{minimizer} as the $k$-mer with the smallest hash value in a window of $w$ consecutive $k$-mers and their reverse complements (in a $k+w-1$~bp window).
@@ -1304,7 +1525,7 @@ To do this, we first select all minimizers that have a number of hits at or belo
 Then, if we have not yet achieved the score fraction, we select progressively less-informative minimizers one by one. We stop when we reach the score fraction, run out of minimizers, or the next minimizer has more than $C_h$ hits.
 
 \subsubsection{Minimum distance clustering}
-\label{subsec:clustering}
+\label{subsec:aim2:clustering}
 In order to avoid redundant work, we cluster the seeds into sets that should correspond to the same mapping.
 Two seeds are assigned to the same cluster if the minimum distance between them is sufficiently small. It must be no larger than the \param{distance limit}. The distance limit is $200$~bp by default or, for longer reads, $|R| + 50~\mathrm{bp}$, where $|R|$ is the read length.
 
@@ -1327,7 +1548,7 @@ The primary criterion is \vocab{read coverage}: the fraction of the read covered
 The secondary criterion, for breaking ties, is \vocab{cluster score}: the sum of minimizer scores for the minimizers present in the cluster.
 
 \subsubsection{Gapless haplotype-consistent seed extension}
-\label{subsec:gapless-extension}
+\label{subsec:aim2:gapless-extension}
 We need to turn seeds into \vocab{extensions}: gapless, haplotype-consistent partial alignments that may be longer than a minimizer and may contain some mismatches. We define a \param{mismatch bound} (default $d = 4$) that limits the number of mismatches in various parts of the extension.
 
 Before extending, we first merge redundant seeds.
@@ -1359,7 +1580,7 @@ Then we greedily select all alignments that do not overlap with any of the alrea
 If there are no full-length alignments with at most $d$ mismatches, on the other hand, we trim the partial extensions to maximize the alignment score and return the whole set of distinct extensions.
 
 \subsubsection{From extension sets to alignments}
-\label{sec:extensions-to-alignments}
+\label{sec:aim2:extensions-to-alignments}
 
 We transform at least two, but no more than 8 (the \param{alignment bound}) of the highest-scoring extension sets into alignments, and ignore those with scores further than the \param{extension set score threshold} (default 20~points) below that of the best set.
 
@@ -1388,7 +1609,7 @@ After collecting up to two alignments from each extension set, we select the hig
 
 Paired-end mapping runs start with fragment length estimation, if a fragment length distribution has not been specified.
 We map the reads in single-ended mode using a single thread until we have 1000~uniquely mapping read pairs.
-We then estimate the mean and standard deviation of fragment length using the uniquely mapping pairs (see Section \ref{subsec:fragment-length}).
+We then estimate the mean and standard deviation of fragment length using the uniquely mapping pairs (see Section \ref{subsec:aim2:fragment-length}).
 
 Once we have estimated the fragment length distribution, we continue mapping with multiple threads.
 We cluster the seeds for both reads in the pair at the same time and try to group clusters that are at the right distance from each other.
@@ -1415,7 +1636,7 @@ While dozeu must extend a seed, GSSW always finds the best alignment in the subg
 
 
 \subsubsection{Fragment length estimation}
-\label{subsec:fragment-length}
+\label{subsec:aim2:fragment-length}
 
 We use a method of moments approach to estimate the fragment length distribution
 The distribution is modeled as a normal distribution.
@@ -1551,7 +1772,7 @@ We ran each of the mappers on a variety of different graphs and read sets to eva
 
 
 \subsubsection{Graph construction}
-\label{subsec:graphconstruction}
+\label{subsec:aim2:graphconstruction}
 
 Human graphs were constructed using the \href{https://github.com/vgteam/toil-vg}{toil-vg tool}, versions \toilvgcommit{71f484ce519bb7eff2941a650638e98b4713b852}{71f484c} through \toilvgcommit{cfe15995a8da67257af1b9aca25fa1a686a839c4}{cfe1599}, as well as version \toilvgcommit{b319a1b22df6dac585b7f95bc1a603577452d443}{b319a1b}. 
 Construction and indexing for the HGSVC graph required multiple retries of the workflow with successive improved versions of the tool.
@@ -1604,7 +1825,7 @@ For speed evaluation on yeast data, real reads for each strain were used, from a
 
 
 \subsubsection{Read simulation}
-\label{subsec:readsim}
+\label{subsec:aim2:readsim}
 
 To train vg's read simulator for generating human reads, the truncated 500~thousand~pair real read sets were used to train the simulator to match the read length and quality string characteristics of each of the three different Illumina instruments.
 Training reads for human were interpreted as pairs.
@@ -1636,7 +1857,7 @@ Exactly 1~million reads (500,000~pairs) were simulated for the DBVPG6044 strain;
 
 
 \subsubsection{Read mapping}
-\label{subsec:readmapping}
+\label{subsec:aim2:readmapping}
 For our read mapping experiments on human data, we used vg release~\vgcommit{6b7d2eeb618bb85c65438016a9eeccecfa0f6c82}{1.27.1} to run Giraffe and VG-MAP.
 For mapping to yeast, we used commit \vgcommit{1d9385e1ca55689cd3ad251b6b2c23319d37be52}{1d9385e}.
 We tested this commit on a small number of cases with human data and saw no difference between it and the \texttt{1.27.1} version.
@@ -1665,7 +1886,7 @@ In these cases, we counted a read as correctly mapped if any of its alignments w
 
 
 \subsubsection{Speed, runtime, and memory evaluation}
-\label{subsec:srgiraffe_speed}
+\label{subsec:aim2:srgiraffe_speed}
 
 For our speed, runtime, and memory evaluations we used an AWS EC2 i3.8xlarge node with 32~vCPUs and 244~GB of memory.
 We found the total runtime and memory use of each of the mappers using our 600-million-read NovSeq~6000 set.
@@ -1683,7 +1904,7 @@ We did not find the speed of GraphAligner because it logs mapping time per read,
 
 
 \subsection{Evaluation of reference allele bias}
-\label{subsec:srgiraffe_allelebias}
+\label{subsec:aim2:srgiraffe_allelebias}
 We produced an allele balance plot (Figure \ref{fig:aim2_fig4}A) to assess the mapping bias of Giraffe, VG-MAP, and BWA-MEM.
 We mapped 600 million real paired-end NovaSeq 6000 reads for NA19239 to our 1000GP graph or GRCh38 using each of the mappers.
 For the graph mappers, Giraffe and VG-MAP, we projected the graph alignments to alignments to the linear GRCh38 reference using \texttt{vg surject}.
@@ -2117,9 +2338,87 @@ This strategy was chosen to restrict analysis to sites that we are confident are
 \end{table}
 
 \chapter{Long read mapping}
+\label{chapter:lr-giraffe}
 \section{Preface}
 
 \chapter{Discussion}
+
+We are in an era of tremendous growth in the field of genomics.
+Recent advances in sequencing technologies and bioinformatics tools have made sequencing experiments faster, cheaper, and more accurate, leading to a proliferation of high-quality human genome sequences being generated.
+This abundance of data has granted us greater insight into human genetic variation and its distribution in the human population.
+But as we learn more about human genetic diversity, there is a growing recognition that standard practices are insufficient for accurately and equitably detecting and interpreting genetic variants. 
+Pangenomes are a promising alternative to standard linear genomes that can better represent the genetic landscape of a species and reduce bias in analyses.
+With modern sequencing technologies and understanding of population genetics, it is now possible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
+
+The first reference pangenomes are just beginning to be produced, both as global and population-specific references.
+With the growth of pangenomics, both in the pangenomes themselves and the popularity of the field, there is a corresponding need for bioinformatics tools capable of scaling to large pangenomes and datasets. 
+In this dissertation, I presented tools for indexing pangenome graphs and for mapping long and short sequencing reads to them.
+These mappers are among the first practical tools capable of mapping to pangenome graphs at large scales, a crucial step for many genomics pipelines.
+
+Although we have shown Giraffe to be fast and accurate for the current HPRC graphs, there is still work to be done to ensure that it works with increasingly complicated graphs.
+The distance index has become a major barrier for mapping to topologically complex graphs due to the quadratic complexity of its representation of distances in snarl netgraphs.
+In order for Giraffe to function on graphs with more haplotypes, graphs representing species with more genetic divergence, or graphs that allow more collapsing of similar sequences, the distance index must be changed to more efficiently represent distances within snarls.
+
+This has been a recent area of exploration in the lab.
+One potential solution that I discussed with Simon Heumos is to use his layout algorithm from odgi to estimate a 2-dimensional embedding of the netgraph.
+Odgi layout uses stochastic gradient descent to find the optimal set of 2-dimensional coordinates for each node such that the distance between all pairs of nodes in the coordinate plane best matches the distances between the nodes on embedded paths in the graph \cite{guarracino_odgi_2022}.
+An index like this would use $O(ND)$ space, where $N$ is the number of nodes and $D$ is the number of dimensions, but such an approach would allow distances between all pairs of nodes, even though most pairs of node sides are unreachable in a net graph.
+The embedding could be paired with a bit-vector representing reachability between nodes, but even a bit vector with quadratic cost may be too big. 
+Zia Truong, a rotation student whom I co-mentored with Adam Novak, explored using landmark-based distances for netgraphs.
+Her algorithm finds a set of landmark nodes that are expected to be included in most paths through the snarl, then stores the distance from each node to each landmark.
+Distances between nodes can be estimated by finding the distance from each node to a common landmark.
+The memory cost of the index is $O(NL)$ where $L$ is the number of landmarks, and the runtime for calculating distance is $O(L)$.
+Another project led by Jouni Sirén has been to estimate distances using the haplotype sequences in the graph.
+A haplotype-based distance has the advantage that it uses distances from real sequences, rather than using the graph topology which may produce biologically unrealistic distances.
+
+Even when distance indexing is solved, the problem remains that as pangenomes grow in size, analyses using them will inevitably become slower and at times less accurate.
+Counterintuitively, adding more variants to a pangenome can actually impede read mapping; when there are too many targets for mapping, reads may erroneously map to a rare variant that happens to be more similar to the read than the correct alignment. %TODO cite forge
+The solution used in the Giraffe papers is to use a frequency-filtered graph that has low-frequency variants removed~\cite{}, but this solution is not ideal as it throws away potentially valuable information.
+Another solution for mapping reads from a single individual is to sample the graph to find a subgraph that best represents the individual: a so-called personalized pangenome \cite{}.
+This strategy has been shown to be faster and produce better variant calling results than using the frequency filtered graph.
+
+The success of personalized pangenomes demonstrates the versatility of a pangenome reference.
+Pangenomes could be customized for a particular individual or application, by either adding or removing disease-specific, population-specific, or individual-specific variants.
+%TODO: idk if I can include this?
+The Emblask-Weaver pipeline for example adds population-specific small variants to a graph containing structural variants.
+A similar strategy could be imagined for Giraffe for mapping to graphs with additional variants added.
+In general, mapping to a modified graph with Giraffe would be slow because the graph must be re-indexed to accommodate the new variants. 
+The personalized pangenome workflow is efficient because it reduces the pangenome to just two haplotypes, which can be indexed quickly.
+Adding variants to a pangenome, particularly adding large chromosomal rearrangements, complicates the topology of the graph and the indexes, particularly the snarl decomposition. 
+
+I propose a strategy for adding a small number of chromosomal rearrangements to a pangenome as a target for read mapping using the long read Giraffe algorithm.
+Rather than changing the graph itself and re-indexing, the variants would only be considered during mapping.
+The variants would be represented in the zip code tree as edges that connect disparate chains in the zip code tree with no distance.
+Although the zip code tree structure is based on the snarl decomposition, it is not necessary for the snarl decomposition represented in the zip code tree to be valid in order to find distances using traversals of the zip code tree and the zip code tree will still be valid after adding these extra edges.
+Chaining can be done as usual using the extra edges to consider mappings that span chromosomal rearrangements and alignment can be done on the chain on each side of the rearrangement edge separately.
+
+
+
+Read mapping is one of the first necessities of pangenome workflows, but there remain many challenges in the way of the general adoption of a pangenome standard.
+To convince researchers and clinicians who still haven't adopted the GRCh38 standard to switch to a pangenome, pangenomics must be clearly better and simple and easy to use.
+
+
+
+-To make pangenomes standard, we need to convince people to use them and make them as easy as possible to use
+-Deal with bigger graphs
+-Haplotype sampling to personalize pangenomes
+-application/population specific pangenomes by adding or removing variants
+-Questions about how to best represent a pangenome- what do we consider homology, how much variation should we include, balance utility with representation
+-inevitable loss of information when using reference downstream-represent variants relative to the reference genome
+-coordinate system
+
+
+
+
+As more and more high-quality data is being produced, bioinformatics tools must keep pace with methods to efficiently process and analyze  
+
+They are capable of more accurately representing the genetic diversity of a population and can reduce biases in genomic analyses.
+However due to their novelty and the technical challenges of working with a larger and more complex data structure, methods for working with pangenomes are less mature than analogous methods for linear genomes.
+I plan to develop pangenome methods for common genomic tasks.
+I will create a distance index for efficiently calculating minimum distances in pangenome graphs.
+Using algorithms developed against the distance index, I will contribute to a read-to-graph mapper for mapping short and long reads to pangenome graphs.
+Finally, I will write a graph-to-graph mapper for comparing pangenome graphs.
+Each of these aims will contribute to establishing a robust ecosystem of tools to support a more complete standard reference genome.
 
 \appendix
 \chapter{Additional short read giraffe materials}
@@ -2130,7 +2429,7 @@ This section contains materials from the supplement of short read giraffe paper 
 \section{Supplementary methods}
 
 \subsection{Genotyping and evaluating short variants with Dragen}
-\label{subsec:dragen}
+\label{subsec:aim2:dragen}
 
 We mapped $\sim$830~million~paired-end, 150-bp-long reads (Precision FDA Challenge V2 Illumina $\sim$35x~coverage) from the HG002 sample to the 1000GP graph.
 We also separately evaluated mapping $\sim$1.08 billion 250-bp-long reads ($\sim$40-50x~coverage of Illumina HiSeq~2500) from HG002 to see if using longer reads and higher coverage would affect the results.
@@ -2150,7 +2449,7 @@ All pipelines used the computational resources of the NIH HPC Biowulf cluster (\
 
 
 
-\subsubsection{Graph construction} \label{subsec:graph_construction}
+\subsubsection{Graph construction} \label{subsec:aim2:graph_construction}
 For the variant calling experiments, graph references, and their indexes for running vg mappers, were constructed using different versions of vg ranging from \texttt{1.20.0} to \texttt{1.31.0}, orchestrated by \texttt{toil-vg~construct}.
 
 The graph references for GRCh38-based experiments were constructed using vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:v1.31.0}, using the cannonical \texttt{hs38d1} FASTA reference file as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/linear_references/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna} and the 1000 Genomes Project Phase 3 phased VCFs that were lifted over from old GRCh37-based joint-called datasets as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000gp_data/ALL.chr*_GRCh38.genotypes.20170504.rename.vcf.gz}.
@@ -2180,9 +2479,9 @@ GATK's Picard tool~\cite{Picard2019toolkit} was used to reorder aligned BAM file
 
 
 \subsubsection{DeepVariant calling}
-\label{subsec:deepvariant_calling}
+\label{subsec:aim2:deepvariant_calling}
 
-All pipelines for the DeepVariant experiment evaluation used BWA-MEM version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference or VG Giraffe against the same 1000GP graph as described in \ref{subsec:graph_construction}.
+All pipelines for the DeepVariant experiment evaluation used BWA-MEM version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference or VG Giraffe against the same 1000GP graph as described in \ref{subsec:aim2:graph_construction}.
 Alignments were then indel realigned using ABRA2\cite{mose2019improved}.
 The DeepVariant v1.1.0 code base was used for all experiments.
 
@@ -2193,7 +2492,7 @@ We used DeepVariant v1.1.0 production model for the BWA-MEM experiments and a cu
 The custom model data can be found here \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/deepvariant_models/model.ckpt-25600*}.
 
 \subsection{Genotyping and evaluating structural variants}
-\label{subsec:svgenotyping}
+\label{subsec:aim2:svgenotyping}
 
 We replicated the evaluation performed in Hickey et al.\cite{hickey_vgsv_2020} using two SV graphs made from the HGSVC\cite{chaisson_sv_2019} and GIAB v0.6\cite{zook_robust_2020} SV catalogs, respectively.
 The graphs had originally been built from VCF files provided by the HGSVC and GIAB consortia.
@@ -2204,14 +2503,14 @@ We then mapped and genotyped the SVs in four samples: HG00514, HG00733 and NA192
 The genotyped were compared to the truth-set using \texttt{sveval}\cite{hickey_vgsv_2020}.
 We use non-repeat regions, i.e. regions of the genome that don't overlap simple-repeats and segmental duplications, as high-confidence regions for the HGSVC graph and the combined SV graphs that are both on GRCh38.
 For the GIAB graph, which uses GRCh37, we use the high-confidence regions provided by the GIAB consortium\cite{zook_robust_2020}.
-The scripts to build the pangenomes, genotype the SVs and evaluate the genotyping performance are available in the repository (see Section{sec:code-data}).
+The scripts to build the pangenomes, genotype the SVs and evaluate the genotyping performance are available in the repository (see Section{sec:aim2:code-data}).
 
-(see section \ref{sec:code-data}).
+(see section \ref{sec:aim2:code-data}).
 
 \subsection{Combining long-read catalogs for an SV pangenome}
 \label{subsec:svpangenome}
 
-We combined variants from the three SV catalogs used previously in Hickey et al.\cite{hickey_vgsv_2020}: HGSVC \cite{chaisson_sv_2019}, GIAB\cite{zook_robust_2020}, and SVPOP \cite{audano2019c}.
+We combined variants from the three SV catalogs used previously in Hickey et al.\cite{hickey_vgsv_2020}: HGSVC \cite{chaisson_sv_2019}, GIAB\cite{zook_robust_2020}, and SVPOP \cite{audano_hgsvc}.
 The three catalogs were first normalized and merging using bcftools version 1.9 \cite{li_samtools_2011}.
 
 
@@ -2248,7 +2547,7 @@ The chunked graphs was merged using \texttt{vg~concat}.
 Finally, we added unplaced and unlocated contigs from the GRCh38 reference assembly to the pangenome.
 We also added the \texttt{hs38d1} decoy sequences (accession GCA\_000786075.2).
 
-The scripts used to build this pangenomes are documented in the repository (see Section \ref{sec:code-data}).
+The scripts used to build this pangenomes are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
 \subsection{Population scale analysis of SVs}
 
@@ -2258,7 +2557,7 @@ The MESA whole-genome sequencing dataset was obtained from NHLBI’s TOPMed prog
 Paired-end 150bp reads had been sequenced on Illumina HiSeq X Ten instruments and achieved a mean depth of at least 30x.
 All sequencing had used PCR-free library preparation kits.
 
-For the 1000 Genomes Project samples, we used public whole-genome sequencing data generated at the New York Genome Center\cite{1000gp_nygc_2021} (see Section \ref{sec:code-data}).
+For the 1000 Genomes Project samples, we used public whole-genome sequencing data generated at the New York Genome Center\cite{1000gp_nygc_2021} (see Section \ref{sec:aim2:code-data}).
 Samples had been sequenced to a minimum of 30x mean genome coverage using PCR-free sequencing libraries on the Illumina NovaSeq 6000 sequencing instrument, with 150bp paired-end reads.
 All cell lines had been obtained from the Coriell Institute for Medical Research and had been consented for full public release of genomic data.
 
@@ -2276,7 +2575,7 @@ Around 71\% of the time is spent mapping reads, 18\% genotyping the variants, an
 
 
 \subsubsection{Diverse sample selection from the MESA cohort}
-\label{subsec:mesaselection}
+\label{subsec:aim2:mesaselection}
 
 The MESA cohort is a medical research study involving white, African American, Hispanic/Latino, and Chinese adults from 6 U.S. communities \cite{bild2002multi}.
 We selected a subset of 2~thousand individuals in the MESA cohort from the TOPMed freeze 5b.
@@ -2287,7 +2586,7 @@ New individuals were then selected, one by one, to maximize their distance to al
 
 
 \subsubsection{Combining SV genotypes across samples}
-\label{subsec:svcombining}
+\label{subsec:aim2:svcombining}
 
 SVs were merged using bcftools version 1.9 \cite{li_samtools_2011}.
 For each sample, we split multi-allelic variants, normalize them and sort the output VCF.
@@ -2301,7 +2600,7 @@ Finally, the VCF files were combined using \texttt{bcftools merge} using the \ve
 The corresponding WDL workflow has been deposited on Dockstore\cite{svmerge_dockstore}.
 
 \subsubsection{Clustering SV alleles into SV sites}
-\label{subsec:svclustering}
+\label{subsec:aim2:svclustering}
 
 Deletions were matched if their reciprocal overlap was at least 80\%.
 Insertions were matched if located at less than 20 and their sizes were reciprocally similar at least 80\%.
@@ -2310,10 +2609,10 @@ We built a network using these matches to identify connected component represent
 If the component formed a clique, i.e. all SVs matched all other SVs, the SV site contained alleles that differed by small variants (relative to the SV size).
 If not, the SV site contained alleles with significant differences, usually due to important repeat expansion or contraction at a VNTR site.
 For most analysis at the SV site level, we used the most frequent allele's information, such as boundaries or size.
-The corresponding scripts are documented in the repository (see Section \ref{sec:code-data}).
+The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
 \subsubsection{Allele frequency patterns across populations}
-\label{subsec:sv-pop-freq}
+\label{subsec:aim2:sv-pop-freq}
 
 
 We performed a principal component analysis of the individuals using the allele counts across all SV sites.
@@ -2331,7 +2630,7 @@ This distribution was compared to an empirical null distribution produced by shu
 As population-centric metric, we contrasted the allele frequency at each SV site in a super population versus the median allele frequency across all super populations.
 Again, we used the null dataset to illustrate the enrichment in SVs whose frequency in the super population of interest is different from the global allele frequency.
 We highlight SVs with a frequency differing by more than 10\% from the median frequency, a threshold at which only a few SVs are expected to show population patterns based on the permuted dataset.
-The corresponding scripts are documented in the repository (see Section \ref{sec:code-data}).
+The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
 \subsubsection{Comparison with existing large-scale SV catalogs}
 
@@ -2340,17 +2639,17 @@ We compared the variants genotyped in this study with three SV catalogs that scr
 \begin{enumerate}
 \item The 1000 Genomes Project phase 3\cite{1000gp_sv_2015} (2,504 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/integrated_sv_map/supporting/GRCh38_positions/ALL.wgs.mergedSV.v8.20130502.svs.genotypes.GRCh38.vcf.gz}
 \item gnomAD-SV\cite{gnomadsv_2020} v2 (more than 14~thousand individuals), lifted over to GRCh38
-\item SVPOP\cite{audano2019c} (440 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20181025_EEE_SV-Pop_1/VariantCalls_EEE_SV-Pop_1/EEE_SV-Pop_1.ALL.genotypes.20181204.vcf.gz}.
+\item SVPOP\cite{audano_hgsvc} (440 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20181025_EEE_SV-Pop_1/VariantCalls_EEE_SV-Pop_1/EEE_SV-Pop_1.ALL.genotypes.20181204.vcf.gz}.
 \end{enumerate}
 
 These three public catalogs provide allele frequency estimate that we compared with the frequency of matched variants in our datasets.
 Variants were matched with weaker matching criteria than before to avoid over-estimating the amount of novel variants.
 We matched deletions with at least 30\% reciprocal overlap and insertions located at less than 200 bp from each other and at least 30\% reciprocally similar sizes.
 Annotated simple repeats were also used to extend the range used to match SVs.
-The corresponding scripts are documented in the repository (see Section \ref{sec:code-data}).
+The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
 \subsubsection{Fine-tuning structural variants with frequencies}
-\label{subsec:svfinetuning}
+\label{subsec:aim2:svfinetuning}
 
 The frequency pattern across the different alleles at a SV site can help identify the discard alleles that contain errors.
 We have found thousands of SV sites where one allele is much more frequent than the other.
@@ -2375,7 +2674,7 @@ As before, a SV was preferentially annotated using the following order: coding, 
 
 
 \subsubsection{Expression Quantitative Trait Locus discovery}
-\label{subsec:eqtldiscovery}
+\label{subsec:aim2:eqtldiscovery}
 
 We used gene expression provided by the GEUVADIS consortium\cite{geuvadis_2013}.
 We tested for cis-eQTLs using a 1 Mbp range around the gene's transcription start site using Matrix eQTL\cite{matrix_eqtl_2012}.
@@ -2400,7 +2699,7 @@ We then selected all common SVs (allele frequency $\geq$ 1\%) and located at les
 
 Separate analysis of the four European-ancestry populations together, and the YRI population alone, identified respectively 44 and 139 SVs where an association with the expression of protein-coding genes was detected only in the smaller analysis.
 Possible reasons for this include the 5\% frequency cutoff imposed on SV-eQTL candidates (which produced different sets of eligible variants in the different groups), the limited statistical power of the test (as the absence of a finding of an SV-eQTL is not the same as the finding of an absence of an SV-eQTL), and interactions between the candidate SV-eQTLs and the frequencies of other alleles or environmental factors which vary between the populations.
-As expected, a number of these population-specific SV-eQTLs had shown strong inter-super-population frequency patterns (see Section \ref{subsec:inter-super-pop}):
+As expected, a number of these population-specific SV-eQTLs had shown strong inter-super-population frequency patterns (see Section \ref{subsec:aim2:inter-super-pop}):
 19 out of the 44 CEU-FIN-GBR-TSI-specific SV-eQTLs and 10 out of the 139 YRI-specific SV-eQTLs showed such patterns.
 
 We also performed a joint analysis that included the public SNV and indel calls generated at the New York Genome Center\cite{1000gp_nygc_2021}.
@@ -2462,7 +2761,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
     \centering
     \includegraphics[width=.9\linewidth]{aim2_supplement_wdl-sveval.pdf}
     \caption[Structural variant genotyping workflow]{\textbf{Structural variant genotyping workflow.}
-      (A, B, C) SV genotyping F1, precision, and recall (respectively) for the SV graph combining HGSVC \cite{chaisson_sv_2019}, SVPOP \cite{audano2019c} and GIAB \cite{zook_robust_2020}, and for individual SV graphs containing only HGSVC or GIAB as used in Hickey et al.\cite{hickey_vgsv_2020}.
+      (A, B, C) SV genotyping F1, precision, and recall (respectively) for the SV graph combining HGSVC \cite{chaisson_sv_2019}, SVPOP \cite{audano_hgsvc} and GIAB \cite{zook_robust_2020}, and for individual SV graphs containing only HGSVC or GIAB as used in Hickey et al.\cite{hickey_vgsv_2020}.
       The genotypes predicted from the long-read sequencing data in the original studies are used as truthset.
       (D) Workflow overview with average resources used for each task for a typical sample (Table \ref{tab:svwdl-task}). Note: the core hours estimates include the time spent copying files between computing instances.
     }
