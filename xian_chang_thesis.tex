@@ -2348,22 +2348,22 @@ Recent advances in sequencing technologies and bioinformatics tools have made se
 This abundance of data has granted us greater insight into human genetic variation and its distribution in the human population.
 But as we learn more about human genetic diversity, there is a growing recognition that standard practices are insufficient for accurately and equitably detecting and interpreting genetic variants. 
 Pangenomes are a promising alternative to standard linear genomes that can better represent the genetic landscape of a species and reduce bias in analyses.
-With modern sequencing technologies and understanding of population genetics, it is now possible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
+It is now possible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
 
-The first reference pangenomes are just beginning to be produced, both as global and population-specific references.
-With the growth of pangenomics, both in the pangenomes themselves and the popularity of the field, there is a corresponding need for bioinformatics tools capable of scaling to large pangenomes and datasets. 
+The first human reference pangenomes are just beginning to be produced and used.
+However, due to their novelty and the technical challenges of working with a larger and more complex data structure, methods for working with pangenomes are less mature than analogous methods for linear genomes.
 In this dissertation, I presented tools for indexing pangenome graphs and for mapping long and short sequencing reads to them.
 These mappers are among the first practical tools capable of mapping to pangenome graphs at large scales, a crucial step for many genomics pipelines.
 
-Although we have shown Giraffe to be fast and accurate for the current HPRC graphs, there is still work to be done to ensure that it works with increasingly complicated graphs.
+Although we have shown Giraffe to be efficient for the first draft of the HPRC graphs, there is still work to be done to ensure that it works with increasingly complicated graphs.
 The distance index has become a major barrier for mapping to topologically complex graphs due to the quadratic complexity of its representation of distances in snarl netgraphs.
 In order for Giraffe to function on graphs with more haplotypes, graphs representing species with more genetic divergence, or graphs that allow more collapsing of similar sequences, the distance index must be changed to more efficiently represent distances within snarls.
 
-This has been a recent area of exploration in the lab.
-One potential solution that I discussed with Simon Heumos is to use his layout algorithm from odgi to estimate a 2-dimensional embedding of the netgraph.
+This has been an area of recent exploration in the lab.
+One potential solution that I discussed with Simon Heumos is to use his layout algorithm from odgi to estimate a low-dimensional embedding of the netgraph.
 Odgi layout uses stochastic gradient descent to find the optimal set of 2-dimensional coordinates for each node such that the distance between all pairs of nodes in the coordinate plane best matches the distances between the nodes on embedded paths in the graph \cite{guarracino_odgi_2022}.
 An index like this would use $O(ND)$ space, where $N$ is the number of nodes and $D$ is the number of dimensions, but such an approach would allow distances between all pairs of nodes, even though most pairs of node sides are unreachable in a net graph.
-The embedding could be paired with a bit-vector representing reachability between nodes, but even a bit vector with quadratic cost may be too big. 
+The embedding could be paired with a bit-vector representing reachability between nodes, but even a bit vector with quadratic cost may be too big for the largest snarls. 
 Zia Truong, a rotation student whom I co-mentored with Adam Novak, explored using landmark-based distances for netgraphs.
 Her algorithm finds a set of landmark nodes that are expected to be included in most paths through the snarl, then stores the distance from each node to each landmark.
 Distances between nodes can be estimated by finding the distance from each node to a common landmark.
@@ -2371,20 +2371,15 @@ The memory cost of the index is $O(NL)$ where $L$ is the number of landmarks, an
 Another project led by Jouni Sirén has been to estimate distances using the haplotype sequences in the graph.
 A haplotype-based distance has the advantage that it uses distances from real sequences, rather than using the graph topology which may produce biologically unrealistic distances.
 
-Even when distance indexing is solved, the problem remains that as pangenomes grow in size, analyses using them will inevitably become slower and at times less accurate.
-Counterintuitively, adding more variants to a pangenome can actually impede read mapping; when there are too many targets for mapping, reads may erroneously map to a rare variant that happens to be more similar to the read than the correct alignment. %TODO cite forge
-The solution used in the Giraffe papers is to use a frequency-filtered graph that has low-frequency variants removed~\cite{}, but this solution is not ideal as it throws away potentially valuable information.
-Another solution for mapping reads from a single individual is to sample the graph to find a subgraph that best represents the individual: a so-called personalized pangenome \cite{}.
-This strategy has been shown to be faster and produce better variant calling results than using the frequency filtered graph.
-
-The success of personalized pangenomes demonstrates the versatility of a pangenome reference.
-Pangenomes could be customized for a particular individual or application, by either adding or removing disease-specific, population-specific, or individual-specific variants.
-%TODO: idk if I can include this?
-The Emblask-Weaver pipeline for example adds population-specific small variants to a graph containing structural variants.
-A similar strategy could be imagined for Giraffe for mapping to graphs with additional variants added.
-In general, mapping to a modified graph with Giraffe would be slow because the graph must be re-indexed to accommodate the new variants. 
-The personalized pangenome workflow is efficient because it reduces the pangenome to just two haplotypes, which can be indexed quickly.
-Adding variants to a pangenome, particularly adding large chromosomal rearrangements, complicates the topology of the graph and the indexes, particularly the snarl decomposition. 
+Efficiently indexing a graph is one of many problems that arise as pangenomes grow in size and complexity; analyses also tend to become slower and at times less accurate as the reference pangenome grows \cite{Pritt2018}.
+Pangenomes cannot grow indefinitely and no single pangenome will be able to represent all variants of interest for every study.
+However, a pangenome graph could be used as a more versatile reference that can be modified for specific applications.
+The recent personalized pangenomes paper demonstrates how variants can be removed from a pangenome to better represent an individual sample \cite{siren_personalized_2024}. 
+Conversely, variants specific to a population, disease, or individual could be added to a reference pangenome.
+%TODO: Include the Emblask-weaver pipeline if it is published
+Adding variants to a graph is more difficult than removing them because the graph must be re-indexed in order to map to it.
+While any modification to the graph will change the indexes, re-indexing a reduced graph may not be necessary if the new index will be a subset of the old and, as in the case of the personalized pangenome workflow, the new graph may be small enough for indexing to be very fast.
+Re-indexing a graph with additional variants, particularly larger variants connecting disparate regions of the genome, is a more difficult task. 
 
 I propose a strategy for adding a small number of chromosomal rearrangements to a pangenome as a target for read mapping using the long read Giraffe algorithm.
 Rather than changing the graph itself and re-indexing, the variants would only be considered during mapping.
@@ -2392,33 +2387,10 @@ The variants would be represented in the zip code tree as edges that connect dis
 Although the zip code tree structure is based on the snarl decomposition, it is not necessary for the snarl decomposition represented in the zip code tree to be valid in order to find distances using traversals of the zip code tree and the zip code tree will still be valid after adding these extra edges.
 Chaining can be done as usual using the extra edges to consider mappings that span chromosomal rearrangements and alignment can be done on the chain on each side of the rearrangement edge separately.
 
+An approach like this could be used for mapping reads derived from cancer tumors containing translocations.
+Long reads aligned to a pangenome with split-read mapping enabled could be used to identify putative chromosomal rearrangements.
+Using these rearrangements as added edges in the proposed algorithm, shorter reads could be mapped to the graph considering the putative rearrangements. 
 
-
-Read mapping is one of the first necessities of pangenome workflows, but there remain many challenges in the way of the general adoption of a pangenome standard.
-To convince researchers and clinicians who still haven't adopted the GRCh38 standard to switch to a pangenome, pangenomics must be clearly better and simple and easy to use.
-
-
-
--To make pangenomes standard, we need to convince people to use them and make them as easy as possible to use
--Deal with bigger graphs
--Haplotype sampling to personalize pangenomes
--application/population specific pangenomes by adding or removing variants
--Questions about how to best represent a pangenome- what do we consider homology, how much variation should we include, balance utility with representation
--inevitable loss of information when using reference downstream-represent variants relative to the reference genome
--coordinate system
-
-
-
-
-As more and more high-quality data is being produced, bioinformatics tools must keep pace with methods to efficiently process and analyze  
-
-They are capable of more accurately representing the genetic diversity of a population and can reduce biases in genomic analyses.
-However due to their novelty and the technical challenges of working with a larger and more complex data structure, methods for working with pangenomes are less mature than analogous methods for linear genomes.
-I plan to develop pangenome methods for common genomic tasks.
-I will create a distance index for efficiently calculating minimum distances in pangenome graphs.
-Using algorithms developed against the distance index, I will contribute to a read-to-graph mapper for mapping short and long reads to pangenome graphs.
-Finally, I will write a graph-to-graph mapper for comparing pangenome graphs.
-Each of these aims will contribute to establishing a robust ecosystem of tools to support a more complete standard reference genome.
 
 \appendix
 \chapter{Additional short read giraffe materials}
