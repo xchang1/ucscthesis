@@ -248,19 +248,41 @@ These population-specific efforts aim to improve understanding of genetic varian
     \label{fig:example_graph}
 \end{figure}
 
-A human pangenome can 
+A sequence content human pangenome can easily reach hundreds of billions of base pairs and compact data structures are needed to efficiently represent all of the sequences and the relationships among them. 
 A popular method of representing pangenome is with sequence graphs (Figure \ref{fig:example_graph}).
 Nodes in a sequence graph are labeled with nucleotide sequences and longer sequences can be encoded as paths through the graph.
 Divergences in the graph represent variations in the sequences.
 Variation graphs are sequence graphs that additionally encode a set of reference paths through the graph.
-These paths typically correspond to reference and alternate scaffolds.
+These paths typically correspond to reference genomes.
 
 Formally, a sequence graph is a bidirected graph $G = (V, E)$ where $V$ is the set of nodes and $E$ is the set of edges.
 A node $v$ in a bidirected graph has two node sides, $\{v^{-}, v^{+}\}$, which are arbitrarily designated as ``left'' and ``right'' respectively (Figure \ref{fig:example_graph}).
 Each node $v$ in a sequence graph is labeled with a nucleotide sequence, $s(v)$.
 Edges in sequence graphs connect node sides and traversals of nodes must enter and exit the node at opposite sides.
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
-The variation graph toolkit (vg) is a software suite for working with variation graphs.
+The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs.
+
+\subsection{Graph construction}
+\label{sec:graph-construction}
+A variation graph can be constructed using a variety of different methods, each of which produces graphs with distinct characteristics.
+One option for constructing a graph is to start with a set of variants, typically represented in a variant calling format (VCF) file.
+The \texttt{vg} toolkit's \texttt{vg construct} subcommand takes a reference and a set of variants called against that reference and produces a variation graph.
+Variation graphs constructed with this method are generally topologically simple. 
+
+Graphs can also be constructed from genome assemblies.
+There are currently three methods for constructing pangenome graphs from assemblies.
+The Minigraph algorithm starts from a single reference genome and progressively aligns and incorporates each additional genome into the graph \cite{li_minigraph_2020}.
+As this algorithm is not designed to find small variants, graphs constructed with Minigraph represent only larger structural variants and are generally simple and acyclic \cite{li_minigraph_2020}.
+The Minigraph-Cactus (MC) pipeline builds on graphs build with the Minigraph algorithm and adds smaller variants using the Cactus algorithm \cite{minigraph_cactus_2024}. 
+This introduces smaller variants, nested variants, and can create cycles in the graph.
+The PanGenome Graph Builder (PGGB) algorithm constructs a graph using a reference-free all-to-all comparison of genomes \cite{pggb_2024}.
+The PGGB pipeline tends to add more alignments between homologous sequences, particularly copy number variants, resulting in collapsing of repetitive sequences into a single copy \cite{hprc_draft_2023}.
+This creates large cycles and complicated nested structures.
+
+The choice of graph construction method is a trade off between the complexity of the graph and the homology that they represent.
+PGGB graphs are the most topologically complicated, but the construction method is unbiased by the choice of reference and the collapsing of variants better represents the relationship between paralogous sequences within a genome.
+In contrast, less collapsed graphs built with Minigraph are simpler and can more clearly define the orthology among genomes, as the individual repeat copies are separately expressed and aligned \cite{li_minigraph_2020}. 
+
 
 \section{Snarl decomposition}
 \begin{figure}
@@ -270,6 +292,7 @@ The variation graph toolkit (vg) is a software suite for working with variation 
     (B) A view of the graph in (A) with snarl $\{a^+$,$k^-\}$ replaced by its netgraph. In this view, the chains $\{b^+$, $d^-\}$ and $\{e^+$, $j^-\}$ are represented by nodes.}
     \label{fig:snarl_tree}
 \end{figure}
+
 To help find organization in a sequence graph, it is often useful to describe common topological motifs.
 A simple variation such as a SNP or indel will be represented by one or two nodes representing the variant sequences, flanked by two nodes representing conserved sequences.
 In Figure \ref{fig:snarl_tree}A, nodes $h$ and $i$ represent the alleles of a SNP while nodes $g$ and $j$ represent conserved sequence.
@@ -302,14 +325,6 @@ Based on this property, snarls and chains can be treated as nodes within their p
 A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
 In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
 For convenience, I will refer to nodes, snarls, and chains collectively as ``structures'' when referring to them as nested structures in a snarl tree.
-
-\subsection{Graph construction}
-\label{sec:graph-construction}
--VCF construction
--MC
--PGGB
-How they produce graphs with different characteristics
-Main difference between MC and PGGB graphs is the representation of CNVs
 
 \section{Sequencing technologies}
 \label{sec:background:sequencing}
@@ -431,7 +446,7 @@ Often these regions are identified by clusters of matches.
 Clustering requires repeated distance calculations between seeds and can be very slow in graphs as large as whole genome graphs. 
 The prohibitive run time of clustering algorithms can make them impractical for mapping and some mapping algorithms omit this step entirely \cite{rautiainen_bit-parallel_2019}.
 
-We have developed an algorithm to calculate the exact minimum distance between any two positions in a sequence graph and designed an index to support it. We also developed a clustering algorithm that clusters seeds based on the minimum distance between them. Our algorithms are implemented as part of vg, a variation graph toolkit \cite{garrison_variation_2018}.
+We have developed an algorithm to calculate the exact minimum distance between any two positions in a sequence graph and designed an index to support it. We also developed a clustering algorithm that clusters seeds based on the minimum distance between them. Our algorithms are implemented as part of \texttt{vg}, a variation graph toolkit \cite{garrison_variation_2018}.
 
 \section{Background}
 
