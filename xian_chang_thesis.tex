@@ -1499,836 +1499,945 @@ Using these rearrangements as added edges in the proposed algorithm, shorter rea
 \chapter{Additional short read giraffe materials}
 \label{sec:appendix_sr_giraffe}
 \section{Preface}
-This section contains materials from the supplement of short read giraffe paper \cite{sr_giraffe_2021}. 
+This section contains materials from the supplement of short read giraffe paper \cite{sr_giraffe_2021} that are referenced in the main text but not related to my portion of the paper. 
 
-\section{Supplementary methods}
+\section{Supplementary materials and methods}
+\subsection{Giraffe Algorithm}
+\label{subsec:aim2:giraffe-methods}
+\subsubsection{Definitions}
 
-\subsection{Genotyping and evaluating short variants with Dragen}
-\label{subsec:aim2:dragen}
+We work in the \vocab{sequence graph} model, as defined in the vg toolkit\cite{garrison_variation_2018}.
+In a sequence graph, each node $v$ is labeled by a nucleotide sequence $\nodelabel{v}$.
+A sequence graph is a bidirected graph, which means that each node $v$ has two \vocab{sides}: left side $\leftside{v}$ and right side $\rightside{v}$.
+Edges connect unordered pairs of sides of nodes.
+Nodes can be \vocab{visited} in either forward or reverse \vocab{orientation}.
+When we visit a node $v$ in forward orientation $\forwardnode{v}$, we enter it from the left side $\leftside{v}$, read the node's sequence $\nodelabel{\forwardnode{v}} = \nodelabel{v}$, and exit from the right side $\rightside{v}$.
 
-We mapped $\sim$830~million~paired-end, 150-bp-long reads (Precision FDA Challenge V2 Illumina $\sim$35x~coverage) from the HG002 sample to the 1000GP graph.
-We also separately evaluated mapping $\sim$1.08 billion 250-bp-long reads ($\sim$40-50x~coverage of Illumina HiSeq~2500) from HG002 to see if using longer reads and higher coverage would affect the results.
-For the genome graph mappers, we evaluated variant calling performance by using \texttt{vg~surject} to produce BAM representations of our graph alignments projected onto the linear reference assembly, and then using Dragen version~3.7.5 to call variants against the \texttt{hs38d1} reference for each set of alignments.
-Dragen was used as the primary variant caller because Illumina, who sells it, has found it to produce robust results\cite{illumina_dragen_2019,illumina_dragen_pfda_2017,illumina_dragen_pfda_2020}.
-Its speed was also useful for the purposes of rapid evaluation of whole genome alignments of real read data.
-No training or calibration was performed for any of the generated mappings other than those performed by default by Dragen itself.
+For such a visit, $\leftside{v}$ is the \vocab{entry side}, and $\rightside{v}$ is the \vocab{exit side}.
+In a reverse orientation visit $\reversenode{v}$, we enter from $\rightside{v}$, read the sequence $\nodelabel{\reversenode{v}} = \reversecomplement{\nodelabel{v}}$, the reverse complement of the node's sequence, and exit from $\leftside{v}$.
+% Something about the previous line makes us lose the next paragraph break with make4ht. So we add a fake one.
+\ifdefined\HCode
+    \par
+\fi
+See Figure~\ref{fig:aim2_supplement_graph-example}A for an example.
+A \vocab{position} in a sequence graph is a pair $(x, i)$, where $x$ is a node in a specific orientation and $i$ is an offset in sequence $\nodelabel{x}$.
+We start counting sequence offsets from $0$.
 
-All pipelines evaluated for short variant calling performance had the same structure.
-First, we mapped reads to the appropriate GRCh38-based linear or graph reference using the pipeline's mapper.
-Then, we genotyped the resulting alignments using Illumina’s ``Dragen Bio-IT Platform'' product, version~3.7.5, against an index generated from the \texttt{hs38d1} human genome reference.
-The mappers for each pipeline evaluated were Illumina’s Dragen internal aligner, BWA-MEM, VG-MAP, Giraffe, and Giraffe in fast mode.
-The Genome In a Bottle HG002 version 4.2.1 high-confidence VCFs were used as the truth sets for evaluating performance of variant calling\cite{chin2020diploid}.
-The VCF was obtained from \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz} and the high confidence regions evaluated were based on the BED files obtained from \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}.
-We used RTG's \texttt{vcfeval} \cite{cleary2015comparing} and Illuminas \texttt{hap.py} \url{https://github.com/Illumina/hap.py} to evaluate variant calling concordance with truth sets.
-All pipelines used the computational resources of the NIH HPC Biowulf cluster (\url{http://hpc.nih.gov}).
+We calculate \vocab{alignment scores} with the following parameters: $+1$ for each matching character, $-4$ for each mismatch, $-6$ for the first character in an insertion or a deletion, $-1$ for each additional character in the indel, and $+5$ at each end if the alignment matches or mismatches at that end of the read.
+Note that, in this scoring model, indels only occur between matches or mismatches; deletions abutting the ends of the read are always removable to get a higher score (and thus never occur), and insertions abutting the ends of the read are actually \vocab{softclips}, and are scored as 0 points.
 
-
-
-\subsubsection{Graph construction} \label{subsec:aim2:graph_construction}
-For the variant calling experiments, graph references, and their indexes for running vg mappers, were constructed using different versions of vg ranging from \texttt{1.20.0} to \texttt{1.31.0}, orchestrated by \texttt{toil-vg~construct}.
-
-The graph references for GRCh38-based experiments were constructed using vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:v1.31.0}, using the cannonical \texttt{hs38d1} FASTA reference file as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/linear_references/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna} and the 1000 Genomes Project Phase 3 phased VCFs that were lifted over from old GRCh37-based joint-called datasets as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000gp_data/ALL.chr*_GRCh38.genotypes.20170504.rename.vcf.gz}.
-\vocab{Primary} graphs and indexes were constructed using just the linear reference FASTA with vg version \texttt{v1.26.0-180-gdc119fa04} as packaged in container \texttt{quay.io/vgteam/vg:ci-2284-dc119fa046aa7131a1a8e026be36da2d79bc2f22}.
-\vocab{1000GP} graphs and indexes were constructing using both the FASTA and the VCFs after filtering out variants belonging to segmental duplication regions of greater than 10 kilobases in length as defined in the bed file \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/genome-stratifications/v2.0/GRCh38/SegmentalDuplications/GRCh38_segdups_gt10kb.bed.gz} with vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:ci-2890-655a9622c3d60e87f14b88d943fbd8554214a975}.
+The discussion below describes the general principles used in the Giraffe mapper.
+We skip many details and special cases.
 
 
-\subsubsection{Read sets}
-Two different read sets were used to evaluate performance
-One was the 150~bp paired-end FASTQ set from sample HG002 as obtained from the FDA Precision Challenge dataset.
-These reads are available as paired FASTQs at \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002.NovaSeq.pcr-free.35x.R1.fastq.gz} and \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002.NovaSeq.pcr-free.35x.R2.fastq.gz}.
-The other read set consisted of 250~bp paired-end FASTQ reads from sample HG002, obtained from the GIAB NovoAligned BAM at \url{ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/NIST_Illumina_2x250~bps/novoalign_bams/HG002.hs37d5.2x250.bam}.
-These reads in paired FASTQ format are available at \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002_read_pair_1.fq.gz} and \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002_read_pair_2.fq.gz}.
 
-\subsubsection{Read mapping}
-The HISAT2 mapping runs were done using version~\texttt{2.1.0}.
-Only default settings, with the addition of the \texttt{-{}-no-spliced-alignment} flag, were used during HISAT2 execution.
+\subsubsection{Graph representation}
 
-One pipeline used Illumina's Dragen module for both mapping and alignment; both steps were run against the same index derived from the \texttt{hs38d1} human genome reference.
+Our graph representation is based on a bidirectional GBWT index \cite{siren_indexes_2020}.
+The GBWT is a data structure, based on the FM-index \cite{Ferragina2005a}, that can efficiently compress and store a large number of similar paths (haplotypes) in a graph.
+The primary query in the GBWT is a counting query: as we traverse a path in the graph, we can always tell how many indexed paths contain the path traversed so far as a subpath.
 
-The BWA-MEM mapping runs were done using version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference.
+The GBWT data model is based on directed graphs.
+However, we can accommodate a bidirected graph with a bidirectional GBWT index.
+For each sequence graph node $v$, we have separate GBWT nodes for visits $\forwardnode{v}$ and $\reversenode{v}$.
+The outgoing edges of a GBWT node correspond to the graph edges on the exit side of that visit, and the incoming edges correspond to the graph edges on the entry side of the visit.
+See Figure~\ref{fig:aim2_supplement_graph-example} B for an example.
 
-The vg alignment runs used different graph indexes depending on the mapper used (VG-MAP or Giraffe).
-GRCh38-based experiment run details are given in Supplementary Table~\ref{tab:vgruns_grch38}.
-All runs used the \texttt{toil-vg~map} workflow for the alignment procedure and ABRA2\cite{mose2019improved} for indel realignment after alignment.
-GATK's Picard tool~\cite{Picard2019toolkit} was used to reorder aligned BAM files for contig consistency which is required by the Dragen variant calling algorithm.
+A GBWT index encodes the topology of the graph induced by the indexed haplotypes.
+This is not always identical to the original sequence graph, as some nodes and edges may not be visited by any haplotype.
+In order to support the \vocab{handle graph} interface\cite{eizenga2020efficient}, we need some additional structures:
+\begin{itemize}
 
+\item Determining whether a node with a given identifier exists in the graph is relatively slow with the GBWT interface.
+Hence, we cache this information in a bitvector.
 
-\subsubsection{DeepVariant calling}
-\label{subsec:aim2:deepvariant_calling}
+\item We concatenate the sequences for all GBWT nodes (i.e. $\nodelabel{\forwardnode{v}}$ and $\nodelabel{\reversenode{v}}$ for each sequence graph node $v$) and store them in a single character array.
 
-All pipelines for the DeepVariant experiment evaluation used BWA-MEM version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference or VG Giraffe against the same 1000GP graph as described in \ref{subsec:aim2:graph_construction}.
-Alignments were then indel realigned using ABRA2\cite{mose2019improved}.
-The DeepVariant v1.1.0 code base was used for all experiments.
+\item We use an integer array to store references into the concatenation that let us find the beginning of each sequence. When node sequences are requested, we use these references to provide clients with direct access to the stored sequence bytes, without needing to decompress the sequences or create temporary copies.
 
-DeepVariant learns to call variants by training on input data from gold standard samples HG001-HG007.
-In all DeepVariant models, the HG003 sample is fully withheld from training, allowing a full genome sample to be evaluated.
-Because the DeepVariant production models for Illumina are trained on samples mapped with BWA, DeepVariant likely optimizes for the mapping accuracy and quality profile of BWA.
-We used DeepVariant v1.1.0 production model for the BWA-MEM experiments and a custom model for the GIRAFFE alignments that were trained using the same methods that were used to train the DeepVariant model for BWA-MEM alignments.
-The custom model data can be found here \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/deepvariant_models/model.ckpt-25600*}.
+\end{itemize}
 
-\subsection{Genotyping and evaluating structural variants}
-\label{subsec:aim2:svgenotyping}
-
-We replicated the evaluation performed in Hickey et al.\cite{hickey_vgsv_2020} using two SV graphs made from the HGSVC\cite{chaisson_sv_2019} and GIAB v0.6\cite{zook_robust_2020} SV catalogs, respectively.
-The graphs had originally been built from VCF files provided by the HGSVC and GIAB consortia.
-To evaluate Giraffe, we built the necessary indexes.
-For the minimizer index, we used the default minimizer length of 29 and window size of 11.
-The GBWT index was created using the greedy path-cover algorithm and $n = 32$ paths.
-We then mapped and genotyped the SVs in four samples: HG00514, HG00733 and NA19240 for the HGSVC graph; HG002 for the GIAB graph.
-The genotyped were compared to the truth-set using \texttt{sveval}\cite{hickey_vgsv_2020}.
-We use non-repeat regions, i.e. regions of the genome that don't overlap simple-repeats and segmental duplications, as high-confidence regions for the HGSVC graph and the combined SV graphs that are both on GRCh38.
-For the GIAB graph, which uses GRCh37, we use the high-confidence regions provided by the GIAB consortium\cite{zook_robust_2020}.
-The scripts to build the pangenomes, genotype the SVs and evaluate the genotyping performance are available in the repository (see Section{sec:aim2:code-data}).
-
-(see section \ref{sec:aim2:code-data}).
-
-\subsection{Combining long-read catalogs for an SV pangenome}
-\label{subsec:svpangenome}
-
-We combined variants from the three SV catalogs used previously in Hickey et al.\cite{hickey_vgsv_2020}: HGSVC \cite{chaisson_sv_2019}, GIAB\cite{zook_robust_2020}, and SVPOP \cite{audano_hgsvc}.
-The three catalogs were first normalized and merging using bcftools version 1.9 \cite{li_samtools_2011}.
+Accessing edges using the GBWT interface is somewhat slow.
+We first have to find the record corresponding to the GBWT node and then decompress the header of the record.
+As seed extension, dynamic programming, and pair rescue repeatedly access the edges in a small subgraph, we can speed them up by caching the decompressed records.
+We use an application-specific per-thread cache in Giraffe, where eviction consists of discarding the entire cache after each stage of processing for each cluster of aligner seed hits. The cache stores all records we have accessed during the current stage for the current cluster.
 
 
-To minimize issues with near-duplicate variants, we first mapped short reads from 17 diverse samples to a local graph containing all versions of a variant, and kept one version if substantially supported by the reads.
-Near-duplicate variants often exists because they contain errors around their breakpoints.
-Our aim was to filter out the most obvious errors before starting to build the SV graph.
-We identified near-duplicates by overlapping the SVs in this combined catalog.
-At this stage, we defined near-duplicate SVs as deletions with a reciprocal overlap at least 80\% or insertions located at less than 50 bp from each other and sizes at least 80\% reciprocally similar.
-A network was build from this ``near-duplicate'' relationships to identify connected components of near-duplicate variants, which we referred to as SV clusters.
-We identified 34,010 such clusters of near-duplicates SVs, each with on average 2.6 SVs.
-For each SV cluster, we extracted the reference sequence and variants to create a local SV graph of the region.
-We then aligned short-reads pooled from 17~diverse individuals selected to span different populations in the 1000 Genomes Project and HGSVC.
-The reads aligning to the region of interest were extracted using SAMtools\cite{li_samtools_2011} from the aligned reads publicly available.
-A subset of SV clusters didn't have SV-supporting reads, because they originally couldn't be mapped to the linear reference, were too difficult to map in general, or the variants were rare enough that none of the 17 individuals carried them.
-Out of the 23,929 clusters with read support, 43.1\% had one variant supported by more than 50\% of the SV-supporting reads.
-When reads supported one variant better than the other near-duplicates in the SV cluster, the near-duplicates were discarded.
-This filtering step removed 55,330~near-duplicate SVs.
+\subsubsection{Downsampling the haplotypes}
+\label{subsec:aim2:downsampling}
 
-
-Although many obvious duplicates had been removed, many SVs sharing sequence remained.
-For example if SVs were not covered by the short-reads used above or if they were too different to match the near-duplicate definition used above.
-Instead of building a pangenome naively from the variant definition, we used a hybrid approach using iterative graph augmentation.
-The goal is to collapse as much as possible variants that share sequence content by iteratively aligning and adding variants into the SV graph.
-The graph was built in chunks separated by at least 10~kbp without any variants.
-We focused on SVs shorter than 1~kbp which represented the vast majority of the near-duplicate variants and allowed us to parallelize this iterative graph augmentation approach.
-For each chunk, we clustered SVs using a less stringent criterion as above: deletions with at least 30\% reciprocal overlap; insertion located at less than 100bp from each other and with at least 30\% reciprocally similar sizes.
-The 18,286 clusters of SVs identified contained an average of 3.24 SVs.
-A graph was built for the chunk using one variant per SV cluster.
-One by one, the other variants were then added by aligning them to the graph and augmenting the graph.
-We used \texttt{vg~mpmap} \cite{sibbesen2021haplotype} to align large sequences representing the SV variation flanked by 5~kbp of sequence context.
-The alignment was added to the graph using \texttt{vg~augment}.
-The chunked graphs was merged using \texttt{vg~concat}.
-
-Finally, we added unplaced and unlocated contigs from the GRCh38 reference assembly to the pangenome.
-We also added the \texttt{hs38d1} decoy sequences (accession GCA\_000786075.2).
-
-The scripts used to build this pangenomes are documented in the repository (see Section \ref{sec:aim2:code-data}).
-
-\subsection{Population scale analysis of SVs}
-
-\subsubsection{Whole-genome sequencing datasets}
-
-The MESA whole-genome sequencing dataset was obtained from NHLBI’s TOPMed program (\url{www.nhlbiwgs.org}), freeze 5b.
-Paired-end 150bp reads had been sequenced on Illumina HiSeq X Ten instruments and achieved a mean depth of at least 30x.
-All sequencing had used PCR-free library preparation kits.
-
-For the 1000 Genomes Project samples, we used public whole-genome sequencing data generated at the New York Genome Center\cite{1000gp_nygc_2021} (see Section \ref{sec:aim2:code-data}).
-Samples had been sequenced to a minimum of 30x mean genome coverage using PCR-free sequencing libraries on the Illumina NovaSeq 6000 sequencing instrument, with 150bp paired-end reads.
-All cell lines had been obtained from the Coriell Institute for Medical Research and had been consented for full public release of genomic data.
-
-Of note, the reads were downsampled to 20x in both datasets and mapped with Giraffe fast mode to reduce the computing cost.
-
-\subsubsection{Pangenome genotyping workflow}
-
-A genotyping pipeline was implemented in WDL and ran using the BioData Catalyst ecosystem\cite{bdc2020} providing access to the TOPMed and 1000 Genomes Project datasets.
-The WDL pipeline was deposited on Dockstore\cite{vgsv_dockstore} and ran on Terra.
-TOPMed data was accessed through Gen3.
-The estimated cost per sample was estimated from Google Billing Reports.
-Resources used for each sample or step in the workflow were extracted using \texttt{terra-utils} notebooks from the \href{https://biodatacatalyst.nhlbi.nih.gov/platforms/terra}{BioData Catalyst Powered by Terra}.
-On average, genotyping a sample took 194.4 cpu-hours of compute and cost between \$1.11 and \$1.56 (Figure~\ref{fig:sv-wdl-graph}A, Tables~\ref{tab:svwdl-corehours} and \ref{tab:svwdl-task}).
-Around 71\% of the time is spent mapping reads, 18\% genotyping the variants, and the remainder downloading and preparing the raw reads (Table~\ref{tab:svwdl-task}).
-
-
-\subsubsection{Diverse sample selection from the MESA cohort}
-\label{subsec:aim2:mesaselection}
-
-The MESA cohort is a medical research study involving white, African American, Hispanic/Latino, and Chinese adults from 6 U.S. communities \cite{bild2002multi}.
-We selected a subset of 2~thousand individuals in the MESA cohort from the TOPMed freeze 5b.
-The individuals were selected to cover as uniformly as possible the space defined by the top 11 principal components provided by the TOPMed consortium.
-These principal components (PCs) were derived from SNVs genotypes across the full TOPMed dataset.
-Briefly, the selection process started with the two individuals that located the furthest from each other in the PC space.
-New individuals were then selected, one by one, to maximize their distance to already selected individuals.
-
-
-\subsubsection{Combining SV genotypes across samples}
-\label{subsec:aim2:svcombining}
-
-SVs were merged using bcftools version 1.9 \cite{li_samtools_2011}.
-For each sample, we split multi-allelic variants, normalize them and sort the output VCF.
-The output of \texttt{vg~call} is derived from paths in the graph (like haplotypes) that traverse the SV site.
-For large SV sites, it means that one called variant may contain multiple smaller canonical SVs.
-In addition, this path-based reporting of the variants can sometimes separate homozygous canonical variants into two heterozygous variants embedded within larger paths.
-Hence, during normalization, we aligned the reference and alternate alleles in the VCF file to break down each variant into canonical SVs.
-We also combined heterozygous variants that matched exactly into homozygous calls.
-These SVs were then left-aligned and sorted using bcftools.
-Finally, the VCF files were combined using \texttt{bcftools merge} using the \verb~-0 -m none~ parameters to avoid multi-allelic records.
-The corresponding WDL workflow has been deposited on Dockstore\cite{svmerge_dockstore}.
-
-\subsubsection{Clustering SV alleles into SV sites}
-\label{subsec:aim2:svclustering}
-
-Deletions were matched if their reciprocal overlap was at least 80\%.
-Insertions were matched if located at less than 20 and their sizes were reciprocally similar at least 80\%.
-Annotated simple repeats were also used to extend the range used to match SVs because similar variants might be placed in different position of an annotated VNTR.
-We built a network using these matches to identify connected component representing SV sites where similar alleles cluster.
-If the component formed a clique, i.e. all SVs matched all other SVs, the SV site contained alleles that differed by small variants (relative to the SV size).
-If not, the SV site contained alleles with significant differences, usually due to important repeat expansion or contraction at a VNTR site.
-For most analysis at the SV site level, we used the most frequent allele's information, such as boundaries or size.
-The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
-
-\subsubsection{Allele frequency patterns across populations}
-\label{subsec:aim2:sv-pop-freq}
-
-
-We performed a principal component analysis of the individuals using the allele counts across all SV sites.
-The allele counts represent the number of non-reference alleles called in each individual at each SV locus.
-
-For the MESA cohort, we compared the principal components derived from the SV allele counts to the principal components produced by the TOPMed consortium using short variants.
-Population information was not available for these individuals, so we used the top three principal components from our SV analysis to cluster them and explore population patterns further.
-We used hierarchical clustering (\verb!ward.D! method in R's \verb!hclust! function) and cut the tree to obtain 6 clusters.
-
-For the 1000 Genomes Project dataset, we used public information about the samples' super populations to color the PCA graphs and explore population patterns.
-
-For each SV site, we compared the allele frequencies between the clusters/super populations.
-To illustrate global population differences, we computed the range of allele frequencies across clusters/super populations.
-This distribution was compared to an empirical null distribution produced by shuffling the population assignments.
-As population-centric metric, we contrasted the allele frequency at each SV site in a super population versus the median allele frequency across all super populations.
-Again, we used the null dataset to illustrate the enrichment in SVs whose frequency in the super population of interest is different from the global allele frequency.
-We highlight SVs with a frequency differing by more than 10\% from the median frequency, a threshold at which only a few SVs are expected to show population patterns based on the permuted dataset.
-The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
-
-\subsubsection{Comparison with existing large-scale SV catalogs}
-
-We compared the variants genotyped in this study with three SV catalogs that screened large populations:
-
+Mapping to a GBWT with too many haplotypes can be slow in regions with a high density of variations, and can be inaccurate due to rare variants creating false positive mappings.
+Conversely, there may be regions not covered by the haplotypes in the GBWT, especially unplaced or unlocalized contigs, decoy contigs, and other contigs that might not appear in input VCF files.
+We therefore provide a mechanism for creating artificial haplotype paths for a graph, with three operating modes:
 \begin{enumerate}
-\item The 1000 Genomes Project phase 3\cite{1000gp_sv_2015} (2,504 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/integrated_sv_map/supporting/GRCh38_positions/ALL.wgs.mergedSV.v8.20130502.svs.genotypes.GRCh38.vcf.gz}
-\item gnomAD-SV\cite{gnomadsv_2020} v2 (more than 14~thousand individuals), lifted over to GRCh38
-\item SVPOP\cite{audano_hgsvc} (440 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20181025_EEE_SV-Pop_1/VariantCalls_EEE_SV-Pop_1/EEE_SV-Pop_1.ALL.genotypes.20181204.vcf.gz}.
+    \item Create an artificial \vocab{path cover} of each graph component, assuming that each path is equally likely to be a true haplotype.
+    \item \vocab{Augment} an existing GBWT with an artificial path cover of graph components with no haplotypes.
+    \item \vocab{Downsample} the haplotypes proportionally in graph components that have them and create an artificial path cover of components with no haplotypes.
 \end{enumerate}
 
-These three public catalogs provide allele frequency estimate that we compared with the frequency of matched variants in our datasets.
-Variants were matched with weaker matching criteria than before to avoid over-estimating the amount of novel variants.
-We matched deletions with at least 30\% reciprocal overlap and insertions located at less than 200 bp from each other and at least 30\% reciprocally similar sizes.
-Annotated simple repeats were also used to extend the range used to match SVs.
-The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
+We generate the paths with a greedy algorithm similar to that used by the Pan-genome Seed Index\cite{Ghaffaari2019}.
+We create $n$ paths in each weakly connected component and consider the frequencies of subpaths (local haplotypes) of length $k = 4$ nodes.
+By default, we use $n = 64$ in the downsampling mode and $n = 16$ in other modes.
+The algorithm generates paths in the directed GBWT graph and later transforms them into paths in the bidirected sequence graph.
+If the component is acyclic, we start from a source node and extend forward until we reach sink node.
+Otherwise, we start from an arbitrary node and extend in both directions, stopping when there are no possible extensions in either direction or the length of the path reaches the size of the component.
 
-\subsubsection{Fine-tuning structural variants with frequencies}
-\label{subsec:aim2:svfinetuning}
+Assume that we are extending the path forward and we have not reached the stopping condition.
+Let $X$ be the $(k-1)$-node suffix of the current path and $u$ the last node.
+For any subpath $P$, let $f_{s}(P)$ be the frequency of $P$ in the set of paths we have generated so far.
+We consider all outgoing edges $(u, v)$ and choose the one with the highest weight $w(X, v) / (f_{s}(Xv) + 1)$, where $w(\cdot, \cdot)$ is a weight function.
+If we are downsampling the haplotypes proportionally, we use $w(X, v) = f_{h}(Xv)$, where $f_{h}(P)$ is the frequency of subpath $P$ in the true haplotypes.
+Otherwise, we use $w(X, v) = 1$ and try to sample all length-$k$ subpaths as equally as possible.
 
-The frequency pattern across the different alleles at a SV site can help identify the discard alleles that contain errors.
-We have found thousands of SV sites where one allele is much more frequent than the other.
-Our most stringent definition selected 6,175 SV sites where the major allele is the only one with a frequencyhigher than 1\% while also being at least three times more frequent than any other alleles.
+When we supplement input haplotypes with path covers for components of the graph without them (such as decoy sequences), we call the resulting GBWT a \vocab{full} GBWT.
 
-These alleles were indeed of better quality at the base level when we compared them to the GIAB catalog\cite{zook_robust_2020}, a SV catalog of unprecendented base quality.
-Out of the 22 of those SV sites that were found in GIAB, 3 (13.6\%) matched exactly in terms of start/end position and size.
-We show that it is significantly more than expected using permutation.
-We permuted the frequency estimates 10,000 times and showed that, on average, only 2.9\% of SV sites would match GIAB exactly by chance (p-value $<$ 0.0001).
+\subsubsection{Downsampling evaluation}
+\label{subsec:aim2:downsamplingeval}
 
-\subsubsection{Annotation of the SVs}
+To evaluate the effect of haplotype downsampling on read mapping, we generated GBWT indexes containing different numbers of haplotypes.
+The \vocab{full} 1000GP GBWT index contains the 5,006~input haplotypes (real haplotypes from 2,503~samples, which were restricted to the autosomes and sex chromosomes) and an additional 16~path covers over connected components not containing input haplotypes.
+We downsampled these input haplotypes to create GBWT indexes containing between 1 and 128 haplotypes, and used the read mapping simulations described to compare these GBWT indexes to the full GBWT index containing all haplotypes and to a primary graph containing only the paths of the linear reference (Figure~\ref{fig:aim2_supplement_haplotype_sampling}A).
+The mapping benefit of adding more haplotypes was found to plateau at 64 haplotypes, with higher accuracy than is achieved by mapping to the full haplotype set.
 
-The RepeatMasker and SimpleRepeat annotation downloaded from the UCSC Genome Browser FTP server.
-We considered a SV to overlap simple repeats if at least 50\% of its region overlapped with the SimpleRepeat track or repeats from the {\it Simple\_repeat} class in the RepeatMasker annotation.
-Low-complexity regions were extracted from the RepeatMasker annotation.
-The SVs were overlapped with gene annotation from Genecode v35.
-Promoter regions were defined from 2~kbp up-stream to 200 bp downstream of the transcription start site.
-We annotated SVs that overlapped coding regions, UTRs, promoters or introns of protein-coding genes, in this order.
-This means that a SVs spanning a full gene is annotated as {\it coding}, or, for example, that a {\it promoter} SV overlapped neither coding nor untranslated regions.
-Because the gene expression in the GEUVADIS is from lymphoblastoid cell lines, we used candidate regulatory regions for GM12878 from the ENCODE project\cite{encode1,encode2} (\href{https://www.encodeproject.org/files/ENCFF590IMH/}{ENCFF590IMH}) when annotating SV-eQTLs.
-As before, a SV was preferentially annotated using the following order: coding, UTR, promoter, intron, regulatory region, intergenic region.
+In contrast to the 1000GP graph, the full HGSVC GBWT index contains just 6 haplotypes for its three samples. We used this graph for an experiment on generating path covers without known haplotypes, to test how Giraffe, which requires a GBWT, might perform on graphs where there are no haplotypes available. Repeating the same read mapping analysis, we found that path covers alone did not outperform the full underlying haplotype set for the HGSVC graph, but came close to matching its performance (Figure~\ref{fig:aim2_supplement_haplotype_sampling}B).
+
+Similar results were seen for both experiments in paired end mapping mode (Figure~\ref{fig:aim2_supplement_haplotype_sampling}C-D). Consequently, we selected the 64-haplotype GBWT for use in the 1000GP graph mapping experiments, and the full GBWT for use in the HGSVC graph mapping experiments.
 
 
-\subsubsection{Expression Quantitative Trait Locus discovery}
-\label{subsec:aim2:eqtldiscovery}
+\subsubsection{Minimizer seeds}
+\label{subsec:aim2:minimizers}
+Giraffe maps reads using the common seed-and-extend approach.
+We use a minimizer index\cite{Roberts2004} for finding seeds.
+We define a $(w,k)$-\vocab{minimizer} as the $k$-mer with the smallest hash value in a window of $w$ consecutive $k$-mers and their reverse complements (in a $k+w-1$~bp window).
+As we expect that sequencing errors are rare and that common variants are present in the haplotypes, we use longer than usual minimizers: $k = 29$ and $w = 11$ by default.
 
-We used gene expression provided by the GEUVADIS consortium\cite{geuvadis_2013}.
-We tested for cis-eQTLs using a 1 Mbp range around the gene's transcription start site using Matrix eQTL\cite{matrix_eqtl_2012}.
-First, all 445 samples with gene expression information were analyzed jointly.
-Additionally, we also analyzed the CEU, FIN, GBR, and TSI samples together, and the YRI population separately.
-In each analysis, we only tested SVs with a minor allele frequencies of at least 1\% and at least two samples with non-reference alleles.
-The gene expression had been corrected for batch effects by the GEUVADIS consortium using PEER\cite{geuvadis_2013}.
-To facilitate comparison of the predicted effect sizes, the gene expression distribution was centered and standardized before eQTL testing using the \verb!RowStandardizeCentered! function in Matrix eQTL.
-Covariates of the model included sex and the top four principal components derived from the SV genotypes.
-The p-values were corrected for multiple-testing using Benjamini-Hochberg correction.
-We report eQTLs with an adjusted p-value (false discovery rate) of 1\%.
-The p-value distributions and QQ plots were inspected for quality control.
+Our minimizer index is a hash table with 64-bit keys and 128-bit values.
+62~bits of the key are used for encoding the $k$-mer, allowing us to support $k \le 31$~bp seeds.
+The value is either a single \vocab{hit} or a pointer to a sorted array of hits.
+We use the high bit in the key for indicating the type of the value.
+For each hit, we use 64~bits for the graph position (53~bits for node identifier, 1~bit for node orientation, and 10~bits for sequence offset) and reserve the other 64~bits for \vocab{payload}.
 
-We tested enrichment of SV-eQTLs in gene families extracted from the ``Families'' dataset of the HUGO Gene Nomenclature Committee (HGNC) BioMart server (downloaded March 15, 2021 from \url{https://biomart.genenames.org/}).
-The 1,552 gene families were tested using a hypergenometric test comparing genes with eQTLs versus genes that were tested in the eQTL analysis.
-The p-values were corrected for multiple testing using the Benjamini-Hochberg method.
+We index only unambiguous minimizers, skipping $k$-mers containing characters that represent multiple nucleotides.
+We only consider paths consistent with the haplotypes.
+Index construction is fast: typically 5--10~minutes for a human genome graph using 16~threads.
 
-We annotated each SV-eQTL using the gene annotation (see above).
-SVs were split between SVs associated with increased or decreased gene expression.
-As baseline for the functional overlaps, we selected genes with similar sizes as the genes involved in eQTLs.
-We then selected all common SVs (allele frequency $\geq$ 1\%) and located at less than 1 Mbp of these genes.
+For mapping, we prioritize the most informative minimizers (those with the smallest number of hits) and always select more-informative minimizers before less-informative ones.
+For a minimizer with $n$ hits, we define \vocab{minimizer score} as $\max\left(1 + \ln C_h - \ln n, 1\right)$, where $C_h$ is the \param{hard hit cap} (default 500~hits).
+We try to select enough minimizers so that the sum of minimizer scores for the selected minimizers reaches the \param{score fraction} (default 0.9) of the total score for all minimizers available, but we never select any minimizers with more hits than the hard hit cap.
+To do this, we first select all minimizers that have a number of hits at or below the \param{soft hit cap} $c_h$ (default 10~hits).
+Then, if we have not yet achieved the score fraction, we select progressively less-informative minimizers one by one. We stop when we reach the score fraction, run out of minimizers, or the next minimizer has more than $C_h$ hits.
 
-Separate analysis of the four European-ancestry populations together, and the YRI population alone, identified respectively 44 and 139 SVs where an association with the expression of protein-coding genes was detected only in the smaller analysis.
-Possible reasons for this include the 5\% frequency cutoff imposed on SV-eQTL candidates (which produced different sets of eligible variants in the different groups), the limited statistical power of the test (as the absence of a finding of an SV-eQTL is not the same as the finding of an absence of an SV-eQTL), and interactions between the candidate SV-eQTLs and the frequencies of other alleles or environmental factors which vary between the populations.
-As expected, a number of these population-specific SV-eQTLs had shown strong inter-super-population frequency patterns (see Section \ref{subsec:aim2:inter-super-pop}):
-19 out of the 44 CEU-FIN-GBR-TSI-specific SV-eQTLs and 10 out of the 139 YRI-specific SV-eQTLs showed such patterns.
+\subsubsection{Minimum distance clustering}
+\label{subsec:aim2:clustering}
+In order to avoid redundant work, we cluster the seeds into sets that should correspond to the same mapping.
+Two seeds are assigned to the same cluster if the minimum distance between them is sufficiently small. It must be no larger than the \param{distance limit}. The distance limit is $200$~bp by default or, for longer reads, $|R| + 50~\mathrm{bp}$, where $|R|$ is the read length.
 
-We also performed a joint analysis that included the public SNV and indel calls generated at the New York Genome Center\cite{1000gp_nygc_2021}.
-Phased SNVs and indels in the autosomes and with minor allele frequencies of at least 1\% were used for the eQTL analysis.
-The same approach as described above was performed.
-We defined the lead eQTL as the most significant association in a gene.
+As computing distances between graph positions can be slow, we use a minimum distance index \cite{chang_distance_2020} to speed up the clustering.
+The index is based on the \vocab{snarl decomposition} of the graph.
+A \vocab{snarl}\cite{paten_superbubbles_2018} is a graph-aware concept of a genetic locus, or a ``site''.
+It is a subgraph separated by two node sides from the rest of the graph.
+A \vocab{chain} is a series of snarls arranged end to end, like beads on a string, with no connections to anything else except (possibly) at the ends.
+Any sequence graph can be recursively decomposed into a tree of snarls containing chains, and chains containing snarls.
+In order to find the distance between two graph positions, we determine their lowest common ancestor in this \vocab{snarl tree} and calculate the distance by traversing the tree and consulting precomputed tables at each level.
 
-To evaluate the enrichment of SVs as lead eQTLs, we permuted the p-values within each gene 10,000 times to compute an empirical null distribution for the rate of lead SV-eQTL.
-We also used permutation to test for an enrichment of SV-eQTLs or SNV/indel-eQTLs among highly expressed genes.
-Genes were split in 20 expression classes based on their quantiles.
-We then computed an empirical p-value for the proportion of eQTLs in each expression class using an empirical distribution derived from permuting the expression classes 10,000 times.
-The p-values were corrected for multiple testing using the Benjamini-Hochberg method.
+Non-informative seeds are often scattered around the graph.
+Finding them in the snarl tree causes cache misses for each seed.
+However, in a typical sequence graph, most positions are located close to the root of the snarl tree.
+For such positions, the amount of information we get from the distance index is small.
+Hence, we can cache the distance information for seeds near the root in the payload field of the minimizer index.
 
-\section{Supplementary figures}
+After clustering, we score the clusters by two criteria and pick the highest-scoring clusters for extension.
+The primary criterion is \vocab{read coverage}: the fraction of the read covered by the seeds.
+The secondary criterion, for breaking ties, is \vocab{cluster score}: the sum of minimizer scores for the minimizers present in the cluster.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_250bp.wgs.vcfevalroc.pdf}
-    \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 250bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. The ROC curve discrimination threshold is based on variant call quality.}
-    \label{fig:250bp_genotyping}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_150bp.wgs.vcfevalroc.1000GP_only.pdf}
-    \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers in 1000GP regions only]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 150bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions only within 1000GP variant regions. The ROC curve discrimination threshold is based on variant call quality.}
-    \label{fig:150bp_genotyping_1000GP_only}
-\end{figure}
+\subsubsection{Gapless haplotype-consistent seed extension}
+\label{subsec:aim2:gapless-extension}
+We need to turn seeds into \vocab{extensions}: gapless, haplotype-consistent partial alignments that may be longer than a minimizer and may contain some mismatches. We define a \param{mismatch bound} (default $d = 4$) that limits the number of mismatches in various parts of the extension.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_150bp.wgs.vcfevalroc.1000GP_excluded.pdf}
-    \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers in 1000GP excluded regions]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 150bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions with 1000GP variant regions excluded. The ROC curve discrimination threshold is based on variant call quality.}
-    \label{fig:150bp_genotyping_1000GP_excluded}
-\end{figure}
+Before extending, we first merge redundant seeds.
+A set of seeds is redundant if they all correspond to the same gapless alignment between the read and a node.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{HG003_trained_deepvariant_genotyping.pdf}
-    \caption[Genotyping evaluation for the DeepVariant genotyper with projected mappings from Giraffe and other mappers]{True positive and false positive genotypes made using the DeepVariant genotyper trained on alignments of 150bp paired-end reads from HG002 and HG004 GIAB samples and tested on 150bp paired-end reads from the HG003 GIAB sample and evaluated against the HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Dragen genotyper results are included for performance comparison. The ROC curve discrimination threshold is based on variant call quality.}
-    \label{fig:trained_deepvariant_genotyping}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.9\linewidth, page=2]{fig-sveval.pdf}
-    \caption[SV evaluation of vg and GraphTyper on HGSVC and GIAB]{{\bf SV evaluation of vg and GraphTyper on HGSVC and GIAB.}
-      SV were genotyped with vg and GraphTyper and compared to the truthset from HGSVC\cite{chaisson_sv_2019} and GIAB\cite{zook_robust_2020}.
-      When genotyping the HGSVC catalog, we used short-reads from the three individuals and one set of simulated reads for one individual.
-      When genotyping the GIAB catalog, we genotyped SV from short-read for HG002.
-      The y-axis shows the F1 score when assessing the presence/absence of a SV (semi-transparent bars) or exact genotype (opaque bars), for vg (red) and GraphTyper (blue).
-      GraphTyper outputs multiple entries for the same variant which decreases the genotyping accuracy when including all the variants (light blue).
-      To improve the genotyping performance, we selected one prediction per variant for GraphTyper (darker blue).
-      Finally, insertions and deletions were evaluated separately (top vs bottom) on the whole genome or high-confidence regions (x-axis).
-      Panels A, B, and C show the F1 score, precision, and recall, respectively.
-      }
-    \label{fig:graphtyper_eval}
-\end{figure}
+We then try to extend the remaining seeds into haplotype-consistent alignments without gaps.
+We extend up to 800~clusters (\param{extension bound}) but ignore those with read coverage or cluster score a certain threshold below the best cluster.
+For each cluster, we return a set of extensions.
+We also determine the \vocab{extension set score} for the cluster as an upper bound for the alignment score, assuming that we can chain the extensions arbitrarily over the read while ignoring graph topology.
 
-\begin{figure}[htp]
-    \centering
-    \includegraphics[width=.9\linewidth]{aim2_supplement_wdl-sveval.pdf}
-    \caption[Structural variant genotyping workflow]{\textbf{Structural variant genotyping workflow.}
-      (A, B, C) SV genotyping F1, precision, and recall (respectively) for the SV graph combining HGSVC \cite{chaisson_sv_2019}, SVPOP \cite{audano_hgsvc} and GIAB \cite{zook_robust_2020}, and for individual SV graphs containing only HGSVC or GIAB as used in Hickey et al.\cite{hickey_vgsv_2020}.
-      The genotypes predicted from the long-read sequencing data in the original studies are used as truthset.
-      (D) Workflow overview with average resources used for each task for a typical sample (Table \ref{tab:svwdl-task}). Note: the core hours estimates include the time spent copying files between computing instances.
-    }
-    \label{fig:sv-wdl-graph}
-\end{figure}
+To find the extensions, for each merged seed, we first gaplessly align the read to the entire node corresponding to the seed, and place that extension into a priority queue by alignment score.
+Then we process the extensions in the priority queue, highest-scoring first.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.9\linewidth, page=1]{fig-sveval.pdf}
-    \caption[Minimal effect of down-sampling reads to 20x depth on the SV genotyping performance]{{\bf Minimal effect of down-sampling reads to 20x depth on the SV genotyping performance.}
-      HG00514 was genotyped using the SV graph combining HGSVC, SVPOP and GIAB.
-      Panels A, B, and C show the F1 score, precision, and recall, respectively.
-    }
-    \label{fig:sveval-depth}
-\end{figure}
+We define a \vocab{right extension} of an extension as the original extension, made longer on its right side in a haplotype-consistent way by extending the gapless alignment into another node in the graph.
+A right extension of an extension matches some nonempty subset of the haplotypes that match the original extension.
+Each haplotype in the original extension either continues on into some right extension, or ends.
+An extension is \vocab{right-maximal} if i) we have reached the end of the read; ii) it does not have right extensions for all haplotypes that currently match it; or iii) a right extension would have both more than $d$ mismatches and more than $d/2$ mismatches in the right flank after the initial node.
+\vocab{Left extensions} and \vocab{left-maximality} are defined similarly.
 
+If the highest-scoring extension has not been found right-maximal, we find all its right extensions and place them in the priority queue.
+If, while attempting this process, we find that the extension is right-maximal, we mark it as such and return it to the priority queue.
+If the highest-scoring extension \emph{has} been found right-maximal, we extend it to the left as above, marking it left-maximal if we find it to be so.
+At the end, we report the highest-scoring, both left-maximal and right-maximal extension we find for the seed.
 
+We then look at the collection of highest-scoring, left-and-right-maximal extensions across all seeds.
+If a full-length alignment with at most $d$ mismatches exists as an extension of a seed, we will have found it.
+In that case, we sort all the full-length alignments we have found in descending order by alignment score.
+Then we greedily select all alignments that do not overlap with any of the already selected alignments, where we consider two alignments \vocab{overlapping} if the fraction of (read, reference) base mapping pairs in common is greater than the \param{overlap threshold} (default 0.8).
+If there are no full-length alignments with at most $d$ mismatches, on the other hand, we trim the partial extensions to maximize the alignment score and return the whole set of distinct extensions.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.9\linewidth]{fig-sv-mesa-stats-2.pdf}
-    \caption[SV alleles and SV sites in the MESA cohort]{{\bf SV alleles and SV sites in the MESA cohort.}
-      (A) Proportion of SV loci in clique formation, i.e. with alleles different by only small variants (SNVs, indels) as opposed to large allelic variation such as VNTRs.
-      The more alleles in a SV site the more likely it is to show VNTR-like allelic patterns.
-      (B) Fold-change between the major allele and the second most frequent allele in a SV loci (y-axis), grouped by the number of alleles in the locus (x-axis).
-      The number of loci with a fold-change higher than 3 (dotted line) are labeled.
-    }
-    \label{fig:svsites_mesa}
-\end{figure}
+\subsubsection{From extension sets to alignments}
+\label{sec:aim2:extensions-to-alignments}
 
-\begin{figure}[H]
-  \centering
-  %~~~(A)\hfill{(B)~~~}
+We transform at least two, but no more than 8 (the \param{alignment bound}) of the highest-scoring extension sets into alignments, and ignore those with scores further than the \param{extension set score threshold} (default 20~points) below that of the best set.
 
-  %\includegraphics[width=.49\linewidth, page=1]{examples-svsites-mesa.pdf}
-  %\includegraphics[width=.49\linewidth, page=2]{examples-svsites-mesa.pdf}
+We try to find at least two alignments from each extension set we use.
+If an extension set consists exclusively of full-length gapless alignments, we can use them directly. We take the top two if there are two or more, or the only one otherwise.
+If there are partial extensions in the set, we also consider alignments computed from the best partial extensions in the set, to see if they beat out any full-length gapless alignments for those top two spots.
+Using each partial extension as a seed, we perform dynamic programming alignment of partial extensions above a score threshold, which is set dynamically such that we align at least one partial extension and end up with at least two alignments overall (including the full-length gapless ones).
 
-  %~~~(C)\hfill{(D)~~~}
+Once these criteria are met, we do not align further partial extensions, unless we estimate that the extension could produce a better alignment than the best we have already seen in the extension set.
+We estimate the best possible alignment score for extension $X$ by considering three types of alignments for each unaligned tail, without taking the graph into account:
+\begin{enumerate}
+\item An exact match of at most $k + w - 2$~bp (shorter than the minimizer window) followed by a gap to $X$.
+\item A gap to another extension $Y$, an exact match up to the first mismatch in $Y$, and then another gap to $X$.
+\item A gap to another extension $Y$, then $Y$ or a part of it, and then another gap to $X$. In this case, we assume that all mismatches in $Y$ are in the part we use.
+\end{enumerate}
+Then we use the highest score across all cases as the estimate.
 
-  %\includegraphics[width=.49\linewidth, page=3]{examples-svsites-mesa.pdf}
-  %\includegraphics[width=.49\linewidth, page=4]{examples-svsites-mesa.pdf}
-  \includegraphics[width=\linewidth]{examples-svsites-mesa-all.pdf}
-  \caption[Four examples of SV sites in the MESA cohort]{{\bf Four examples of SV sites in the MESA cohort.}
-    For each site, the top left panel shows a representation of their configuration in the genomic region, the top right panel shows the distribution of allele frequencies across the 2000 MESA samples, and the bottom panel shows the result of a multiple-sequence alignment of the inserted/deleted sequences.
-    In (A) and (B), the insertions' alleles are only different due to small variants while (C) and (D) shows an insertion and deletion site with significant size variation between the alleles.
-    In (A), there is one major allele while multiple alleles of (B) are frequent in the population. }
-  \label{fig:mesa-svsite-examples}
-\end{figure}
+To actually perform dynamic programming alignment for an extension, we start from the GBWT search state for the extension.
+The search state corresponds to a set of haplotypes.
+For each unaligned tail of the read outside the partial extension, we build a tree-shaped graph by tracing out these haplotypes in the appropriate direction, splitting whenever two or more haplotypes in the set diverge from each other.
+We then align the tail to the tree using the dozeu library \url{https://github.com/ocxtal/dozeu}, a vectorized implementation of X-drop alignment.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{fig-sv-1kgp-stats.pdf}
-    \caption[Structural variants in 2,504 unrelated individuals from the 1000 Genomes Project]{\textbf{Structural variants in 2,504 unrelated individuals from the 1000 Genomes Project.}
-      (A) Allele frequency distribution of the major allele for each SV loci.
-      (B) Size distribution of the major allele for each SV loci.
-      (C) Cumulative proportion of SV loci depending on the maximum number of alleles (x-axis) in the locus.
-      (D) Proportion of SV loci in clique formation, i.e. with alleles different by only small variants (SNVs, indels) as opposed to large allelic variation such as VNTRs.
-      The more alleles in a SV site the more likely it is to show VNTR-like allelic patterns.
-      (E) Fold-change between the major allele and the second most frequent allele in a SV loci (y-axis), grouped by the number of alleles in the locus (x-axis).
-      The number of loci with a fold-change higher than 3 (dotted line) are labeled.
-    }
-    \label{fig:sv-1kgp-stats}
-\end{figure}
+After collecting up to two alignments from each extension set, we select the highest-scoring alignment as the \vocab{primary} for the read, while all others are \vocab{secondaries}.
+
+\subsubsection{Paired-end mapping}
+
+Paired-end mapping runs start with fragment length estimation, if a fragment length distribution has not been specified.
+We map the reads in single-ended mode using a single thread until we have 1000~uniquely mapping read pairs.
+We then estimate the mean and standard deviation of fragment length using the uniquely mapping pairs (see Section \ref{subsec:aim2:fragment-length}).
+
+Once we have estimated the fragment length distribution, we continue mapping with multiple threads.
+We cluster the seeds for both reads in the pair at the same time and try to group clusters that are at the right distance from each other.
+Each \vocab{cluster group} can contain clusters from either mate pair that are closer than the \param{fragment distance limit} to each other (default: fragment length distribution mean + 2 standard deviations).
+We produce alignments within each cluster as is done for single-ended mapping, prioritizing cluster groups containing clusters from both reads.
+We then attempt to find pairs of alignments that originated from the same cluster group.
+Pairs of alignments are scored as the sum of the two alignment scores and the log likelihood of their fragment length.
+If we do not find paired alignments or if we have an unpaired alignment with score at least 0.9~times (the \param{rescue threshold}) the score of the best alignment, we try to \vocab{rescue} the pair.
+We attempt to rescue at most 15~unpaired alignments (the \param{rescue bound}).
+
+To perform rescue, we use an aligned read to find an alignment for its unaligned mate. We use the distance index to find the \vocab{rescue subgraph} with all nodes within at most 4~standard deviations of the expected read location.
+We then find all minimizer hits in the subgraph, including those we ignored during mapping.
+Because the hits are sorted by node identifier in the index, we can find the ones in the rescue subgraph efficiently by doing list intersection with exponential search.
+We treat all the seeds as a single cluster and try to extend them without gaps.
+If we find a full-length alignment, we use it as the rescued alignment.
+
+If there are no full-length extensions, we resort to dynamic programming.
+We now consider alignments to the entire subgraph, not just to the paths consistent with haplotypes.
+By default, we use the dozeu algorithm.
+If we had minimizer hits in the rescue subgraph, we use the best extension as the seed for dynamic programming.
+Otherwise, we find the best alignment for the first 15~bp of the read and use it as the seed.
+As a slower but more accurate alternative to dozeu, we also support using the GSSW alignment implementation\cite{zhao_gssw_2013}.
+While dozeu must extend a seed, GSSW always finds the best alignment in the subgraph.
 
 
+\subsubsection{Fragment length estimation}
+\label{subsec:aim2:fragment-length}
 
-\begin{figure}[H]
-  \includegraphics[width=\linewidth]{fig-sv-trio-eval.pdf}
-  \caption[SV evaluation using 602 trios from the 1000 Genomes Project]{{\bf SV evaluation using 602 trios from the 1000 Genomes Project}
-    (A) Mendelian error (y-axis) for different minimum genotype quality thresholds (x-axis), i.e. considering all variants where the minimum genotype quality in the trio is X or higher.
-    (B) Proportion of transmitted allele from an heterozygous parent (y-axis) for the same minimum genotype quality thresholds (x-axis).
-    In (A) and (B), the vertical lines represent the full error range across all trios while the point represents the median error.
-    (C) Proportion of variants (y-axis) passing each minimum genotype quality threshold (x-axis).
-  }
-  \label{fig:sv-trio-eval}
-\end{figure}
-
-\begin{figure}[H]
-  \includegraphics[width=\linewidth]{fig-sv-freq-comp.pdf}
-  \caption[Allele frequency of SVs in this study and public studies]{{\bf Allele frequency of SVs in this study and public studies.}
-    (A) Allele frequency distribution of common variants (frequency >1\%) in each dataset.
-    (B-D) show the difference in frequency between our results in the MESA cohort and each of the three public catalogs (1000 Genome Project phase 3, gnomAD-SV, SVPOP).
-    (E-F) show the difference in frequency between SVPOP and the two other public catalogs.}
-  \label{fig:sv-freq-comp}
-\end{figure}
-
-\begin{figure}[H]
-  \includegraphics[width=\linewidth, page=3]{fig-sv-mesa-pcs.pdf}
-  \caption[Principal component analysis using the SV genotypes or SNVs in the MESA dataset]{{\bf Principal component analysis using the SV genotypes (y-axis) in the MESA dataset compared to the principal components derived from TOPMed-wide SNVs (x-axis).}
-    (A), (B), (C) compare the first, second and third components.}
-  \label{fig:mesa-topmed-pcs}
-\end{figure}
-
-\begin{figure}[H]
-  \includegraphics[width=\linewidth]{fig-pops-freq-mesa.pdf}
-  \caption[SV sites with population specific frequency patterns in the MESA cohort]{{\bf SV sites with population specific frequency patterns in the MESA cohort.}
-    The two thousand MESA samples were clustered in 6 clusters based on the top 3 principal components (A-B).
-    (C) The range of frequency, i.e. the difference between the maximum and minimum frequencies, across the sample clusters was larger than expected (permutation) for thousands of SV sites.
-    (D) Two clusters (x-axis) show high number of population-specific SV sites (y-axis), defined as deviating from the median allele frequency by at least 10\%, 25\%, or 50\% (panels).}
-  \label{fig:mesa-pop-freq}
-\end{figure}
+We use a method of moments approach to estimate the fragment length distribution
+The distribution is modeled as a normal distribution.
+To estimate the parameters of the distribution, we map pairs of reads without pairing constraints until obtaining $N$ uniquely mapped pairs that can reach each other through some path in the graph (default $N = 1000$).
+To avoid producing a fragment length distribution that does not reflect expected lengths from paired-end sequencing machines, we do not consider distances that are greater than the \param{maximum fragment length} (default $2000$~bp).
+We discard the largest and smallest $(1 - \gamma) / 2$ distances that we find (default $\gamma = 0.95$).
+We use the remaining $\gamma N$ distance measurements as a sample from a truncated normal distribution.
+The truncated distribution has the same $\mu$ and $\sigma^{2}$ as the underlying normal distribution, and the truncation points can be calculated based on $\mu$, $\sigma^{2}$, and $\gamma$.
+We can estimate the following parameters using the method of moments:
+$$
+\hat{\mu} = \bar{x} \quad \textrm{and} \quad
+\hat{\sigma}^{2} = s^{2} \left( \frac{1 - 2 \alpha \phi(\alpha)}{\gamma} \right)^{-1}
+$$
+In the above, $\bar{x}$ and $s^{2}$ are the maximum likelihood estimates of the mean and variance among the retained $N$ measurements, and $\alpha = \Phi^{-1}((1 - \gamma) / 2)$ is the left truncation point on a standardized normal distribution.
 
 
-\begin{figure}[H]
-  \includegraphics[width=\linewidth]{fig-sv-1kgp-pcs.pdf}
-  \caption[PCA of SV genotypes in the 1000 Genomes Project]{{\bf Principal component analysis from structural variant genotypes across the 2,504 unrelated individuals in the 1000 Genomes Project dataset. }
-    Principal component analysis was performed on the SV genotypes predicted by vg across the 166,199 SV loci.
-    Individuals are colored according to their assigned ``super population'' in the 1000 Genomes Project.
-    (A) shows the first and second principal components, (B) shows the third and fourth components.
-  }
-  \label{fig:1kgp-sv-pcs}
-\end{figure}
+\subsubsection{Mapping quality estimation}
+
+Mapping uncertainty is conventionally summarized as a \vocab{mapping quality}: the Phred-scaled\cite{ewing1998base} posterior probability of a mapping error. To compute mapping qualities, we take advantage of the interpretation of an alignment score as the log-likelihood of a Viterbi path through a pair hidden Markov model \cite{durbin1998biological}. With this model, the posterior probability of the maximum likelihood alignment $\hat A$ of a query sequence $Q$ to the reference $R$ can be expressed as
+
+\begin{align}
+    P(\hat A| Q, R) &= \frac{P(Q, R | \hat A)}{\sum_A P(Q,R|A)} \nonumber \\
+    &= \frac{\exp \lambda S(\hat A)}{\sum_A \exp \lambda S(A)}, \nonumber
+\end{align}
+
+\noindent where $S$ is the alignment score, and $\lambda$ is a normalizing factor that can be numerically computed from the scoring parameters \cite{karlin1990methods}. In practice, we do not score all possible alignments in order to evaluate this expression's denominator. Rather, we approximate it by using the high-scoring secondary alignments that are discovered during the mapping process.
+
+
+
+\subsubsection{Mapping quality caps}
+
+We impose several \vocab{caps} on the mapping quality derived from the formula above, each of which models a source of error due to Giraffe's heuristics.
+All mapping qualities are capped at 60 to account for some miscalibration and approximation in the mapping quality model.
+Another cap is computed based on the probability that all the minimizers we explored were actually created by base errors.
+Finally, we employ additional mapping quality caps for paired-end mapping to account for uncertain pairing and error introduced by hard caps in the rescue algorithm.
+
+\subsubsection{Minimizer error mapping quality cap}
+
+The Giraffe algorithm can only find a correct mapping if the read contains instances of minimizers that exactly match minimizers in the true placement in the graph, which then form a cluster, which is then extended to produce an alignment. 
+Consequently, the probability that all the minimizer instances in extended clusters were actually created by errors in the read is an upper bound on the mapping quality.
+We take a conservative approach to estimating this cap where we actually compute a lower bound on the probability of error. 
+In particular, we make assumptions that restrict the set of errors we consider for the sake of computational efficiency.
+We consider only substitution errors, which are much more frequent than indel errors, and we restrict our attention to only the most probable way the minimizer instances could have been created, rather all possible ways. 
+
+Each minimizer instance in the read is minimal in one or more windows; we call the consecutive run of windows that produce a minimizer instance the minimizer instance’s \vocab{agglomeration}. The agglomeration can be divided into the minimizer itself, of length $k$, and the \vocab{flank} of zero or more bases beyond the minimizer on either or both ends. In order for all minimizer instances to be disrupted, it is necessary for each window in each agglomeration to contain at least one error. Mathematically, we say that for an agglomeration $i$, the minimizer occurs at bases in the set $\core{i} = \{\minstart{i} \ldots \minend{i}\}$ in the read, and the agglomeration occurs at bases $\{\aggstart{i} \ldots \aggend{i}\}$. We write the hash value of the agglomeration's minimizer as~$\agghash{i}$.
+
+
+We consider only the subset of minimizer instances that were explored, and thus contributed to the set of candidate alignments. Our goal is to find a lower bound on probability of disrupting all minimizers, via errors in their agglomerations. We take advantage of the fact that we are looking for a lower bound by restricting our considered cases to those where each base error disrupts all windows that it overlaps. We also employ an approximation, by treating as sufficient the disruption of any windows of an agglomeration with an error in the flank, instead of requiring errors in the flank to disrupt all windows of the agglomeration. 
+
+
+We consider the minimizers' agglomerations to be sorted in the order they appear along the read. We approach this as a dynamic programming problem, with the dynamic programming table $c$, where $c_{i + 1}$ holds a lower bound on the probability that all agglomerations $\{0 \ldots i\}$ were disrupted. We use $I$ to represent the number of the final agglomeration, and we number the bases in the read (or \vocab{columns}) as $j$ running $\{0 \ldots J\}$.
+
+We imagine all the agglomerations arranged under the read, each on its own line (Figure~\ref{fig:aim2_supplement_regions}B).
+We overlay the minimizers with \vocab{regions} left to right, where the region changes whenever an agglomeration begins or ends (Figure~\ref{fig:aim2_supplement_regions}C).
+We number these regions as $r$ running $\{0 \ldots R\}$, and define their 0-based end-inclusive bounds in agglomerations as $\{\rtop{r} \ldots \rbottom{r}\}$ and in columns as $\{\rleft{r} \ldots \rright{r}\}$. 
+
+
+\newcommand{\Prob}[1]{P\left({#1}\right)}
+
+\newcommand{\BreakRegion}[1]{\textsc{BreakRegion}(#1)}
+\newcommand{\BreakRegionByColumn}[2]{\textsc{BreakRegionByColumn}(#1, #2)}
+\newcommand{\ErrorBreaksAgg}[2]{\textsc{ErrorBreaksAgg}(#1, #2)}
+\newcommand{\BaseError}[1]{\textsc{BaseError}(#1)}
+\newcommand{\BeatHash}[1]{\textsc{BeatHash}(#1)}
+\newcommand{\AnyBeatsHash}[2]{\textsc{AnyBeatsHash}(#1, #2)}
+
+We define the following events to structure our probability model:
+
+\begin{align*}
+    \BreakRegion{r} &= \text{all agglomerations in region } r \text{ are disrupted by errors in the region} \nonumber \\
+    \BreakRegionByColumn{r}{j} &= \text{all agglomerations in region } r \text{ are disrupted by an error at column } j \nonumber\\
+    \ErrorBreaksAgg{i}{j} &= \text{agglomeration } i \text{ would be disrupted if there were an error at column } j \nonumber \\
+    \BaseError{j} &= \text{there is an error at column } j \nonumber \\
+    \BeatHash{h} &= \text{a sequence has a hash more minimal than the hash } h \nonumber \\
+    \AnyBeatsHash{n}{h} &= \text{any of } n \text{ sequences has a hash more minimal than the hash } h \nonumber
+\end{align*}
+
+\begin{samepage}
+We implement the following recurrence relation on the dynamic programming table $c$:
+\nopagebreak
+\begin{align*}
+    c_0 &= 1 \nonumber \\
+    c_{i + 1} &= \max_{\forall r \mid i \in \left\{\rtop{r} \ldots \rbottom{r}\right\}} c_{\rtop{r}} \cdot \Prob{\BreakRegion{r}} \nonumber
+\end{align*}
+\end{samepage}
+
+\newcommand{\candidates}[2]{\mathrm{candidates}({#1},\ {#2})}
+
+\begin{samepage}
+In addition to the minimizer and region information, we take the read quality string $q$ as input, which defines $\Prob{\BaseError{j}}$. Also, we approximate the output of $\agghash{i}$ as a uniform random integer in $\{0,1,\ldots,2^{64}-1\}$. We can then evaluate the recurrence to fill the dynamic programming table using the following relationships:
+
+\nopagebreak
+\begin{align*}
+    \Prob{\BreakRegion{r}} &= 1 - \prod_{j = \rleft{r}}^{\rright{r}}\left( 1 - \Prob{\BreakRegionByColumn{r}{j}}\right) \nonumber \\
+    \Prob{\BreakRegionByColumn{r}{j}} &= \left(\prod_{i = \rtop{r}}^{\rbottom{r}} \Prob{\ErrorBreaksAgg{i}{j}}\right) \cdot \Prob{\BaseError{j}} \nonumber \\
+    \Prob{\BaseError{j}} &= 10^{-q_j / 10} \nonumber \\
+    \Prob{\ErrorBreaksAgg{i}{j}} &=
+        \begin{cases}
+            1, & \text{if } j \in \core{i} \\
+            \Prob{\AnyBeatsHash{\candidates{i}{j}}{\agghash{i}}}, & \text{otherwise}
+        \end{cases} \nonumber \\
+    \candidates{i}{j} &= \min(j - \aggstart{i} + 1, \aggend{i} - j + 1, k) \nonumber \\
+    \Prob{\AnyBeatsHash{n}{h}} &= 1 - (1 - \Prob{\BeatHash{h}})^{n - 1} \nonumber \\
+    \Prob{\BeatHash{h}} &= \frac{h}{2^{64}} \nonumber
+\end{align*}
+\end{samepage}
+
+
+The final result is the bottom cell in the dynamic programming table, at $c_{I+1}$: the probability of the highest-probability case in which all agglomerations in the region are disrupted. This probability is converted from the internal log10-probability representation used for computation into a Phred score.
+
+The Phred score is then transformed by an empirically-developed heuristic to produce a mapping quality cap, based on how the computation of the initial mapping quality went for the read or read pair. The initial mapping quality can be \vocab{pegged} at the maximum value representable by a 32-bit signed integer, which occurs when the score gap between the top-scoring alignment or pair and any secondary is too great. Our heuristic is that, when the initial mapping quality is not pegged, the cap is used as-is, but if the initial mapping quality for the read is pegged to its maximum representable value, the cap is doubled.
+
+
+
+\subsubsection{Paired read mapping quality caps}
+
+We apply two different caps for paired reads based on the outcome of the pair rescue routine.
+If we didn't find the best pair of alignments with rescue, we cap the mapping quality of each individual alignment to account for uncertain pairing.
+First, we find all alignments for the one read that were in a pair with the same alignment of the other read.
+We then calculate the mapping quality of the best pair based on the scores of these alignments and use the resulting value as a cap on the mapping quality of the other read.
+As a second cap, we treat all equally-scoring cluster groups as having an equal probability of producing a correct pair of alignments.
+Therefore, for the final alignment pair, we take the probability that we picked the incorrect alignment pair to be at most $1 - \frac{1}{C}$, where $C$ is the number of equivalent or better cluster groups, and cap the mapping quality accordingly.
+
+
+If all pairs of alignments were found by rescue, then we adjust the mapping quality to model the effects of Giraffe's hard limits on the number of rescue attempts.
+For the primary alignment pair, we estimate the number of equivalent pairs that would have been found without the limit.
+This estimate is the total number of unpaired alignments divided by the number of alignments that were actually rescued.
+When calculating the mapping quality of the primary alignment pair, we compute it as if the estimated number of pairs had been found.
+
+\subsection{Mapping evaluation}
+
+We ran each of the mappers on a variety of different graphs and read sets to evaluate their accuracy (Figure \ref{fig:aim2_fig2} and Figures~\ref{fig:aim2_supplement_haplotype_sampling}, \ref{fig:aim2_supplement_novaseq_rocs}, \ref{fig:aim2_supplement_hiseqxten_rocs}, and \ref{fig:aim2_supplement_hiseq2500_rocs}), speed (Figure~\ref{fig:aim2_supplement_speed}), and time and memory consumption (Figure \ref{fig:aim2_fig3}).
+
+
+\subsubsection{Graph construction}
+\label{subsec:aim2:graphconstruction}
+
+Human graphs were constructed using the \href{https://github.com/vgteam/toil-vg}{toil-vg tool}, versions \toilvgcommit{71f484ce519bb7eff2941a650638e98b4713b852}{71f484c} through \toilvgcommit{cfe15995a8da67257af1b9aca25fa1a686a839c4}{cfe1599}, as well as version \toilvgcommit{b319a1b22df6dac585b7f95bc1a603577452d443}{b319a1b}. 
+Construction and indexing for the HGSVC graph required multiple retries of the workflow with successive improved versions of the tool.
+Some indexes, such as the multiple kinds of sampled GBWT indexes and their corresponding minimizer indexes, were generated with additional ad-hoc scripts around functionality in vg.
+To run GraphAligner, we also needed to convert our vg-format graphs to GFA format using vg.
+
+
+Reported variant counts were derived from the VCFs used to build the graphs, with \texttt{bcftools stats}.
+A local graph visualization was produced with \cite{beyer2019sequence}, for path \texttt{11} (GRCh38 \texttt{chr11}) from $105,027,313$~bp to $105,027,345$~bp, by cutting out the local region in advance with \texttt{vg chunk}.
+
+The indexes used by HISAT2 for the mapping evaluation were constructed using version 2.2.0. 
+Variants were first split into bi-allelic sites and normalized using bcftools version 1.9 \cite{li_samtools_2011}.
+The variants were then preprocessed using\\ \texttt{hisat2\_extract\_snps\_haplotypes\_VCF.py} (part of the HISAT2 package) with the option that allows variant ids not beginning with rs.
+Furthermore, \texttt{Y} bases in the reference genome were changed to \texttt{N} for the preprocessing only.
+The resulting variant and haplotype list was then used as input to \texttt{hisat2-build} to construct the index.
+
+For the 1000GP graph, we used VCF files from the 20170504 GRCh38 liftover of the 1000 Genomes Project variants, previously available at \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/GRCh38_positions/} and currently obtainable from \url{http://ftp.ensembl.org/pub/data_files/homo_sapiens/GRCh38/variation_genotype/}.
+These VCFs have since been withdrawn in favor of newer call sets produced directly on GRCh38.
+We used the liftover files anyway, as we had already validated that our graph construction pipeline could work with them, and we were unable to find a new call set that covered all the chromosomes and had the level of inter-sample variant spelling consistency of the lifted-over co-called variants.
+Additionally, we pre-processed the VCFs to remove variants in segmental duplications over 10~kilobases, as identified in \cite{krusche2019best} and described by \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/genome-stratifications/v2.0/GRCh38/SegmentalDuplications/GRCh38_segdups_gt10kb.bed.gz}.
+We did this because, when we did not do this, and used the resulting graphs for genotyping, we found evidence of miscalls in these regions; we suspect that these regions may have been particularly difficult to lift over, resulting in misplaced variants that do more harm than good at the variant calling stage.
+Because we used reads simulated from NA19239 to evaluate mapping accuracy in the 1000GP graph, we did not include any variants that were unique to NA19239 in the 1000GP graph (their child NA19240 was not present in the call set).
+NA19239 and associated private variants were filtered out of the input VCF files before the graph was constructed.
+The other parent of the family, NA19238, was retained.
+This left 2,503~samples to be included the base haplotype index.
+Additionally, we produced a sample graph containing only variants and haplotypes from sample NA19239, in versions with and without reference paths through sites where the sample had two alternate alleles, to use as a positive mapping control.
+We used the graph including the reference path as our positive control.
+
+For the HGSVC graph, VCF files from the HGSVC were used (see Hickey et al.\cite{hickey_vgsv_2020} and available \href{https://github.com/vgteam/sv-genotyping-paper/tree/master/human/hgsvc}{{here}}), together with a FASTA reference combining the GRCh38 no-alt analysis set (accession GCA\_000001405.15) and the \texttt{hs38d1} decoy sequences (accession GCA\_000786075.2).
+Although NA19240 was used as the simulation target for simulating reads, no haplotype data or private variants were held out, as the graph contained only three samples to begin with. For a positive mapping control, we used the full graph, but a haplotype database containing only NA19240.
+
+The same reference genomes and variant sets as above were used to build the HISAT2 indexes.
+However, for the GRCh38 1000GP set we filtered all variants with a frequency below 0.001 since HISAT2 was not able to construct an index using the full variant set.
+
+To allow more direct comparison of Giraffe to linear mappers, we created \vocab{primary graphs} containing only the primary linear reference genome (GRCh38) with no variants or alternative loci, which we used as a negative control.
+
+For the yeast experiments, a five-strain yeast multiple sequence alignment previously constructed\cite{hickey_vgsv_2020} was imported as a graph with \texttt{hal2vg} v2.1\cite{hickey_vgsv_2020}, with ancestral genomes (internal nodes in the alignment tree) excluded.
+
+
+\subsubsection{Sample selection}
+
+For human evaluation, we decided to use real and simulated reads from NA19239 and NA19240. These two people are parent and child from a well-studied trio pedigree, sometimes described as ``the Yoruba trio'', recruited from among people claiming four Yoruba grandparents in Ibadan, Nigeria\cite{international2005haplotype,abyzov2011cnvnator}.
+After obtaining informed consent and collecting blood, the original collecting investigators gave donors ``an equivalent of $\sim$US \$8.00 and multivitamins worth $\sim$US \$4.00 to compensate them for their time and travel''\cite{international2004integrating}.
+Because NA19239 had haplotypes available on the 1000 Genomes variants, and NA19240 had haplotypes available on the HGSVC variants (no sample has both), and real reads from a variety of Illumina instruments were publicly available for one or the other, these two samples were chosen to avoid unduly confounding graph choice and sample genome.
+
+
+\subsubsection{Real reads}
+
+For speed evaluation on yeast data, real reads for each strain were used, from accessions SRR4074256, SRR4074257, SRR4074394, SRR4074384, SRR4074413, SRR4074358, and SRR4074383, shuffled and subset to 500~thousand~pairs as with the human data.
+
+
+\subsubsection{Read simulation}
+\label{subsec:aim2:readsim}
+
+To train vg's read simulator for generating human reads, the truncated 500~thousand~pair real read sets were used to train the simulator to match the read length and quality string characteristics of each of the three different Illumina instruments.
+Training reads for human were interpreted as pairs.
+To train the read simulator for the yeast experiments, the Illumina HiSeq~2500 reads from accession SRR4074257 were used as the training reads.
+These training reads were not interpreted as pairs, and the entire file was used.
+
+
+For the human 1000GP experiments, using \texttt{toil-vg~construct}, the input VCFs were subset to just sample NA19239, and a pair of single-haplotype graphs were built.
+These graphs were used as input to \texttt{toil-vg~sim}, trained as above for the different sequencer models, and configured for an average fragment length of 570~bp, a standard deviation of 165~bp, and an indel rate of 0.029\%.
+Reads were annotated with path positions for touched reference paths.
+Reads touching the \texttt{hs38d1} general decoy sequence and the \texttt{NC\_007605} viral decoy were excluded.
+Finally, we truncated to exactly 1~million pairs (2~million reads).
+
+For the human HGSVC graph, we needed to annotate reads not only with positions along the reference paths, but also with positions along alt allele paths corresponding to large insertions, in order to assess our ability to correctly place reads that did not touch the primary reference.
+Since the way these paths are named by vg differs depending on the set of alt alleles in the input VCF, the single-haplotype graph approach could not be used.
+Instead, we simulated from the full HGSVC graph using \texttt{vg~sim}, restricting the simulator to the haplotype segments representing sample NA19240 in the GBWT.
+The same training reads, fragment length distribution, and error parameters were used as in the 1000GP case.
+Reads were annotated with path positions for all touched paths, including reference and alt allele paths.
+Because NA19240 is known to have an XX karyotype, we excluded reads annotated as touching paths in the connected component of the graph hosting the Y chromosome reference path.
+Reads touching paths containing ``JTFH'' or ``KN70'' in their names were also excluded, in order to remove reads simulated from decoy sequences.
+Finally, we truncated to exactly 1~million pairs (2~million reads).
+
+For yeast, reads were simulated from the DBVPG6044 strain as contained in an \vocab{all-strain yeast graph}. 
+This graph was generated using \texttt{hal2vg} v2.1 from a previously reported Cactus alignment of the five strains in the yeast graph and an additional seven strains\cite{hickey_vgsv_2020}.
+The \texttt{vg~sim} tool was used on this graph standalone, without toil-vg.
+The simulator was trained as described above, and used the same fragment length distribution and indel rate as for the human reads.
+Simulation was restricted to the paths in the graph belonging to DBVPG6044.
+Exactly 1~million reads (500,000~pairs) were simulated for the DBVPG6044 strain; no truncation was performed.
+
+
+\subsubsection{Read mapping}
+\label{subsec:aim2:readmapping}
+For our read mapping experiments on human data, we used vg release~\vgcommit{6b7d2eeb618bb85c65438016a9eeccecfa0f6c82}{1.27.1} to run Giraffe and VG-MAP.
+For mapping to yeast, we used commit \vgcommit{1d9385e1ca55689cd3ad251b6b2c23319d37be52}{1d9385e}.
+We tested this commit on a small number of cases with human data and saw no difference between it and the \texttt{1.27.1} version.
+For our simulated read mapping experiment on the 1000GP graph (Figure \ref{fig:aim2_fig2} A,D, we used a 64 haplotype sampled GBWT and for the HGSVC graph (Figure \ref{fig:aim2_fig2} B,E, we used the full GBWT for mapping with Giraffe.
+We ran Bowtie2 version~\texttt{2.4.1} with default settings for single-ended reads, and a maximum fragment length of 1065 for paired-end.
+BWA-MEM version~\texttt{0.7.17-r1188} was run with default settings.
+GraphAligner version~\texttt{1.0.11} was run with its variation graph parameter preset.
+HISAT2 version~\texttt{2.2.1} was run with default parameters with maximum fragment length 1065 and no spliced alignment.
+We also ran HISAT2 with its sensitive and very sensitive settings.
+Minimap2 version~\texttt{2.14-r883} was run with its short reads preset and no secondary alignments.
+A Docker container with these versions of each of the mappers is available on Docker Hub: \href{https://hub.docker.com/layers/xhchang/vg/giraffe-paper/images/sha256-7dd5579b6cd3805c7d335803f2f646eada09f32159d1c534ab6c91c402627e33?context=explore}{xhchang/vg:giraffe-paper}
+
+As a positive control, we mapped reads to our positive control sample graphs using Giraffe.
+Giraffe was run in a permissive parameterization (\texttt{-{}-hit-cap 100 -{}-hard-hit-cap 5000 -{}-score-fraction 1.0 -{}-max-extensions 10000 -{}-max-alignments 1000 -{}-cluster-score 0 -{}-cluster-coverage 0 -{}-extension-score 0 -{}-extension-set 0}), to attempt to exhaustively explore all possible alignments.
+
+
+\subsubsection{Evaluating simulated read mapping}
+
+We used the path position annotations that were found during simulation to determine the correctness of read mappings.
+After mapping, each read was annotated again with the nearest reference position in the graph.
+For regions in the held out sample not included in the reference assemblies, other linear paths were also considered (such as the alt allele paths in the HGSVC graph).
+Any alignment that was within 100~bp of the true reference position was considered correct.
+For the linear mappers, we \textit{injected} the alignments into the graph with \texttt{vg~inject}, turning them into alignments to the graph, and then performed the same evaluation as for the graph mappers.
+Several tools allowed split read mapping and produced both primary and supplementary alignments for a single read.
+In these cases, we counted a read as correctly mapped if any of its alignments were correct.
+
+
+\subsubsection{Speed, runtime, and memory evaluation}
+\label{subsec:aim2:srgiraffe_speed}
+
+For our speed, runtime, and memory evaluations we used an AWS EC2 i3.8xlarge node with 32~vCPUs and 244~GB of memory.
+We found the total runtime and memory use of each of the mappers using our 600-million-read NovSeq~6000 set.
+Runtime and memory were measured using \texttt{/usr/bin/time}.
+Each of the mappers was run using 16~threads.
+We also separately measured reads mapped per thread per second, ignoring the start-up time of the mapper (Figure~\ref{fig:aim2_supplement_speed}), but although this metric can be more useful for provisioning resources, it relies on more assumptions and could not be obtained for some mappers.
+For speed evaluation we mapped reads to the 1000GP graph and GRCh38 linear reference, and to the HGSVC graph and GRCh38 linear reference.
+We were unable to map this read set with GraphAligner on the 1000GP graph as we ran out of memory.
+%HISAT2 writes alignments in SAM format; converting to BAM took an additional half an hour.
+
+We found the speed of each mapper using our 1~million~read real read sets for each sequencing technology.
+Each mapper except for Minimap2 was run on 16~threads; Minimap2 was run on 2~threads because it did not use all 16~threads when given.
+Speed was measured as reads per second per thread based on the time each tool reported as spending on mapping.
+We did not find the speed of GraphAligner because it logs mapping time per read, and dumping and aggregating the measurements without affecting the mapping speed would not have been feasible.
+
+
+\subsection{Evaluation of reference allele bias}
+\label{subsec:aim2:srgiraffe_allelebias}
+We produced an allele balance plot (Figure \ref{fig:aim2_fig4}A) to assess the mapping bias of Giraffe, VG-MAP, and BWA-MEM.
+We mapped 600 million real paired-end NovaSeq 6000 reads for NA19239 to our 1000GP graph or GRCh38 using each of the mappers.
+For the graph mappers, Giraffe and VG-MAP, we projected the graph alignments to alignments to the linear GRCh38 reference using \texttt{vg surject}.
+Replicating a previous approach\cite{crysnanto_bovine_2020}, we used \texttt{bcftools mpileup} and \texttt{bcftools call}\cite{li_samtools_2011} to call variants, and filtered to high-confidence variants (root mean square read mapping quality >= 40 and depth >= 25) that were called as heterozygous for all mappers.
+This strategy was chosen to restrict analysis to sites that we are confident are heterozygous in NA19239 and are supported by the read set used.
+\texttt{mpileup} and \texttt{call} were run on each chromosome in parallel using GNU Parallel \cite{Tange2011a}.
+
+
+
+
 \newpage
 
+\subsection{Supplementary figures}
+
 \begin{figure}[H]
-  \includegraphics[width=\linewidth]{fig-pops-freq-kgp.pdf}
-  \caption[SV sites with population specific frequency patterns in the 2,504 individuals from the 1000 Genomes Project]{{\bf SV sites with population specific frequency patterns in the 2,504 individuals from the 1000 Genomes Project. }
-    (A) The range of frequency, i.e. the difference between the maximum and minimum frequencies, across the super-population was larger than expected (permutation) for thousands of SV sites.
-    (B) Super-populations (x-axis) show high number of population-specific SV sites (y-axis), defined as deviating from the median allele frequency by at least 10\%, 25\%, or 50\% (panels).}
-  \label{fig:1kgp-pop-freq}
+    \centering
+    \includegraphics[width=\linewidth]{aim2_supplement_graph_example.pdf}
+    \caption[Sequence graph example]{\textbf{Sequence graph example.}
+      (A) A sequence graph with three nodes $u$, $v$, and $w$, with labels $\nodelabel{u} =$ GAT, $\nodelabel{v} =$ TA, and $\nodelabel{w} =$ CA. Node sides $\leftside{x}$ and $\rightside{x}$ are marked for each node $x$.
+      (B) The same graph as a directed graph with each visit $\forwardnode{x}$ and $\reversenode{x}$ a separate node.
+    }
+    \label{fig:aim2_supplement_graph-example}
+    \label{fig:first}
 \end{figure}
 
 
 \begin{figure}[H]
-  \includegraphics[width=\linewidth]{fig-sv-eqtl.pdf}
-  \caption[P-value distribution of the SV vs gene expression tests in the GEUVADIS dataset]{{\bf P-value distribution of the SV vs gene expression tests in the GEUVADIS dataset.}
-    Three analysis were performed: joint European and Yoruba populations (A-B), European populations only (C-D), and the Yoruba population (YRI) only (E-F).
-    (A,C,E) show the p-value distribution, uniform except for the peak of low p-values.
-    (B,D,F) show the QQ plots for the three analysis.
+    \includegraphics[width=.5\linewidth]{aim2_supplement_regiondiagram.pdf}
+    \caption[Diagram of minimizers, agglomerations, and regions]{{\bf Diagram of minimizers, agglomerations, and regions.} In this example, we use a minimizer length of $k=3$, and a window size of $w=4$. (A) shows where three example minimizers fall in the read. (B) shows the agglomerations of these minimizers, if the minimizers happen to be minimal for all windows they appear in. For agglomeration $i=1$, we have $\aggstart{1}=1$, $\aggend{1}=5$, $\minstart{1}=2$, and $\minend{1}=4$. (C) shows the regions, which we use to decompose the part of the diagram covered by agglomerations, with breaks wherever an agglomeration begins or ends. For the region $r=3$, we have $\rtop{3}=1$, $\rbottom{3}=2$, $\rleft{3}=4$, and $\rright{3}=5$.
   }
-  \label{fig:eqtl_qc}
-  \end{figure}
-
-\begin{figure}[H]
-  \includegraphics[width=\linewidth, page=2]{fig-sv-functional-summary.pdf}
-  \caption[Location of the SV-eQTLs around the associated gene]{{\bf Location of the SV-eQTLs around the associated gene}
-    The x-axis reports the proportion of SV-eQTLs overlapping each annotation group (panels).
-    A SV-eQTL is either positively (red) or negatively (blue) associated with gene expression, i.e. each additional SV allele correlates with increased or decreased gene expression respectively.
-    The control bar (green) represents the expected distribution of common SVs around control genes.
-    Control genes were chosen to match the size distribution of genes involved in eQTLs.
-    {\it UTR: untranslated region.}
-  }
-  \label{fig:eqtl_enr}
-\end{figure}
-
-\begin{figure}[H]
-  \includegraphics[width=\linewidth, page=1]{fig-sv-snv-indel-eqtl.pdf}
-  \caption[Enrichment of SV-eQTLs in highly expressed genes]{{\bf Enrichment of SV-eQTLs in highly expressed genes}
-    Genes were split in 20 expression groups of equal size (quantiles).
-    The graph shows the proportion of eQTLs (y-axis) in each expression quantile (x-axis).
-    We see a strong enrichment for SV-eQTLs (blue) in the last quantile representing the mist expressed genes.
-    The enrichment is also significant (point size) if only weaker for SNV/indel eQTLs.
-    The horizontal dotted line represents the expected value, i.e. 1/20 of the eQTLs in each quantile group.
-  }
-  \label{fig:eqtl_enr_ge}
+  \label{fig:aim2_supplement_regions}
 \end{figure}
 
 
 \begin{figure}[H]
-  \textsf{(A)} \hspace{15em} \textsf{(B)}
-
-  \includegraphics[trim={0 0em 0 20em}, clip, width=\linewidth, page=2]{fig-sv-snv-indel-eqtl.pdf}
-  \caption[Example of a SV lead-eQTL]{{\bf Example of SV lead-eQTL}
-    Association between an intronic 5,405 bp deletion and the gene expression of the {\it SLC44A5} gene.
-    (A) Each additional allele is associated with a decrease in gene expression.
-    (B) shows the position of significant eQTLs (SNV/indels in green, deletion in red, insertion in blue).
-    The y-axis represents the significance of the association, with the top eQTL being the highest point.
-    The deletion is the most significant eQTLs and the significance decreases the farther the variant is from it.
-  }
-  \label{fig:eqtl_ex}
+    \centering
+    \includegraphics[width=.6\linewidth]{aim2_supplement_novaseq6000-all.pdf}
+    \caption[Simulated read mapping with NovaSeq 6000 reads]{\textbf{Simulated read mapping with NovaSeq 6000 reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were simulated to match 150bp Illumina NovaSeq 6000 reads and were mapped either as single ended reads (A,B) or as paired end reads (C,D). We compared graph mappers (Giraffe, VG-MAP, GraphAligner, HISAT2) and linear mappers (BWA-MEM, Bowtie2, Minimap2) mapping to either the 1000GP graph and GRCh38 reference (A,C) or the HGSVC graph and GRCh38 reference (B,D). For Giraffe, we mapped to a 64 haplotype sampled GBWT for the 1000GP graph and to the full GBWT for the HGSVC graph. In addition to aligning to the 1000GP and HGSVC graphs, we also used Giraffe and VG-MAP to align to primary graphs containing only the GRCh38 reference. We also ran Giraffe and HISAT2 using different pre-defined parameterizations in addition to the default settings: fast Giraffe and HISAT2 sensitive and very sensitive. For a positive control, we aligned reads to our positive control graphs using Giraffe run with a more exhaustive parameterization.
+    Reads were stratified by their mapping quality. Each point in the plot represents to a mapping quality value and the size of a point corresponds the number of reads it represents. GraphAligner did not assign mapping qualities, so it is represented as a single point. For the remaining mappers, the mapping quality values varied from 0 to 60, except for Bowtie2, which had a maximum mapping quality of 42.}
+    \label{fig:aim2_supplement_novaseq_rocs}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseqxten-all.pdf}
+    \caption[Simulated read mapping with HiSeq X Ten reads]{\textbf{Simulated read mapping with HiSeq X Ten reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseqxten_rocs}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseq2500-all.pdf}
+    \caption[Simulated read mapping with HiSeq 2500 reads]{\textbf{Simulated read mapping with HiSeq 2500 reads.} Each panel shows 1-precision (FDR) vs. recall for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseq2500_rocs}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_novaseq6000-qq.pdf}
+    \caption[QQ plot for simulated read mapping with NovaSeq 6000 reads]{\textbf{QQ plot for simulated read mapping with NovaSeq 6000 reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_novaseq6000_qq}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseqxten-qq.pdf}
+    \caption[QQ plot for simulated read mapping with HiSeq X Ten reads]{\textbf{QQ plot for simulated read mapping with HiSeq X Ten reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseqxten_qq}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\linewidth]{aim2_supplement_hiseq2500-qq.pdf}
+    \caption[QQ plot for simulated read mapping with HiSeq 2500 reads]{\textbf{QQ plot for simulated read mapping with HiSeq 2500 reads.} Each panel shows a QQ plot for a simulated read mapping experiment. Reads were mapped as single-end (A, B) or paired-end (C, D) to the 1000GP graph and GRCh38 reference (A, C) or the HGSVC graph and GRCh38 reference (B, D).}
+    \label{fig:aim2_supplement_hiseq2500_qq}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth]{aim2_haplotype_sampling.pdf}
+    \caption[Assessing haplotype sampling and path cover]{\textbf{Assessing haplotype sampling and path cover.} Each panel shows recall vs. FDR for a simulated read mapping experiment. (A,C) Haplotype sampling, for samplings from 1 to 128 using the 1000GP derived graph (Table \ref{tab:mapping_accuracy_1000gp_sampled_gbwt}). Includes for comparison a graph containing just the primary reference (here GRCh38) and, separately, the full 1000GP GBWT. For both (A) single-ended and (C) paired-end mapping, performance saturates at around 64x coverage of sampled haplotypes, and exceeds that of mapping to the full GBWT containing all haplotypes. (B,D) Analogous path cover experiments, using the HGSVC graph (Table \ref{tab:mapping_accuracy_hgsvc_cover_gbwt}). All GBWT indexes were evaluated with simulated NovaSeq 6000 reads.}
+    \label{fig:aim2_supplement_haplotype_sampling}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.7\linewidth]{speed_yeast.pdf}
+    \caption[Mapping speed on yeast data]{\textbf{Mapping speed on yeast data.} Each mapper was run on a dataset of 1 million real HiSeq 2500 reads from the DBVPG6044 strain on an AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
+    \label{fig:speed_yeast}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.75\linewidth]{aim2_supplement_speed.pdf}
+    \caption[Mapping speed on human data]{\textbf{Mapping speed on human data.} Each mapper was run on a dataset of 1 million real NovaSeq 6000 (A,B), HiSeq X Ten (C,D), or HiSeq 2500 (E,F) reads on a AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
+    \label{fig:aim2_supplement_speed}
+\end{figure}
+
+\subsection{Supplementary tables}
 
 
-
-\section{Supplementary tables}
+\newcommand{\mapindexes}[1]{\indexurl{#1.xg} & \indexurl{#1.gcsa} & \indexurl{#1.gcsa.lcp} & & & &}
+\newcommand{\giraffeindexes}[1]{\indexurl{#1.xg} & & & \indexurl{#1.gbwt} & \indexurl{#1.min} & \indexurl{#1.gg} & \indexurl{#1.dist}}
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|r|r|r|l|l|l|}
-     \hline
-    Pipeline                    & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
-     \hline
-    BWA-MEM                     & 3,866,030          & 22,519          & 24,392          & 0.9942          & 0.9937          & 0.9940          \\
-    DRAGEN                      & 3,867,353          & \textbf{17,369} & 23,071          & \textbf{0.9955} & 0.9941          & 0.9948
-         \\
-    VG-MAP                      & 3,868,494          & 20,393          & 21,929          & 0.9948          & 0.9944          & 0.9946          \\
-    Giraffe primary             & 3,869,525          & 18,308          & 20,909          & 0.9953          & 0.9946          & 0.9950          \\
-    Giraffe                     & \textbf{3,871,501} & 17,787          & \textbf{18,917} & 0.9954          & \textbf{0.9951} & \textbf{0.9953} \\
-    fast Giraffe                & 3,870,737          & 18,964          & 19,681          & 0.9951          & 0.9949          & 0.9950          \\
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    \end{tabular}
-\caption[Genotyping evaluation with VCFeval in HG002 using 150bp paired-end reads against the grch38-based graph reference]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
-\label{tab:vcfeval_high_conf_2x150_hg002_grch38}
-\end{table}
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and  \\
+              &         &            &            & MAPQ 60           \\
+        \hline
+        single  & Giraffe primary	    & 96.94     & 91.81     & 0.00195 \\
+                & VG-MAP primary        & 97.03     & 92.16     & 0.00125 \\
+                & Bowtie2	            & 96.84     & 82.85     & 0.00075 \\
+                & BWA-MEM	            & 97.05     & 91.07     & 0.00085 \\
+                & Minimap2	            & 96.82     & 90.32     & 0.00250 \\
+                & Giraffe	            & 97.00     & 92.29     & 0.00040 \\
+                & fast Giraffe	        & 96.86     & 89.82     & 0.00075 \\
+                & VG-MAP               	& 96.99     & 91.90     & 0.00005 \\
+                & GraphAligner	        & 88.95     & -         & - \\
+                & HISAT2	            & 96.69     & 95.83     & 0.20275 \\
+                & HISAT2 sens       	& 96.76     & 95.92     & 0.22765 \\
+                & HISAT2 vsens	        & 96.83     & 96.00     & 0.25985 \\
+                & Giraffe control	    & 97.12     & 93.14     & 0.00020 \\
 
-
-\begin{table}[H]
-    \centering
-    \begin{tabular}{|l|c|r|r|r|l|l|l|}
-     \hline
-    Pipeline                                     & Var Type & TP                 & FN              & FP             & Recall            & Precision         & F1                \\
-     \hline
-     \multirow{2}{*}{BWA-MEM}                    & INDELS   & 522,406            & 3,063           & 2,723          & 0.994171          & 0.995028          & 0.994599          \\
-                                                 & SNPS     & 3,343,857          & 21,270          & 19,780         & 0.993679          & 0.994121          & 0.993900          \\
-    \hline
-    \multirow{2}{*}{DRAGEN}                      & INDELS   & 522,618            & 2,851           & \textbf{2,478} & 0.994574          & \textbf{0.995475} & 0.995025 \\
-                                                 & SNPS     & 3,344,971          & 20,156          & \textbf{14,868}& 0.994010          & \textbf{0.995576} & 0.994793          \\
-    \hline
-    \multirow{2}{*}{VG-MAP}                      & INDELS   & 522,643            & 2,826           & 2,689          & 0.994622          & 0.995092          & 0.994857          \\
-                                                 & SNPS     & 3,346,085          & 19,042          & 17,677         & 0.994341          & 0.994746          & 0.994544          \\
-    \hline
-    \multirow{2}{*}{Giraffe primary}             & INDELS   & 522,657            & 2,812           & 2,608          & 0.994649          & 0.995239          & 0.994944          \\
-                                                 & SNPS     & 3,347,097          & 18,030          & 15,672         & 0.994642          & 0.995341          & 0.994991          \\
-    \hline
-    \multirow{2}{*}{Giraffe}                     & INDELS   & \textbf{522,864}   & \textbf{2,605}  & 2,550          & \textbf{0.995043} & 0.995346          & \textbf{0.995194}          \\
-                                                 & SNPS     & \textbf{3,348,882} & \textbf{16,245} & 15,213         & \textbf{0.995173} & 0.995479          & \textbf{0.995326} \\
-    \hline
-    \multirow{2}{*}{fast Giraffe}                & INDELS   & 522,825            & 2,644           & 2,583          & 0.994968          & 0.995286          & 0.995127          \\
-                                                 & SNPS     & 3,348,156          & 16,971          & 16,358         & 0.994957          & 0.995139          & 0.995048          \\
-    \hline
+        \hline
+        paired  & Giraffe Primary	& 98.25     & 94.22     & 0.00135 \\
+                & VG-MAP Primary	& 98.28     & 94.47     & 0.00140 \\
+                & Bowtie2       	& 98.25     & 88.75     & 0.00150 \\
+                & BWA-MEM	        & 98.33     & 93.95     & 0.00120 \\
+                & Minimap2      	& 98.01     & 93.25     & 0.02710 \\
+                & Giraffe	        & 98.27     & 94.34     & 0.00015 \\
+                & fast Giraffe  	& 98.24     & 92.84     & 0.00015 \\
+                & VG-MAP           	& 98.29     & 94.41     & 0.00050 \\
+                & HISAT2        	& 97.95     & 97.50     & 0.31180 \\
+                & HISAT2 sens   	& 98.11     & 97.73     & 0.38640 \\
+                & HISAT2 vsens	    & 98.18     & 97.66     & 0.27780 \\
+                & Giraffe control	& 98.33     & 94.70     & 0.00000 \\
+ 
+ 
+        \hline
+        
     \end{tabular}
-\caption[Genotyping evaluation with Hap.py in HG002 using 150bp paired-end reads against the grch38-based graph reference]{Hap.py performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
-\label{tab:happy_high_conf_2x150_hg002_grch38}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \begin{tabular}{|l|r|r|r|l|l|l|}
-     \hline
-    Pipeline               & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
-     \hline
-    BWA-MEM                & 3,869,299          & 16,380          & 21,134          & 0.9958          & 0.9946          & 0.9952          \\
-    DRAGEN                 & 3,870,566          & \textbf{12,863} & 19,864          & \textbf{0.9967} & 0.9949          & 0.9958          \\
-    VG-MAP                 & 3,871,583          & 14,332          & 18,859          & 0.9963          & 0.9952          & 0.9957          \\
-    Giraffe primary        & 3,873,118          & 13,640          & 17,331          & 0.9965          & 0.9955          & 0.9960          \\
-    Giraffe                & \textbf{3,874,597} & 13,359          & \textbf{15,840} & 0.9966          & \textbf{0.9959} & \textbf{0.9962} \\
-    fast Giraffe           & 3,874,104          & 13,695          & 16,334          & 0.9965          & 0.9958          & 0.9961          \\
-    \hline
-    \end{tabular}
-\caption[Genotyping evaluation with VCFeval in HG002-exclusive variants using 250bp paired reads against the grch38-based graph reference]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 250bp paired reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
-\label{tab:vcfeval_high_conf_2x250_hg002_grch38}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \begin{tabular}{|l|c|r|r|r|l|l|l|}
-     \hline
-    Pipeline                                     & Var Type & TP                 & FN              & FP             & Recall            & Precision         & F1                \\
-     \hline
-     \multirow{2}{*}{BWA-MEM}                    & INDELS   & 522,705            & 2,764           & 2,214          & 0.994740          & 0.995955          & 0.995347          \\
-                                                 & SNPS     & 3,346,810          & 18,317          & 14,146         & 0.994557          & 0.995792          & 0.995174          \\
-    \hline
-    \multirow{2}{*}{DRAGEN}                      & INDELS   & 522,672            & 2,797           & \textbf{2,043} & 0.994677          & \textbf{0.996265} & 0.995471 \\
-                                                 & SNPS     & 3,348,116          & 17,011          & \textbf{10,799}& 0.994945          & \textbf{0.996786} & 0.995865          \\
-    \hline
-    \multirow{2}{*}{VG-MAP}                      & INDELS   & 522,905            & 2,564           & 2,260          & 0.995121          & 0.995873          & 0.995497          \\
-                                                 & SNPS     & 3,348,892          & 16,235          & 12,052         & 0.995176          & 0.996415          & 0.995795          \\
-    \hline
-    \multirow{2}{*}{Giraffe primary}             & INDELS   & 522,834            & 2,635           & 2,316          & 0.994985          & 0.995771          & 0.995378          \\
-                                                 & SNPS     & 3,350,496          & 14,631          & 11,308         & 0.995652          & 0.996637          & 0.996144          \\
-    \hline
-    \multirow{2}{*}{Giraffe}                     & INDELS   & \textbf{523,148}   & \textbf{2,321}  & 2,177          & \textbf{0.995583} & 0.996026          & \textbf{0.995804}          \\
-                                                 & SNPS     & \textbf{3,351,672} & \textbf{13,455} & 11,167         & \textbf{0.996002} & 0.996680          & \textbf{0.996341} \\
-    \hline
-    \multirow{2}{*}{fast Giraffe}                & INDELS   & 523,119            & 2,350           & 2,178          & 0.995528          & 0.996024          & 0.995776          \\
-                                                 & SNPS     & 3,351,207          & 13,920          & 11,503         & 0.995863          & 0.996580          & 0.996222          \\
-    \hline
-    \end{tabular}
-\caption[Genotyping evaluation with Hap.py in HG002 using 250bp paired reads against the grch38-based graph reference]{Hap.py performance of linear and graph-based pipelines against grch38-based references using 250bp paired reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
-\label{tab:happy_high_conf_2x250_hg002_grch38}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \begin{tabular}{|l|r|r|r|l|l|l|}
-     \hline
-    Pipeline                    & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
-     \hline
-    BWA-MEM                     & 3,370,702          & 1,678           & 4,248           & 0.9995          & 0.9987          & 0.9991         \\
-    DRAGEN                      & 3,371,710          & \textbf{1,462}  & 3,296           & \textbf{0.9996} & 0.9990          & 0.9993         \\
-    VG-MAP                      & 3,372,845          & 3,121           & 2,141           & 0.9991          & \textbf{0.9994} & 0.9992         \\
-    Giraffe primary             & 3,371,806          & 1,501           & 3,143           & \textbf{0.9996} & 0.9991          & 0.9993        \\
-    Giraffe                     & \textbf{3,373,044} & 1,543           & \textbf{1,934}  & 0.9995          & \textbf{0.9994} & \textbf{0.9995}\\
-    fast Giraffe                & 3,372,947          & 1,684           & 2,028           & 0.9995          & \textbf{0.9994} & 0.9994 \\
-    \hline
-    \end{tabular}
-\caption[Genotyping evaluation with VCFeval in HG002 using 150bp paired-end reads against the grch38-based graph reference in 1000GP variant regions]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions only found in the 1000GP variant set used in constructing the graph references used by VG-MAP and Giraffe. Best values in each column are highlighted in bold text.}
-\label{tab:vcfeval_high_conf_1000GP_only_2x150_hg002_grch38}
+    \caption[Mapping accuracy on NovaSeq 6000 reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on NovaSeq 6000 reads mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_1kg_novaseq6000}
+    \label{tab:first}
 \end{table}
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|r|r|r|l|l|l|}
-     \hline
-    Pipeline                    & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
-     \hline
-    BWA-MEM                     & 331,019            & 20,738          & 19,972          & 0.9410          & 0.9429          & 0.9420         \\
-    DRAGEN                      & 331,381            & \textbf{15,819} & 19,643          & \textbf{0.9544} & 0.9438          & 0.9491          \\
-    VG-MAP                      & 331,322            & 17,144          & 19,694          & 0.9508          & 0.9437          & 0.9472          \\
-    Giraffe primary             & 333,362            & 16,714          & 17,638          & 0.9523          & 0.9496          & 0.9509         \\
-    Giraffe                     & \textbf{334,122}   & 16,144          & \textbf{16,901} & 0.9539          & \textbf{0.9517} & \textbf{0.9528}\\
-    fast Giraffe                & 333,452            & 17,182          & 17,569          & 0.9510          & 0.9498          & 0.9504         \\
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    \end{tabular}
-\caption[Genotyping evaluation with VCFeval in HG002 using 150bp paired-end reads against the grch38-based graph reference in regions excluding the 1000GP variant set]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions excluding the 1000GP variant set used in constructing the graph references used by VG-MAP and Giraffe. Best values in each column are highlighted in bold text.}
-\label{tab:vcfeval_high_conf_1000GP_excluded_2x150_hg002_grch38}
-\end{table}
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 96.93     & 91.68     & 0.00260 \\
+                & VG-MAP primary	& 97.04     & 92.17     & 0.00085 \\
+                & Bowtie2       	& 96.75     & 83.73     & 0.00185 \\
+                & BWA-MEM	        & 97.03     & 91.06     & 0.00050 \\
+                & Minimap2	        & 96.80     & 90.28     & 0.00200 \\
+                & Giraffe	        & 97.00     & 92.19     & 0.00080 \\
+                & fast Giraffe	    & 96.83     & 90.02     & 0.00095 \\
+                & VG-MAP	        & 97.00     & 91.92     & 0.00020 \\
+                & GraphAligner 	    & 88.82     & -         & - \\
+                & HISAT2	        & 96.51     & 95.75     & 0.30710 \\
+                & HISAT2 sens	    & 96.62     & 95.89     & 0.33675 \\
+                & HISAT2 vsens  	& 96.71     & 95.93     & 0.32535 \\
+                & Giraffe control	& 97.11     & 93.04     & 0.00020 \\
 
+        \hline
+        paired  & Giraffe primary	& 98.27     & 94.27     & 0.00155 \\
+                & VG-MAP primary   	& 98.29     & 94.48     & 0.00125 \\
+                & Bowtie2       	& 98.21     & 89.07     & 0.00245 \\
+                & BWA-MEM	        & 98.33     & 93.94     & 0.00095 \\
+                & Minimap2	        & 98.00     & 93.23     & 0.02785 \\
+                & Giraffe	        & 98.28     & 94.40     & 0.00025 \\
+                & fast Giraffe	    & 98.24     & 93.13     & 0.00010 \\
+                & VG-MAP	        & 98.30     & 94.41     & 0.00060 \\
+                & HISAT2        	& 97.71     & 97.33     & 0.37060 \\
+                & HISAT2 sens   	& 97.95     & 97.66     & 0.45725 \\
+                & HISAT2 vsens	    & 98.12     & 97.68     & 0.33825 \\
+                & Giraffe control	& 98.35     & 94.72     & 0.00010 \\
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq X Ten reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq X Ten reads mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_1kg_hiseqxten}
+\end{table}
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|r|r|r|l|l|l|}
-     \hline
-    Pipeline                    & TP                 & FP             & FN              & Precision       & Sensitivity     & F-measure       \\
-     \hline
-    BWA-MEM + Dragen            & 3,807,536          & 23,443         & 24,345          & 0.9939          & 0.9936          & 0.9938          \\
-    Giraffe + Dragen            & \textbf{3,812,963} & 18,143         & \textbf{18,922} & 0.9953          & \textbf{0.9951} & 0.9952          \\
-    Dragen MAP + Dragen         & 3,808,794          & 18,738         & 23,081          & 0.9951          & 0.9940          & 0.9945          \\
-    BWA-MEM + DeepVariant       & 3,808,209          & \textbf{6,680} & 24,173          & \textbf{0.9982} & 0.9937          & 0.9960          \\
-    Giraffe + DeepVariant       & 3,812,716          & 6,889          & 19,898          & \textbf{0.9982} & 0.9948          & \textbf{0.9965} \\
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    \end{tabular}
-\caption[Genotyping evaluation between DeepVariant calls of bwamem and giraffe 1000GP alignments against grch38-based references with RTG VCFeval in HG003 using 35x 150bp paired-end reads]{RTG VCFeval performance between DeepVariant and Dragen variant callers on grch38-based linear and giraffe 1000GP mappers using 150bp paired-end reads with respect to HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
-\label{tab:deepvariant_vcfeval_high_conf_2x150_50x_hg003_grch38}
-\end{table}
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.80     & 94.95     & 0.00530 \\
+                & VG-MAP primary	& 97.90     & 93.99     & 0.00200 \\
+                & Bowtie2	        & 96.48     & 84.41     & 0.00435 \\
+                & BWA-MEM       	& 97.84     & 92.61     & 0.05120 \\
+                & Minimap2      	& 97.69     & 93.17     & 0.05120 \\
+                & Giraffe       	& 97.84     & 95.04     & 0.00295 \\
+                & fast Giraffe	    & 97.72     & 94.06     & 0.00285 \\
+                & VG-MAP           	& 97.90     & 93.90     & 0.00115 \\
+                & GraphAligner 	    & 92.93     & -         & - \\
+                & HISAT2        	& 94.94     & 95.03     & 0.72205 \\
+                & HISAT2 sens	    & 96.03     & 96.01     & 0.67535 \\
+                & HISAT2 vsens  	& 96.41     & 96.11     & 0.51385 \\
+                & Giraffe control	& 97.94     & 95.27     & 0.00110 \\
 
+        \hline
+        paired  & Giraffe primary	& 98.68     & 95.84     & 0.00350 \\
+                & VG-MAP primary   	& 98.76     & 95.67     & 0.00225 \\
+                & Bowtie2	        & 97.30     & 87.87     & 0.00715 \\
+                & BWA-MEM       	& 98.71     & 94.64     & 0.05415 \\
+                & Minimap2      	& 98.39     & 92.68     & 0.08915 \\
+                & Giraffe	        & 98.69     & 95.87     & 0.00205 \\
+                & fast Giraffe  	& 98.65     & 95.25     & 0.00180 \\
+                & VG-MAP	        & 98.76     & 95.66     & 0.00130 \\
+                & HISAT2        	& 95.52     & 95.80     & 0.78575 \\
+                & HISAT2 sens	    & 96.84     & 97.16     & 0.81925 \\
+                & HISAT2 vsens	    & 97.32     & 97.27     & 0.56045 \\
+                & Giraffe control	& 98.78     & 95.91     & 0.00145 \\
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq 2500 reads mapped to the 1000GP graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq 2500 mapped to the 1000GP graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_1kg_hiseq2500}
+\end{table}
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|c|r|r|r|l|l|l|}
-     \hline
-    Pipeline                                     & Var Type & TP                & FN             & FP            & Recall            & Precision         & F1                \\
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    \multirow{2}{*}{BWA-MEM+Dragen}           & INDELS    & 501,574           & 2,927          & 2,789         & 0.994198          & 0.994696      & 0.994447 \\
-                                                & SNPS      & 3,306,162         & 21,331         & 20,642        & 0.993589          & 0.993797      & 0.993693 \\
-    \hline
-    \multirow{2}{*}{Giraffe+Dragen}           & INDELS    & \textbf{501,993}  & \textbf{2,508} & 2,566         & \textbf{0.995029} & 0.995122      & 0.995075 \\
-                                                & SNPS      & \textbf{3,311,179}& \textbf{16,317}& 15,563        & \textbf{0.995096} & 0.995323      & 0.995210 \\
-    \hline
-    \multirow{2}{*}{DragenMAP+Dragen}        & INDELS    & 501,770           & 2,731          & 2,644         & 0.994587          & 0.994972      & 0.994780 \\
-                                                & SNPS      & 3,307,236         & 20,260         & 16,078        & 0.993911          & 0.995163      & 0.994537 \\
-    \hline
-    \multirow{2}{*}{BWA-MEM+DeepVariant}      & INDELS    & 501,433           & 3,068          & \textbf{1,393}& 0.993919          & \textbf{0.997342} & 0.995627 \\
-                                                & SNPS      & 3,306,484         & 21,012         & 5,268         & 0.993685          & 0.998410          & 0.996042 \\
-    \hline
-    \multirow{2}{*}{Giraffe+DeepVariant}      & INDELS    & 501,919           & 2,582          & 1,851         & 0.994882          & 0.996476          & \textbf{0.995678} \\
-                                                & SNPS      & 3,310,338         & 17,158         & \textbf{5,015}& 0.994844          & \textbf{0.998488} & \textbf{0.996662} \\
-    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and\\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.09     & 92.68     & 0.04840 \\
+                & VG-MAP primary   	& 97.17     & 92.62     & 0.04685 \\
+                & Bowtie2	        & 97.02     & 84.20     & 0.02645 \\
+                & BWA-MEM	        & 97.16     & 91.61     & 0.03925 \\
+                & Minimap2	        & 96.96     & 90.93     & 0.04220 \\
+                & Giraffe	        & 97.17     & 92.63     & 0.00070 \\
+                & fast Giraffe	    & 97.02     & 90.25     & 0.00070 \\
+                & VG-MAP	        & 97.24     & 92.57     & 0.00035 \\
+                & GraphAligner 	    & 91.94     & -      & - \\
+                & HISAT2	        & 97.10     & 96.36     & 0.20975 \\
+                & HISAT2 sens   	& 97.16     & 96.46     & 0.24702 \\
+                & HISAT2 vsens	    & 97.24     & 96.58     & 0.30368 \\
+                & Giraffe control	& 97.26     & 93.42     & 0.00005 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.29     & 94.65     & 0.05480 \\
+                & HISAT2	        & 96.51     & 95.75     & 0.30710 \\
+                & Bowtie2       	& 98.28     & 89.54     & 0.03220 \\
+                & BWA-MEM       	& 98.38     & 94.34     & 0.04275 \\
+                & Minimap2      	& 98.09     & 93.72     & 0.06800 \\
+                & Giraffe       	& 98.39     & 94.57     & 0.00040 \\
+                & fast Giraffe  	& 98.35     & 93.14     & 0.00040 \\
+                & VG-MAP	        & 98.41     & 94.74     & 0.00385 \\
+                & HISAT2	        & 98.24     & 97.95     & 0.35377 \\
+                & HISAT2 sens   	& 98.36     & 98.17     & 0.44951 \\
+                & HISAT2 vsens	    & 98.41     & 98.16     & 0.39059 \\
+                & Giraffe control	& 98.47     & 94.96     & 0.00005 \\
+
+        \hline
+        
     \end{tabular}
-\caption[Genotyping evaluation between DeepVariant calls of bwamem and giraffe 1000GP alignments against grch38-based references with Hap.py in HG003 using 35x 150bp paired-end reads]{Hap.py performance between DeepVariant and Dragen variant callers on grch38-based linear and giraffe 1000GP mappers using 150bp paired-end reads with respect to HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
-\label{tab:deepvariant_happy_high_conf_2x150_50x_hg003_grch38}
+    \caption[Mapping accuracy on NovaSeq 6000 reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on NovaSeq 6000 reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_hgsvc_novaseq6000}
 \end{table}
 
 \begin{table}[H]
-  \centering
-  \begin{tabular}[t]{|r|l|r|r|}
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    Pre-empted jobs & Dataset & Workflows & Core.hour \\
-    \hline
-    0               & all     & 2910      & 194.388   \\
-    0               & MESA    & 1221      & 197.981   \\
-    0               & 1000GP  & 1689      & 191.791   \\
-    \hline
-    1               & all     & 1358      & 220.046   \\
-    1               & MESA    & 517       & 222.205   \\
-    1               & 1000GP  & 841       & 218.718   \\
-    \hline
-    2               & all     & 439       & 240.992   \\
-    2               & MESA    & 172       & 248.246   \\
-    2               & 1000GP  & 267       & 236.318   \\
-    \hline
-    3+              & all     & 209       & 270.351   \\
-    3+              & MESA    & 88        & 282.007   \\
-    3+              & 1000GP  & 121       & 261.874   \\
-    \hline
-  \end{tabular}
-  \caption[Computing resources used when genotyping 2,000 samples from the MESA cohort and 3,202 samples from the 1000 Genomes Project dataset]{{\bf Computing resources used when genotyping 2,000 samples from the MESA cohort and 3,202 samples from the 1000 Genomes Project dataset.}
-    Pre-emptible instances on Google Cloud were used for all jobs.
-    As expected, the average resource required was higher for workflows where some jobs were pre-empted.
-    Note: The sequencing reads were down-sampled to $\sim$20x coverage.}
-  \label{tab:svwdl-corehours}
-\end{table}
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.10     & 92.57     & 0.04850 \\
+                & VG-MAP primary   	& 97.20     & 92.63     & 0.04585 \\
+                & Bowtie2       	& 96.94     & 85.15     & 0.02865 \\
+                & BWA-MEM       	& 97.19     & 91.61     & 0.03885 \\
+                & Minimap2	        & 96.96     & 90.86     & 0.04140 \\
+                & Giraffe	        & 97.16     & 92.52     & 0.00100 \\
+                & fast Giraffe  	& 97.01     & 90.43     & 0.00130 \\
+                & VG-MAP	        & 97.27     & 92.58     & 0.00035 \\
+                & GraphAligner   	& 91.88     & -         & - \\
+                & HISAT2	        & 96.92     & 96.32     & 0.30077 \\
+                & HISAT2 sens   	& 97.02     & 96.45     & 0.34180 \\
+                & HISAT2 vsens	    & 97.11     & 96.52     & 0.34185 \\
+                & Giraffe control	& 97.27     & 93.34     & 0.00015 \\
 
-
-\begin{table}[H]
-  \centering
-  \begin{tabular}[t]{|l|c|c|c|l|}
-    \hline
-    \multirow{2}{*}{SV type} & \multicolumn{3}{|l|}{Number of non-reference alleles} & \multirow{2}{*}{Proportion of variants} \\
-                             & Offspring                                             & Mother & Father &                       \\
-    \hline
-    \multirow{5}{*}{Deletion}     & 1                                                     & 0      & 0      & 0.0255409             \\
-                             & 0                                                     & 2      & 0      & 0.0052011             \\
-                             & 0                                                     & 0      & 2      & 0.0049499             \\
-                             & 2                                                     & 0      & 0      & 0.0042598             \\
-                             & 1                                                     & 2      & 2      & 0.0021315             \\
-    \hline
-    \multirow{5}{*}{Insertion}     & 1                                                     & 0      & 0      & 0.0224647             \\
-                             & 1                                                     & 2      & 2      & 0.0045391             \\
-                             & 0                                                     & 2      & 0      & 0.0037815             \\
-                             & 0                                                     & 0      & 2      & 0.0036952             \\
-                             & 2                                                     & 0      & 0      & 0.0030867             \\
-    \hline
-  \end{tabular}
-  \caption[Most frequent Mendelian errors for SVs in the 1000GP trios]{{\bf Most frequent Mendelian error for SVs in the 1000GP trios.}
-    The table shows the 5 most frequent Mendelian error configurations for deletions and insertions.
-    For both SV types, the most frequent error is a predicted heterozygous variant in the offspring while both parents are predicted homozygous for the reference allele.
-    Here all variants were included, i.e. no filtering based on genotype qualities was applied.
-  }
-  \label{tab:sv-mend-error}
-\end{table}
-
-
-\begin{table}[H]
-  \centering
-  \begin{tabular}[t]{|l|l|r|r|r|}
-    \hline
-    Public SV & Dataset & Novel & Prop. of SVs in        & Prop. of common SVs in \\
-    catalog   &         &       & public catalog covered & public catalog covered \\
-    \hline
-     1000GP   & MESA    & 0.932 & 0.160                  & 0.844                  \\
-              & 1000GP  & 0.932 & 0.160                  & 0.844                  \\
-    \hline
-    gnomAD-SV & MESA    & 0.673 & 0.088                  & 0.628                  \\
-              & 1000GP  & 0.670 & 0.087                  & 0.627                  \\
-    \hline
-  \end{tabular}
-  \caption[Comparing SVs genotyped in the two datasets with two public SV catalogs]{{\bf Comparing SVs genotyped in the two datasets (MESA: 2,000 samples; 1000GP: 2,504 samples) with two public SV catalogs.}
-    The table shows the proportion of novel SVs (not present in the public SV catalogs), and the proportion of SVs in the public catalog that are present in our results, either consering all variants or common variants (frequency greater or equal to 5\%).
-    Deletions were matched if their reciprocal overlap was at least 30\%, insertions if located at less than 200 bp from each other and their size at least 30\% similar.
-    Annotated simple repeats were used to extend the matching.
-  }
-  \label{tab:novel-sv}
+        \hline
+        paired  & Giraffe primary	& 98.29     & 94.76     & 0.05470 \\
+                & VG-MAP primary   	& 98.35     & 94.84     & 0.04750 \\
+                & Bowtie2       	& 98.25     & 89.98     & 0.03325 \\
+                & BWA-MEM        	& 98.40     & 94.36     & 0.04280 \\
+                & Minimap2      	& 98.07     & 93.69     & 0.06815 \\
+                & Giraffe	        & 98.38     & 94.68     & 0.00050 \\
+                & fast Giraffe	    & 98.34     & 93.43     & 0.00030 \\
+                & VG-MAP           	& 98.43     & 94.79     & 0.00420 \\
+                & HISAT2	        & 98.04     & 97.82     & 0.40337 \\
+                & HISAT2 sens   	& 98.23     & 98.13     & 0.51313 \\
+                & HISAT2 vsens	    & 98.36     & 98.16     & 0.42937 \\
+                & Giraffe control	& 98.48     & 95.01     & 0.00005 \\
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq X Ten reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq X Ten reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_hgsvc_hiseqxten}
 \end{table}
 
 \begin{table}[H]
-  {\href{https://www.science.org/doi/suppl/10.1126/science.abg8871/suppl_file/science.abg8871_table_s21.zip}{supptab-S18-sv-eqtl.xlsx}}
-  \caption[Gene families enriched in SV-eQTLs and eGenes with only SV-eQTLs]{{\bf Gene families enriched in SV-eQTLs and eGenes with only SV-eQTLs.}
-    Excel file containing two sheets.
-    The first lists gene families enriched in SV-eQTLs.
-    The gene families were defined using the HUGO Gene Nomenclature Committee (HGNC) resource.
-    The second lists the SV-eQTLs in genes where there are only SV associations, i.e. no SNV/indel eQTLs.
-  }
-  \label{tab:file-sveqtl}
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & Giraffe primary	& 97.89     & 95.34     & 0.06980 \\
+                & VG-MAP primary	& 97.98     & 94.38     & 0.05715 \\
+                & Bowtie2	        & 96.56     & 85.74     & 0.03405 \\
+                & BWA-MEM	        & 97.93     & 93.08     & 0.09025 \\
+                & Minimap2	        & 97.78     & 93.59     & 0.09525 \\
+                & Giraffe	        & 97.97     & 95.30     & 0.00430 \\
+                & fast Giraffe	    & 97.87     & 94.35     & 0.00340 \\
+                & VG-MAP           	& 98.08     & 94.35     & 0.00170 \\
+                & GraphAligner 	    & 94.86     & -         & -0 \\
+                & HISAT2	        & 95.32     & 95.47     & 0.69207 \\
+                & HISAT2 sens   	& 96.36     & 96.41     & 0.66196 \\
+                & HISAT2 vsens  	& 96.73     & 96.58     & 0.54163 \\
+                & Giraffe control	& 98.07     & 95.53     & 0.00075 \\
+
+        \hline
+        paired  & Giraffe primary	& 98.70     & 96.10     & 0.06465 \\
+                & VG-MAP primary	& 98.79     & 95.93     & 0.05845 \\
+                & Bowtie2       	& 97.33     & 88.71     & 0.03860 \\
+                & BWA-MEM       	& 98.75     & 94.97     & 0.09730 \\
+                & Minimap2      	& 98.44     & 93.02     & 0.12805 \\
+                & Giraffe       	& 98.80     & 96.04     & 0.00295 \\
+                & fast Giraffe  	& 98.78     & 95.44     & 0.00280 \\
+                & VG-MAP        	& 98.89     & 95.89     & 0.00280 \\
+                & HISAT2        	& 95.86     & 96.18     & 0.75739 \\
+                & HISAT2 sens   	& 97.09     & 97.51     & 0.82688 \\
+                & HISAT2 vsens	    & 97.55     & 97.72     & 0.63802 \\
+                & Giraffe control	& 98.91     & 96.13     & 0.00165 \\
+
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy on HiSeq 2500 reads mapped to the HGSVC graph/GRCh38 reference]{\textbf{Mapping accuracy on HiSeq 2500 reads mapped to the HGSVC graph/GRCh38 reference} Each mapper was run on 2 million simulated reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60. *Bowtie2 had a maximum mapping quality of 42. GraphAligner did not assign mapping quality}
+    \label{tab:mapping_accuracy_hgsvc_hiseq2500}
 \end{table}
 
 \begin{table}[H]
-  \centering
-  \begin{tabular}[t]{|l|r|r|l|l|}
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    Task            & CPU & Memory (Gb) & Dataset & Core.hour        \\
-    \hline
-    CRAM conversion & 8   & 50          & all     & 12.867 (7.6\%)   \\
-    CRAM conversion & 8   & 50          & MESA    & 13.22 (7.6\%)    \\
-    CRAM conversion & 8   & 50          & 1000GP  & 12.636 (7.6\%)   \\
-    \hline
-    mapping         & 32  & 100         & all     & 146.261 (75.2\%) \\
-    mapping         & 32  & 100         & MESA    & 157.66 (77.1\%)  \\
-    mapping         & 32  & 100         & 1000GP  & 138.782 (73.9\%) \\
-    \hline
-    genotyping      & 16  & 100         & all     & 24.891 (17.2\%)  \\
-    genotyping      & 16  & 100         & MESA    & 27.112 (15.4\%)  \\
-    genotyping      & 16  & 100         & 1000GP  & 23.433 (18.5\%)  \\
-    \hline
-  \end{tabular}
-  \caption[Computing resources for each task in the WDL genotyping workflow]{{\bf Computing resources for each task in the WDL genotyping workflow.}
-    The table shows numbers for the workflows where no jobs were pre-empted.}
-  \label{tab:svwdl-task}
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & primary	& 97.09     & 92.68     & 0.04840 \\
+                & 1x	    & 97.13     & 92.65     & 0.01840 \\
+                & 2x	    & 97.15     & 92.64     & 0.01095 \\
+                & 4x	    & 97.16     & 92.63     & 0.00260 \\
+                & 8x	    & 97.17     & 92.63     & 0.00075 \\
+                & 16x	    & 97.17     & 92.63     & 0.00070 \\
+                & 32x	    & 97.17     & 92.63     & 0.00070 \\
+                & 64x   	& 97.17     & 92.63     & 0.00070 \\
+                & 128x	    & 97.17     & 92.63     & 0.00070 \\
+                & full  	& 97.17     & 92.64     & 0.00045 \\
+
+                
+                
+
+        \hline
+        paired  & primary	& 98.29     & 94.65     & 0.05480 \\
+                & 1x	    & 98.35     & 94.60     & 0.01820 \\
+                & 2x	    & 98.36     & 94.59     & 0.01105 \\
+                & 4x	    & 98.38     & 94.58     & 0.00240 \\
+                & 8x	    & 98.38     & 94.57     & 0.00060 \\
+                & 16x	    & 98.39     & 94.57     & 0.00040 \\
+                & 32x	    & 98.39     & 94.57     & 0.00040 \\
+                & 64x	    & 98.39     & 94.57     & 0.00040 \\
+                & 128x	    & 98.39     & 94.57     & 0.00040 \\
+                & full  	& 98.39     & 94.58     & 0.00035 \\
+                
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy using path cover GBWT]{\textbf{Mapping accuracy using path cover GBWT} GBWTs were generated using the path cover for the HGSVC graph, with between 1 and 128 haplotypes. For comparison, GBWTs with only the primary GRCh38 reference and with the full HGSVC set were used. Giraffe was run with each GBWT on 2 million simulated NovaSeq 6000 reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60.}
+    \label{tab:mapping_accuracy_hgsvc_cover_gbwt}
 \end{table}
 
-
-
-
-%\todo{Tables below are not cited in main text}
-\begin{table}[htb]
-  \centering
-  \begin{tabular}{c|c|c|c|c|c|c|c|c|c|c|c}
-    Mapper & Reads & Graph & vg version & Docker & xg & gcsa & lcp & gbwt & min & gg & dist  \\
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
     \hline
-    VG-MAP & 150~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \mapindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter} \\
-    VG-MAP & 250~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \mapindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter} \\
-    Giraffe & 150~bp & Primary & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/primary_reference/primaryhs38d1}\\
-    Giraffe & 250~bp & Primary & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/primary_reference/primaryhs38d1}\\
-    Giraffe & 150~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
-    Giraffe & 250~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
-    Fast Giraffe & 150~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
-    Fast Giraffe & 250~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
-  \end{tabular}
-  \caption{Table of parameters for GRCh38-based genotyping experiment vg runs}
-  \label{tab:vgruns_grch38}
-  \label{tab:last}
+        Pairing & Mapper & \% Correct & \% MAPQ 60 & \% Incorrect and \\
+               &         &            &            & MAPQ 60          \\
+        \hline
+        single  & primary   & 96.94     & 91.81     & 0.00195 \\
+                & 1x        & 96.97     & 91.98     & 0.00120 \\
+                & 2x        & 96.99     & 92.11     & 0.00075 \\
+                & 4x        & 97.00     & 92.19     & 0.00065 \\
+                & 8x        & 97.00     & 92.24     & 0.00050 \\
+                & 16x       & 97.00     & 92.27     & 0.00055 \\
+                & 32x       & 97.00     & 92.28     & 0.00045 \\
+                & 64x       & 97.00     & 92.29     & 0.00040 \\
+                & 128x      & 97.00     & 92.29     & 0.00035 \\
+                & full      & 96.94     & 92.10     & 0.00040 \\
+
+        \hline
+        paired  & primary   & 98.25     & 94.22     & 0.00135 \\
+                & 1x        & 98.26     & 94.28     & 0.00060 \\
+                & 2x        & 98.26     & 94.31     & 0.00025 \\
+                & 4x        & 98.26     & 94.33     & 0.00010 \\
+                & 8x        & 98.26     & 94.34     & 0.00010 \\
+                & 16x       & 98.26     & 94.34     & 0.00015 \\
+                & 32x       & 98.26     & 94.34     & 0.00015 \\
+                & 64x       & 98.27     & 94.34     & 0.00015 \\
+                & 128x      & 98.26     & 94.33     & 0.00010 \\
+                & full      & 98.25     & 94.25     & 0.00015 \\
+                
+
+        \hline
+        
+    \end{tabular}
+    \caption[Mapping accuracy using haplotype sampled GBWT]{\textbf{Mapping accuracy using haplotype sampled GBWT} GBWTs were generated by sampling the 1000GP haplotypes, sampling between 1 and 128 haplotypes. For comparison, GBWTs with only the primary GRCh38 reference and with the full 1000GP set were used. Giraffe was run with each GBWT on 2 million simulated NovaSeq 6000 reads and assessed for the percent of reads that were mapped correctly, the percent of reads that were assigned mapping quality 60, and the percent of reads that were incorrect and assigned mapping quality 60.}
+    \label{tab:mapping_accuracy_1000gp_sampled_gbwt}
 \end{table}
 
 
