@@ -159,6 +159,41 @@ Next, I describe a short read-to-pangenome mapper (Chapter~\ref{chapter:sr-giraf
 \chapter{Background}
 \label{chapter:background}
 
+\section{Read sequencing technologies}
+\label{sec:background:sequencing}
+
+The earliest DNA sequencing techniques, including Sanger sequencing and Maxam-Gilbert sequencing, produced reads on the order of tens of base pairs \cite{sanger_sequencing_1975,sanger_sequencing_1977,maxam_sequencing_1980}
+Sanger sequencing became the basis of the first sequencing machines, which produced read hundreds of base pairs in length \cite{sequencing_review_2016}.
+Briefly, Sanger sequencing uses fluorescently-labelled nucleotides that stop DNA extension during DNA polymerization, resulting in random-length fragments of DNA that end with a labelled nucleotide. 
+The fragments are then separated by length using gel electrophoresis and the nucleotide at each position is detected from the fluorescent label \cite{sanger_sequencing_1977}. 
+Sanger sequencing has low throughput but it is highly accurate and it is still used for targeted sequencing of small regions.
+These early sequencing technologies, including Sanger sequencing, are collectively known as "first-generation sequencing".
+
+The next generation of sequencing technologies, known as "next-generation" or "second-generation" sequencing, parallelized the sequencing reactions to hugely increase throughput \cite{sequencing_review_2016}. 
+Illumina sequencing became the dominant next-generation sequencing technology.
+In Illumina sequencing, adapter sequences are ligated on each side of a DNA fragment, which bind to complementary oligonucleotides on a flow cell.
+The fragments are clonally amplified and each copy remains tethered to the flow cell to create clusters of identical fragments, which are then sequenced using a sequencing-by-synthesis technique that adds fluorescently-labelled nucleotides one at a time \cite{shendure_illumina_2008}.
+The DNA fragments are sequenced from both sides, producing paired end reads comprised of two short sequences and an approximate distance between them.
+Modern Illumina sequencing machines can produce millions or even billions of paired end reads with lengths between $100$ and $300$ base pairs in a single run \cite{illumina_sequencing_nodate}.
+
+Although Illumina has been the most prominent short read sequencing technology \cite{sr_review_2025}, the recent expiration of several of Illumina's patents has led to new emerging technologies.
+Element Biosciences' Aviti platform produces reads with a similar lengths and throughput as Illumina reads but with higher accuracy \cite{element_sequencing_2024}. 
+Ultima Genomics' UG 100 Platform is a low-cost option for short reads of $~300$ base pairs \cite{ultima_sequencing_2022}. 
+Other new technologies include MGI's DNBseq, Pacific Bioscience's Onso, Singular Genomics' G4, and Thermo Fisher Scientific's Ion Torrent \cite{sr_review_2025}.
+
+The term "third generation sequencing" is generally associated with long read single molecule sequencing.
+Sequencing is performed on individual molecules of DNA, without a separate amplification step \cite{sequencing_review_2016}.
+Currently, the two predominant long read sequencing technologies are single-molecule real-time (SMRT) sequencing or nanopore sequencing \cite{lr_review_23}.
+SMRT sequencing, developed by Pacific Biosciences (PacBio), uses hairpin adapters to circularize a double stranded fragment of DNA, which can be sequenced multiple times in a single pass \cite{pacbio_2019}.
+PacBio High Fidelity (HiFi) reads are between 10 and 25~kbp long with accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
+
+The other major long read sequencing technology, nanopore sequencing, uses an electric current to drive a DNA molecule through a nanopore embedded in a membrane.
+The current across the membrane changes according to the sequence that is passed through the nanopore, and the change in current can be translated into the DNA sequence using base calling algorithms \cite{wang_nanopore_2021}.
+Nanopore sequencing machines from Oxford Nanopore Technologies can produce sequencing reads on the order of 10-100~kbp in length, and up to 882~kbp \cite{nanopore_ultralong_2018}, with accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
+Nanopores are also capable of detecting DNA base modifications such as methylation \cite{wang_nanopore_2021}. 
+
+
+
 \section{Linear reference genomes}
 \label{sec:background:linear-genomes}
 
@@ -172,13 +207,13 @@ The initial copy of the human reference genome was assembled from the genetic se
 This genome assembly is a ``linear'' genome that represents just one haplotype copy of a genome and no variations.
 Moreover, it is a mosaic of a few individuals and represents alleles that are unique to those individuals, and combinations of alleles that did not exist in any individual.
 The current reference genome, GRCh38 \cite{schneider_evaluation_2017}, has build upon the initial assembly by closing gaps, adding alternate loci, improving annotations, and generally improving the quality of the sequence.
-However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated\cite{schneider_evaluation_2017,nurk_complete_2022}.
+However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated \cite{schneider_evaluation_2017,nurk_complete_2022}.
 Furthermore, 93\% of the sequence in GRCh38 is derived from just eleven individuals and about 70\% is derived from a single individual.
 
 Many of these problems are improved upon in the recent CHM13 assembly, which is the first complete sequence of a human genome \cite{nurk_complete_2022}.
 Unlike the GRCh38 assembly, the CHM13 assembly is the sequence of a single individual (a haploid hydatidiform mole) and includes the 8\% of the genome that remained unsequenced in GRCh38\cite{nurk_complete_2022}.
 Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haplotype sequence.
-Although the GRCh38 assembly contains some alternate loci, these are are limited to 176 genomic regions\cite{schneider_evaluation_2017} and it is still essentially a linear genome that does not represent genetic diversity.
+Although the GRCh38 assembly contains some alternate loci, these are are limited to 176 genomic regions \cite{schneider_evaluation_2017} and it is still essentially a linear genome that does not represent genetic diversity.
 
 %Surveys of human genetic variation: hapmap, 1000genomes, hgsvc
 
@@ -216,7 +251,6 @@ Historically, many of these projects focused on European populations...
 As sequencing technologies \cite{} and genome assembly algorithms \cite{} have advanced, these projects have been producing increasingly high-quality genomes and variant catalogues. 
 This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides a roadmap for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_2021}.
 
-
 \section{Pangenomics}
 \label{sec:background:pangenomes}
 
@@ -225,7 +259,7 @@ This greater view of human genetic diversity both highlights the shortcomings of
 A pangenome is an alternative to a standard linear genome.
 Pangenomes are collections of genomic sequences from a population and the alignments among them.
 Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_draft_2023}.
-With recent advances in genome sequencing and assembly algorithms, it is now feasible to produce reference-quality and even telomere-to-telomere genome sequences with ever-decreasing time and cost\cite{}.
+With recent advances in genome sequencing and assembly algorithms, it is now feasible to produce reference-quality and even telomere-to-telomere genome sequences with ever-decreasing time and cost \cite{}.
 This technical capability coupled with our current understanding of population genetics makes it feasible to select and sequence genomes to accurately and efficiently represent the genetic diversity of a population. 
 
 The first human reference pangenomes are just beginning to be produced.
@@ -237,7 +271,7 @@ The HPRC released three different alignments of these haplotype sequences, const
 
 There have been several recent efforts to establish ancestry-specific pangenomes for underrepresented populations \cite{pacific_pangenome_2024,chinese_pangenome_2023,arab_pangenome_2024}.
 These pangenomes have been curated to represent the genetic diversity of Pacific, Chinese, or Arab populations.
-For example, the Chinese pangenome sampled individuals from the 36 of the 55 officially recognized ethnic minority groups and 8 linguistic groups, with the goal of eventually representing all recognized minority groups as well as unrecognized groups\cite{chinese_pangenome_2023}.
+For example, the Chinese pangenome sampled individuals from the 36 of the 55 officially recognized ethnic minority groups and 8 linguistic groups, with the goal of eventually representing all recognized minority groups as well as unrecognized groups \cite{chinese_pangenome_2023}.
 These population-specific efforts aim to improve understanding of genetic variants and diseases that are specific to or more frequent in each population.
 
 
@@ -326,7 +360,6 @@ Based on this property, snarls and chains can be treated as nodes within their p
 A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
 In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
 
-
 \section{Read mapping}
 \label{sec:background:mapping}
 
@@ -348,15 +381,6 @@ In this step, the seed alignment is extended using a dynamic programming algorit
 Read mapping algorithms vary depending on the type of input reads and whether the target reference is a linear genome or a graph.
 Earlier algorithms were designed to aligner shorter reads to linear genomes.
 These algorithms were later adapted to align longer reads and to align to graph references.
-
-
-\section{Read sequencing technologies}
-\label{sec:background:sequencing}
-
-The earliest sequencing technology produced reads...
-
-Illumina, pac bio, nanopore
-error profiles, lengths, etc
 
 \subsection{Seeding}
 
@@ -391,19 +415,19 @@ Some algorithms replace clusters with chains, which additionally require that se
 
 
 %TODO: This was in the lr giraffe paper. If it ends up in the actual version then this needs to be rewritten
-%This recursion can be made more efficient using an auxiliary data structure for finding the best score within a range of previous anchors and a gap cost that can be efficiently computed without considering the sequence content of the read and reference\cite{myers_chaining_1995}.
-%The chaining problem is well studied in a linear context\cite{myers_chaining_1995,shibuya_linear_chaining_2003,abouelhoda_linear_chaining_2005,jain_linear_chaining_2022}, but fewer algorithms exist to do chaining against graph references.
+%This recursion can be made more efficient using an auxiliary data structure for finding the best score within a range of previous anchors and a gap cost that can be efficiently computed without considering the sequence content of the read and reference \cite{myers_chaining_1995}.
+%The chaining problem is well studied in a linear context \cite{myers_chaining_1995,shibuya_linear_chaining_2003,abouelhoda_linear_chaining_2005,jain_linear_chaining_2022}, but fewer algorithms exist to do chaining against graph references.
 %Chaining becomes a more difficult problem in a graph context because the order and distance between anchors is ambiguous in a graph and can be expensive to compute.
 
-%Many existing graph chaining algorithms are based on an algorithm from Makinen et al. that uses a minimum path cover of the graph to determine reachability and distance\cite{makinen_dag_chaining_2019}.
-%The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths\cite{makinen_dag_chaining_2019}.
-%The chaining algorithm in GraphChainer builds on this algorithm and allows overlaps of one node between anchors\cite{ma_graphchainer_2023}.
-%PanAligner's chaining algorithm expands this technique to cyclic graphs\cite{panaligner_2024}.
+%Many existing graph chaining algorithms are based on an algorithm from Makinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
+%The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
+%The chaining algorithm in GraphChainer builds on this algorithm and allows overlaps of one node between anchors \cite{ma_graphchainer_2023}.
+%PanAligner's chaining algorithm expands this technique to cyclic graphs \cite{panaligner_2024}.
 
 %Minigraph uses a chaining algorithm based on that of Minimap2.
 %Minigraph uses two rounds of chaining: it first produces linear chains within individual nodes in the graph, then makes chains of the linear chains taking into account the topology of the graph.
 %The second round of chaining finds graph distances by enumerating up to 16 shortest-path walks between between pairs of linear chains.
-%Of those paths, it chooses the path with length closest to the gap in the read for computing the gap cost\cite{minigraph_2020}.
+%Of those paths, it chooses the path with length closest to the gap in the read for computing the gap cost \cite{minigraph_2020}.
 
 \subsection{Alignment}
 
@@ -421,7 +445,7 @@ This has a similar effect to banded alignment in that it forces the alignment to
 
 Mapping reads to graph references is a much newer and far less well studied problem than mapping to linear references.
 In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
-Existing graph mappers generally follow the same seed-and-extend structure as linear mappers\cite{eizenga_pangenome_2020}.
+Existing graph mappers generally follow the same seed-and-extend structure as linear mappers \cite{eizenga_pangenome_2020}.
 Most graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}; others use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019}.
 %Specific indexes: GCSA, GBWT, r-index?
 
@@ -1056,25 +1080,25 @@ Recent releases of the reference human genome assembly attempted to address thes
 These alternate sequences represent diversity in localized regions of the genome \cite{church_modernizing_2011}.
 However, to date, these limited additions have not found widespread use. By contrast, pangenomes encode information about many complete genome assemblies and their homologies (the sequences that are shared between genomes by virtue of descending from a common ancestral sequence).
 Pangenomes are emerging as a replacement for linear reference assemblies to help mitigate these problems \cite{noauthor_computational_2016,sherman_pan-genomics_2020,ballouz_is_2019}.
-They can particularly improve genotyping of structural variants\cite{hickey_vgsv_2020}.
+They can particularly improve genotyping of structural variants \cite{hickey_vgsv_2020}.
 
-Pangenomes are frequently formulated as sequence graphs\cite{eizenga_pangenome_2020}—mathematical graphs that represent the homology relationships between multiple sequences.
+Pangenomes are frequently formulated as sequence graphs \cite{eizenga_pangenome_2020}—mathematical graphs that represent the homology relationships between multiple sequences.
 Several algorithms have been developed for mapping sequences to sequence graphs.
 None has yet made mapping the short sequencing reads from widely used DNA sequencers, such as those made by Illumina, to a structurally complex pangenome a practical option for large-scale applications.
-The original VG-MAP algorithm\cite{garrison_variation_2018} maps to complex sequence graphs that contain cycles produced by duplications and complex genomic rearrangements\cite{garrison_variation_2018}.
+The original VG-MAP algorithm \cite{garrison_variation_2018} maps to complex sequence graphs that contain cycles produced by duplications and complex genomic rearrangements \cite{garrison_variation_2018}.
 However, VG-MAP is at least an order of magnitude slower than popular linear genome mappers that have comparable accuracy.
 Given that mapping is frequently a bottleneck in genome analysis, the cost of VG-MAP has proven prohibitive. Other pangenome mappers have different capabilities and limitations.
-Some are faster but are limited to acyclic graphs that contain variation at relatively low density\cite{kim_hisat2_2019}, and some can map to arbitrary sequence graphs but are designed for long reads\cite{rautiainen_graphaligner_2020}. Other tools are not open source and are thus unavailable for general testing and customization\cite{sevenbridges_2019,illumina_dragen_2019}, and some additionally cannot run on commodity computing environments\cite{illumina_dragen_2019}.
+Some are faster but are limited to acyclic graphs that contain variation at relatively low density \cite{kim_hisat2_2019}, and some can map to arbitrary sequence graphs but are designed for long reads \cite{rautiainen_graphaligner_2020}. Other tools are not open source and are thus unavailable for general testing and customization \cite{sevenbridges_2019,illumina_dragen_2019}, and some additionally cannot run on commodity computing environments \cite{illumina_dragen_2019}.
 
 \section{Results}
 \subsection{Giraffe: Fast, haplotype-aware pangenome mapping}
-When a sequence graph reference\cite{noauthor_computational_2016} (Figure \ref{fig:aim2_supplement_graph-example}) is substituted for the traditional linear reference (Figure \ref{fig:aim2_fig1} A), it can reduce reference allele bias by including more alleles\cite{garrison_variation_2018}. 
+When a sequence graph reference \cite{noauthor_computational_2016} (Figure \ref{fig:aim2_supplement_graph-example}) is substituted for the traditional linear reference (Figure \ref{fig:aim2_fig1} A), it can reduce reference allele bias by including more alleles \cite{garrison_variation_2018}. 
 However, it also expands the size of the alignment search space from a few linear chromosome strings to a combinatorially large number of paths in the graph.
-This has made our previous graph mappers slower than linear mappers\cite{garrison_variation_2018}.
+This has made our previous graph mappers slower than linear mappers \cite{garrison_variation_2018}.
 Giraffe solves this problem by considering the paths that are observed in individuals’ genomes: the reference haplotypes.
 We use the two haplotypes (one from each parent) that each individual has in their genome and trace them as paths through the sequence graph.
 The graph describes which positions in the haplotypes are equivalent, whereas the haplotypes describe the subset of the possible paths in the graph to consider.
-Giraffe uses a graph Burrows-Wheeler transform (GBWT) index\cite{siren_indexes_2020} to store and query a graph’s haplotypes efficiently.
+Giraffe uses a graph Burrows-Wheeler transform (GBWT) index \cite{siren_indexes_2020} to store and query a graph’s haplotypes efficiently.
 
 Giraffe’s strategy of aligning to haplotype paths has two key benefits.
 First, it prioritizes alignments that are consistent with known sequences, thereby avoiding combinations of alleles that are biologically unlikely.
@@ -1083,7 +1107,7 @@ This deals effectively with complex graph regions where most paths represent rar
 
 We designed Giraffe to minimize the amount of gapped alignment that is performed.
 Computing gapped alignments, in which sequences are allowed to gain or lose bases relative to each other, is much more expensive than gapless alignment because it requires pairwise dynamic programming algorithms.
-Most Illumina sequencing errors are substitutions\cite{schirmer2016illumina}, and common true indels relative to the traditional linear reference should already be present in the haplotypes; therefore, almost all reads will have a gapless alignment to some stored haplotype.
+Most Illumina sequencing errors are substitutions \cite{schirmer2016illumina}, and common true indels relative to the traditional linear reference should already be present in the haplotypes; therefore, almost all reads will have a gapless alignment to some stored haplotype.
 Hence, we try to align each read without gaps before resorting to dynamic programming.
 
 Giraffe follows the common seed-and-extend approach used by most existing mappers (Section \ref{subsec:aim2:giraffe-methods}.
@@ -1094,21 +1118,21 @@ These heuristics are configurable, and we present two presets: default Giraffe (
 \begin{figure}
     \centering
     \includegraphics[width=.5\linewidth]{aim2_fig1.pdf}
-    \caption[Haplotype mapping]{\textbf{Haplotype mapping.} (A) A region of the CASP12 gene in the 1000GP graph, illustrating complex local variation. The observed haplotypes (the colored ribbons of width log-proportional to population frequency) represent only a subset of the possible paths through the graph. (B to F) An overview of Giraffe. Input structures are shown in (B): Giraffe takes as input each read to map, the sequence graph reference to map against, and the GBWT of known haplotypes to restrict to. The input read is represented as a series of colored rectangles. The haplotype sequences in the GBWT are similarly represented as series of rectangles, split according to the nodes they correspond to in the sequence graph. Nodes in the sequence graph and haplotypes in the GBWT are colored according to homology with the read. Haplotype minimizer seeding is shown in (C): Seeds are identified using an index of minimizers (subsets of sequences of specified length k)\cite{Roberts2004} over the sequences of all the GBWT haplotypes. A matching minimizer between the read and the GBWT haplotypes constitutes a seed. The minimizers (black boxes) in the read are enumerated and the matching minimizers in the haplotypes are identified using the minimizer index. Seed clustering is shown in (D): Minimizer instances in the graph are clustered by the minimum graph distance (t, measured in nucleotides) between them\cite{chang_distance_2020}. Seed extension along haplotypes is shown in (E): Minimizers in high-scoring clusters are extended linearly to form maximal gapless local alignments. Haplotype-restricted gapped alignment is shown in (F): Giraffe is designed on the assumption that for most reads, it will be possible to gaplessly extend seed alignments all the way to the ends of the read, allowing the algorithm to stop at the previous step. However, any remaining gaps in the alignment between read and graph are resolved by gapped alignment in this final step.}
+    \caption[Haplotype mapping]{\textbf{Haplotype mapping.} (A) A region of the CASP12 gene in the 1000GP graph, illustrating complex local variation. The observed haplotypes (the colored ribbons of width log-proportional to population frequency) represent only a subset of the possible paths through the graph. (B to F) An overview of Giraffe. Input structures are shown in (B): Giraffe takes as input each read to map, the sequence graph reference to map against, and the GBWT of known haplotypes to restrict to. The input read is represented as a series of colored rectangles. The haplotype sequences in the GBWT are similarly represented as series of rectangles, split according to the nodes they correspond to in the sequence graph. Nodes in the sequence graph and haplotypes in the GBWT are colored according to homology with the read. Haplotype minimizer seeding is shown in (C): Seeds are identified using an index of minimizers (subsets of sequences of specified length k)\cite{Roberts2004} over the sequences of all the GBWT haplotypes. A matching minimizer between the read and the GBWT haplotypes constitutes a seed. The minimizers (black boxes) in the read are enumerated and the matching minimizers in the haplotypes are identified using the minimizer index. Seed clustering is shown in (D): Minimizer instances in the graph are clustered by the minimum graph distance (t, measured in nucleotides) between them \cite{chang_distance_2020}. Seed extension along haplotypes is shown in (E): Minimizers in high-scoring clusters are extended linearly to form maximal gapless local alignments. Haplotype-restricted gapped alignment is shown in (F): Giraffe is designed on the assumption that for most reads, it will be possible to gaplessly extend seed alignments all the way to the ends of the read, allowing the algorithm to stop at the previous step. However, any remaining gaps in the alignment between read and graph are resolved by gapped alignment in this final step.}
     \label{fig:aim2_fig1}
 \end{figure}
 
 \subsection{Pangenome references for evaluation}
 To evaluate Giraffe, we built two human genome reference graphs based on the GRCh38 reference assembly.
 One (the 1000GP graph) contained mostly small [<50 base pairs (bp)] variants from the 1000 Genomes Project \cite{1000gp_2015}.
-The other (the HGSVC graph) contained entirely SVs ($\geq$50 bp) from the Human Genome Structural Variant Consortium\cite{chaisson_sv_2019}.
+The other (the HGSVC graph) contained entirely SVs ($\geq$50 bp) from the Human Genome Structural Variant Consortium \cite{chaisson_sv_2019}.
 The 1000GP graph contained data from 2503 individuals, with one (NA19239) held out for benchmarking.
 It was built from 76,749,431 SNVs; 3,177,111 small indels (<50 bp); and 181 larger SVs ($/geq$50 bp).
 The HGSVC graph contained data from three individuals sequenced with long reads: HG00514, HG00733, and NA19240.
 The HGSVC graph contained 78,106 larger SVs ($\leq$50 bp). Both graphs are available for reuse (see Data and materials availability in the Acknowledgments).
 
 \subsection{Giraffe and VG-MAP map accurately to human pangenomes}
-We evaluated Giraffe for mapping human data by simulating paired-end reads for two individuals (Section \ref{subsec:aim2:readsim}): NA19240, who has available genotypes for the HGSVC variants \cite{chaisson_sv_2019}, and NA19239, who has available genotypes for the 1000GP variants\cite{1000gp_2015}.
+We evaluated Giraffe for mapping human data by simulating paired-end reads for two individuals (Section \ref{subsec:aim2:readsim}): NA19240, who has available genotypes for the HGSVC variants \cite{chaisson_sv_2019}, and NA19239, who has available genotypes for the 1000GP variants \cite{1000gp_2015}.
 Simulated read sets were mapped using Giraffe and competing tools (Section \ref{subsec:aim2:readmapping}).
 We examined the accuracy of single- and paired-end mapping (Figure \ref{fig:aim2_fig2}).
 We looked at a variety of input read sets and evaluated the calibration of reported mapping quality, which is a standard measure of mapping uncertainty (Figures.\ref{fig:aim2_supplement_novaseq_rocs},\ref{fig:aim2_supplement_hiseqxten_rocs},\ref{fig:aim2_supplement_hiseq2500_rocs},\ref{fig:aim2_supplement_novaseq6000_qq},\ref{fig:aim2_supplement_hiseqxten_qq},\ref{fig:aim2_supplement_hiseq2500_qq} and Tables \ref{tab:mapping_accuracy_1kg_novaseq6000},\ref{tab:mapping_accuracy_1kg_hiseqxten},\ref{tab:mapping_accuracy_1kg_hiseq2500},\ref{tab:mapping_accuracy_hgsvc_novaseq6000},\ref{tab:mapping_accuracy_hgsvc_hiseqxten},\ref{tab:mapping_accuracy_hgsvc_hiseq2500}).
@@ -1124,7 +1148,7 @@ This suggests that the gains from using a genome graph are higher when the graph
 \end{figure}
 
 \subsection{Haplotype sampling improves read mapping}
-Having rare variants or errors in the graph and haplotypes may reduce mapping accuracy by creating opportunities for false-positive mappings\cite{Pritt2018}.
+Having rare variants or errors in the graph and haplotypes may reduce mapping accuracy by creating opportunities for false-positive mappings \cite{Pritt2018}.
 Mapping reads to regions with many distinct local haplotypes can also be slow.
 Additionally, Giraffe needs a mechanism to synthesize haplotypes for graph components where no haplotype variation is known.
 To overcome these issues, Giraffe includes mechanisms for creating synthetic haplotype paths.
@@ -1551,7 +1575,7 @@ This section contains materials from the supplement of short read giraffe paper 
 \label{subsec:aim2:giraffe-methods}
 \subsubsection{Definitions}
 
-We work in the \vocab{sequence graph} model, as defined in the vg toolkit\cite{garrison_variation_2018}.
+We work in the \vocab{sequence graph} model, as defined in the vg toolkit \cite{garrison_variation_2018}.
 In a sequence graph, each node $v$ is labeled by a nucleotide sequence $\nodelabel{v}$.
 A sequence graph is a bidirected graph, which means that each node $v$ has two \vocab{sides}: left side $\leftside{v}$ and right side $\rightside{v}$.
 Edges connect unordered pairs of sides of nodes.
@@ -1590,7 +1614,7 @@ See Figure~\ref{fig:aim2_supplement_graph-example} B for an example.
 
 A GBWT index encodes the topology of the graph induced by the indexed haplotypes.
 This is not always identical to the original sequence graph, as some nodes and edges may not be visited by any haplotype.
-In order to support the \vocab{handle graph} interface\cite{eizenga2020efficient}, we need some additional structures:
+In order to support the \vocab{handle graph} interface \cite{eizenga2020efficient}, we need some additional structures:
 \begin{itemize}
 
 \item Determining whether a node with a given identifier exists in the graph is relatively slow with the GBWT interface.
@@ -1620,7 +1644,7 @@ We therefore provide a mechanism for creating artificial haplotype paths for a g
     \item \vocab{Downsample} the haplotypes proportionally in graph components that have them and create an artificial path cover of components with no haplotypes.
 \end{enumerate}
 
-We generate the paths with a greedy algorithm similar to that used by the Pan-genome Seed Index\cite{Ghaffaari2019}.
+We generate the paths with a greedy algorithm similar to that used by the Pan-genome Seed Index \cite{Ghaffaari2019}.
 We create $n$ paths in each weakly connected component and consider the frequencies of subpaths (local haplotypes) of length $k = 4$ nodes.
 By default, we use $n = 64$ in the downsampling mode and $n = 16$ in other modes.
 The algorithm generates paths in the directed GBWT graph and later transforms them into paths in the bidirected sequence graph.
@@ -1652,7 +1676,7 @@ Similar results were seen for both experiments in paired end mapping mode (Figur
 \subsubsection{Minimizer seeds}
 \label{subsec:aim2:minimizers}
 Giraffe maps reads using the common seed-and-extend approach.
-We use a minimizer index\cite{Roberts2004} for finding seeds.
+We use a minimizer index \cite{Roberts2004} for finding seeds.
 We define a $(w,k)$-\vocab{minimizer} as the $k$-mer with the smallest hash value in a window of $w$ consecutive $k$-mers and their reverse complements (in a $k+w-1$~bp window).
 As we expect that sequencing errors are rare and that common variants are present in the haplotypes, we use longer than usual minimizers: $k = 29$ and $w = 11$ by default.
 
@@ -1779,7 +1803,7 @@ We now consider alignments to the entire subgraph, not just to the paths consist
 By default, we use the dozeu algorithm.
 If we had minimizer hits in the rescue subgraph, we use the best extension as the seed for dynamic programming.
 Otherwise, we find the best alignment for the first 15~bp of the read and use it as the seed.
-As a slower but more accurate alternative to dozeu, we also support using the GSSW alignment implementation\cite{zhao_gssw_2013}.
+As a slower but more accurate alternative to dozeu, we also support using the GSSW alignment implementation \cite{zhao_gssw_2013}.
 While dozeu must extend a seed, GSSW always finds the best alignment in the subgraph.
 
 
@@ -1803,7 +1827,7 @@ In the above, $\bar{x}$ and $s^{2}$ are the maximum likelihood estimates of the 
 
 \subsubsection{Mapping quality estimation}
 
-Mapping uncertainty is conventionally summarized as a \vocab{mapping quality}: the Phred-scaled\cite{ewing1998base} posterior probability of a mapping error. To compute mapping qualities, we take advantage of the interpretation of an alignment score as the log-likelihood of a Viterbi path through a pair hidden Markov model \cite{durbin1998biological}. With this model, the posterior probability of the maximum likelihood alignment $\hat A$ of a query sequence $Q$ to the reference $R$ can be expressed as
+Mapping uncertainty is conventionally summarized as a \vocab{mapping quality}: the Phred-scaled \cite{ewing1998base} posterior probability of a mapping error. To compute mapping qualities, we take advantage of the interpretation of an alignment score as the log-likelihood of a Viterbi path through a pair hidden Markov model \cite{durbin1998biological}. With this model, the posterior probability of the maximum likelihood alignment $\hat A$ of a query sequence $Q$ to the reference $R$ can be expressed as
 
 \begin{align}
     P(\hat A| Q, R) &= \frac{P(Q, R | \hat A)}{\sum_A P(Q,R|A)} \nonumber \\
@@ -1957,12 +1981,12 @@ However, for the GRCh38 1000GP set we filtered all variants with a frequency bel
 
 To allow more direct comparison of Giraffe to linear mappers, we created \vocab{primary graphs} containing only the primary linear reference genome (GRCh38) with no variants or alternative loci, which we used as a negative control.
 
-For the yeast experiments, a five-strain yeast multiple sequence alignment previously constructed\cite{hickey_vgsv_2020} was imported as a graph with \texttt{hal2vg} v2.1\cite{hickey_vgsv_2020}, with ancestral genomes (internal nodes in the alignment tree) excluded.
+For the yeast experiments, a five-strain yeast multiple sequence alignment previously constructed \cite{hickey_vgsv_2020} was imported as a graph with \texttt{hal2vg} v2.1\cite{hickey_vgsv_2020}, with ancestral genomes (internal nodes in the alignment tree) excluded.
 
 
 \subsubsection{Sample selection}
 
-For human evaluation, we decided to use real and simulated reads from NA19239 and NA19240. These two people are parent and child from a well-studied trio pedigree, sometimes described as ``the Yoruba trio'', recruited from among people claiming four Yoruba grandparents in Ibadan, Nigeria\cite{international2005haplotype,abyzov2011cnvnator}.
+For human evaluation, we decided to use real and simulated reads from NA19239 and NA19240. These two people are parent and child from a well-studied trio pedigree, sometimes described as ``the Yoruba trio'', recruited from among people claiming four Yoruba grandparents in Ibadan, Nigeria \cite{international2005haplotype,abyzov2011cnvnator}.
 After obtaining informed consent and collecting blood, the original collecting investigators gave donors ``an equivalent of $\sim$US \$8.00 and multivitamins worth $\sim$US \$4.00 to compensate them for their time and travel''\cite{international2004integrating}.
 Because NA19239 had haplotypes available on the 1000 Genomes variants, and NA19240 had haplotypes available on the HGSVC variants (no sample has both), and real reads from a variety of Illumina instruments were publicly available for one or the other, these two samples were chosen to avoid unduly confounding graph choice and sample genome.
 
@@ -1997,7 +2021,7 @@ Reads touching paths containing ``JTFH'' or ``KN70'' in their names were also ex
 Finally, we truncated to exactly 1~million pairs (2~million reads).
 
 For yeast, reads were simulated from the DBVPG6044 strain as contained in an \vocab{all-strain yeast graph}. 
-This graph was generated using \texttt{hal2vg} v2.1 from a previously reported Cactus alignment of the five strains in the yeast graph and an additional seven strains\cite{hickey_vgsv_2020}.
+This graph was generated using \texttt{hal2vg} v2.1 from a previously reported Cactus alignment of the five strains in the yeast graph and an additional seven strains \cite{hickey_vgsv_2020}.
 The \texttt{vg~sim} tool was used on this graph standalone, without toil-vg.
 The simulator was trained as described above, and used the same fragment length distribution and indel rate as for the human reads.
 Simulation was restricted to the paths in the graph belonging to DBVPG6044.
@@ -2056,7 +2080,7 @@ We did not find the speed of GraphAligner because it logs mapping time per read,
 We produced an allele balance plot (Figure \ref{fig:aim2_fig4}A) to assess the mapping bias of Giraffe, VG-MAP, and BWA-MEM.
 We mapped 600 million real paired-end NovaSeq 6000 reads for NA19239 to our 1000GP graph or GRCh38 using each of the mappers.
 For the graph mappers, Giraffe and VG-MAP, we projected the graph alignments to alignments to the linear GRCh38 reference using \texttt{vg surject}.
-Replicating a previous approach\cite{crysnanto_bovine_2020}, we used \texttt{bcftools mpileup} and \texttt{bcftools call}\cite{li_samtools_2011} to call variants, and filtered to high-confidence variants (root mean square read mapping quality >= 40 and depth >= 25) that were called as heterozygous for all mappers.
+Replicating a previous approach \cite{crysnanto_bovine_2020}, we used \texttt{bcftools mpileup} and \texttt{bcftools call}\cite{li_samtools_2011} to call variants, and filtered to high-confidence variants (root mean square read mapping quality >= 40 and depth >= 25) that were called as heterozygous for all mappers.
 This strategy was chosen to restrict analysis to sites that we are confident are heterozygous in NA19239 and are supported by the read set used.
 \texttt{mpileup} and \texttt{call} were run on each chromosome in parallel using GNU Parallel \cite{Tange2011a}.
 
