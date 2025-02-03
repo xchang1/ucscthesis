@@ -178,7 +178,7 @@ Furthermore, 93\% of the sequence in GRCh38 is derived from just eleven individu
 Many of these problems are improved upon in the recent CHM13 assembly, which is the first complete sequence of a human genome \cite{nurk_complete_2022}.
 Unlike the GRCh38 assembly, the CHM13 assembly is the sequence of a single individual (a haploid hydatidiform mole) and includes the 8\% of the genome that remained unsequenced in GRCh38\cite{nurk_complete_2022}.
 Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haplotype sequence.
-Although the GRCh38 assembly contains some alternate loci, these are are limited to 176 genomic regions\cite{schneider_evaluation_2017} and it is still essentially a linear genome.
+Although the GRCh38 assembly contains some alternate loci, these are are limited to 176 genomic regions\cite{schneider_evaluation_2017} and it is still essentially a linear genome that does not represent genetic diversity.
 
 %Surveys of human genetic variation: hapmap, 1000genomes, hgsvc
 
@@ -215,6 +215,7 @@ Projects such as the dbSNP database \cite{sherry_dbsnp_2001}, International HapM
 Historically, many of these projects focused on European populations...
 As sequencing technologies \cite{} and genome assembly algorithms \cite{} have advanced, these projects have been producing increasingly high-quality genomes and variant catalogues. 
 This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides a roadmap for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_2021}.
+
 
 \section{Pangenomics}
 \label{sec:background:pangenomes}
@@ -262,7 +263,7 @@ Edges in sequence graphs connect node sides and traversals of nodes must enter a
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
 The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs.
 
-\subsection{Graph construction}
+\subsection{Graph construction methods}
 \label{sec:graph-construction}
 A variation graph can be constructed using a variety of different methods, each of which produces graphs with distinct characteristics.
 One option for constructing a graph is to start with a set of variants, typically represented in a variant calling format (VCF) file.
@@ -272,7 +273,7 @@ Variation graphs constructed with this method are generally topologically simple
 Graphs can also be constructed from genome assemblies.
 There are currently three methods for constructing pangenome graphs from assemblies.
 The Minigraph algorithm starts from a single reference genome and progressively aligns and incorporates each additional genome into the graph \cite{li_minigraph_2020}.
-As this algorithm is not designed to find small variants, graphs constructed with Minigraph represent only larger structural variants and are generally simple and acyclic \cite{li_minigraph_2020}.
+As this algorithm is not designed to find small variants; graphs constructed with Minigraph represent only larger structural variants and are generally simple and acyclic \cite{li_minigraph_2020}.
 The Minigraph-Cactus (MC) pipeline builds on graphs build with the Minigraph algorithm and adds smaller variants using the Cactus algorithm \cite{minigraph_cactus_2024}. 
 This introduces smaller variants, nested variants, and can create cycles in the graph.
 The PanGenome Graph Builder (PGGB) algorithm constructs a graph using a reference-free all-to-all comparison of genomes \cite{pggb_2024}.
@@ -324,14 +325,18 @@ Nodes, snarls, and chains all have the property that they are connected to the r
 Based on this property, snarls and chains can be treated as nodes within their parents, obscuring the presence of a subgraph between the boundaries of the child.
 A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
 In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
-For convenience, I will refer to nodes, snarls, and chains collectively as ``structures'' when referring to them as nested structures in a snarl tree.
 
-\section{Sequencing technologies}
-\label{sec:background:sequencing}
 
 \section{Read mapping}
 \label{sec:background:mapping}
-Most mapping algorithms, both linear and graph-based, follow a common seed-and-extend framework comprised of three main steps.
+
+Read mapping is often the first step of a genomic pipeline.
+The problem of read mapping is to take sequencing reads from a sample and find the optimal placement of the reads in a reference.
+Often in the literature, the terms ``mapping'' and ``alignment'' are used interchangeably.
+For the sake of clarity, I will use ``mapping'' to refer to the problem of finding the location of a read in a reference, and ``alignment'' to refer to the problem of finding the optimal base-level alignment.
+Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
+
+Most mapping algorithms follow a common seed-and-extend framework comprised of three main steps.
 In the first step, seeding, short ``seed'' alignments are found between the read and reference.
 Next, the seeds may be grouped together based on their locations in the reference to identify regions of the genome that are likely targets of mapping.
 This step is either done by clustering or chaining, and is omitted entirely by some mappers.
@@ -340,15 +345,50 @@ Chaining finds ordered sets of co-linear seeds that occur in the same order in t
 Once a likely location is found on the reference, the final alignment step is done.
 In this step, the seed alignment is extended using a dynamic programming algorithm to find the final base-level alignment.
 
-Often in the literature, the terms ``mapping'' and ``alignment'' are used interchangeably.
-For the sake of clarity, I will use ``mapping'' to refer to the problem of finding the location of a read in a reference, and ``alignment'' to refer to the problem of finding the optimal base-level alignment.
-Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
+Read mapping algorithms vary depending on the type of input reads and whether the target reference is a linear genome or a graph.
+Earlier algorithms were designed to aligner shorter reads to linear genomes.
+These algorithms were later adapted to align longer reads and to align to graph references.
+
+
+\section{Read sequencing technologies}
+\label{sec:background:sequencing}
+
+The earliest sequencing technology produced reads...
+
+Illumina, pac bio, nanopore
+error profiles, lengths, etc
 
 \subsection{Seeding}
 
+Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010}.
+%also Slider, which uses merge sorting
+Text indexes can be queried to find variable-length exact matches between a read and a reference; one common example of a text index is an FM-index, a low-memory index based on the Burrows Wheeler transform (BWT) \cite{li_bwa_mem_2013,langmead_bowtie2_2012,li_soap2_2009}.
+%MEMs and variants of MEMS
+
+$k$-mer based algorithms use an index that stores the locations of $k$-mers (sequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
+Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2020}.
+For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
+
+Minimizers are a method for selecting $k$-mers that is used in several mappers.
+A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
+Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
+A minimizer index stores the locations of minimizers from all windows in a sequence.
+If two sequences share a subsequence of length at least $w+k-1$, then they will share a minimizer.
+
+%syncmers, 
+
 \subsection{Clustering}
 
+
+After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
+Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
+Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
+Clustering techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
+
 \subsection{Chaining}
+
+Some algorithms replace clusters with chains, which additionally require that seeds be co-linear in the read and reference.
+
 
 %TODO: This was in the lr giraffe paper. If it ends up in the actual version then this needs to be rewritten
 %This recursion can be made more efficient using an auxiliary data structure for finding the best score within a range of previous anchors and a gap cost that can be efficiently computed without considering the sequence content of the read and reference\cite{myers_chaining_1995}.
@@ -367,27 +407,6 @@ Alignment is typically a component of a mapping algorithm, used to find the opti
 
 \subsection{Alignment}
 
-\subsection{Linear mappers}
-
-Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010}.
-%also Slider, which uses merge sorting
-Text indexes can be queried to find variable-length exact matches between a read and a reference; one common example of a text index is an FM-index, a low-memory index based on the Burrows Wheeler transform (BWT) \cite{li_bwa_mem_2013,langmead_bowtie2_2012,li_soap2_2009}.
-$k$-mer based algorithms use an index that stores the locations of $k$-mers (sequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
-Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2020}.
-For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
-
-I will be using minimizers for seeding; minimizers are a method for selecting $k$-mers that is used in several mappers.
-A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
-Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
-A minimizer index stores the locations of minimizers from all windows in a sequence.
-If two sequences share a subsequence of length at least $w+k-1$, then they will share a minimizer.
-
-
-After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
-Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
-Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
-These techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
-Chaining algorithms additionally require that seeds in a chain be co-linear\cite{li_bwa_mem_2013,li_minimap2_2018}.
 
 The final base-level alignment is found using dynamic programming, either by extending seed alignments or by aligning the entire reads to a region of the reference that is found by clustering.
 Standard dynamic programming algorithms, such as Smith-Waterman for local alignment, have prohibitive runtimes, so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
@@ -396,15 +415,20 @@ Banded alignment algorithms restrict the dynamic programming matrix to a diagona
 BLAST's X-drop algorithm fills in the matrix row by row, and stops extending each row when the best possible score is a given value X less than the best score seen in the previous row \cite{altschul_blast_1990}.
 This has a similar effect to banded alignment in that it forces the alignment to remain close to the diagonal, preventing large insertions or deletions that could align the start of one sequence to the end of another.
 
+%Wave front algorithm
+
 \subsection{Graph mappers}
 
 Mapping reads to graph references is a much newer and far less well studied problem than mapping to linear references.
 In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
 Existing graph mappers generally follow the same seed-and-extend structure as linear mappers\cite{eizenga_pangenome_2020}.
 Most graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}; others use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019}.
+%Specific indexes: GCSA, GBWT, r-index?
 
 Clustering or chaining seeds in a graph is more difficult than in a linear genome due to the added ambiguity of calculating distance in a graph.
 Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_variation_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
+In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum distance calculation and its use in clustering. 
+Many recent graph chaining algorithms are based on an algorithm from M??? et al. 
 
 Alignment is also more challenging in a graph context, particularly for cyclic graphs.
 Many mappers use linear dynamic programming algorithms that have been extended to a graph context.
@@ -412,6 +436,12 @@ One such example is partial order alignment (POA), an algorithm for aligning to 
 Most mappers are restricted to aligning to DAGs \cite{schneeberger_simultaneous_2009,kim_hisat2_2019,rakocevic_fast_2019}.
 VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_variation_2018}.
 GraphAligner maps to cyclic graphs using a graph extension of Myers' bit parallel alignment algorithm \cite{rautiainen_bit-parallel_2019}
+
+\subsection{Downstream applications of read mapping}
+%Variant calling, briefly
+
+
+
 
 \chapter{Distance Indexing}
 \label{chapter:distance}
