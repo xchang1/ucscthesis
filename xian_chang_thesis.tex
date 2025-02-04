@@ -254,8 +254,6 @@ This greater view of human genetic diversity both highlights the shortcomings of
 \section{Pangenomics}
 \label{sec:background:pangenomes}
 
-%TODO This should discuss HPRC, population pangenomes, etc
-
 A pangenome is an alternative to a standard linear genome.
 Pangenomes are collections of genomic sequences from a population and the alignments among them.
 Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_draft_2023}.
@@ -365,7 +363,7 @@ In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced wi
 
 Read mapping is often the first step of a genomic pipeline.
 The problem of read mapping is to take sequencing reads from a sample and find the optimal placement of the reads in a reference.
-Often in the literature, the terms ``mapping'' and ``alignment'' are used interchangeably.
+The terms ``mapping'' and ``alignment'' are often used interchangeably.
 For the sake of clarity, I will use ``mapping'' to refer to the problem of finding the location of a read in a reference, and ``alignment'' to refer to the problem of finding the optimal base-level alignment.
 Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
 
@@ -385,32 +383,67 @@ These algorithms were later adapted to align longer reads and to align to graph 
 \subsection{Seeding}
 
 Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010}.
-%also Slider, which uses merge sorting
-Text indexes can be queried to find variable-length exact matches between a read and a reference; one common example of a text index is an FM-index, a low-memory index based on the Burrows Wheeler transform (BWT) \cite{li_bwa_mem_2013,langmead_bowtie2_2012,li_soap2_2009}.
+
+
 %MEMs and variants of MEMS
 
+\subsubsection{k-mer indexes}
+
 $k$-mer based algorithms use an index that stores the locations of $k$-mers (sequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
-Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2020}.
+$k$-mer indexes are often stored in a hash table, and these indexes are sometimes referred to as hash-based indexes.
+Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2021}.
 For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
 
 Minimizers are a method for selecting $k$-mers that is used in several mappers.
 A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
+Lexicographical order is often used to select minimizers, but the selection $f$ can be optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
 Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
 A minimizer index stores the locations of minimizers from all windows in a sequence.
-If two sequences share a subsequence of length at least $w+k-1$, then they will share a minimizer.
+If two sequences share a subsequence of length at least $w+k-1$, then they are guaranteed to share a minimizer.
+Minimizers can be further prioritized based on their frequency in the reference.
+Weighted minimizers increase the likelihood of selecting minimizers that are less frequent in the reference, improving the number of false-positive matches \cite{jain_winnowmap_2020}.
 
-%syncmers, 
+Syncmers are another alternative to minimizers that selects $k$-mers based on the properties of the $s$-mers within a $k$-mer \cite{edgar_syncmers_2021}.
+Unlike minimizers, syncmers are selected solely based on the $k$-mers and do not depend on their context.
 
-\subsection{Clustering}
+Some $k$-mer methods allow inexact matches, also known as fuzzy seeds.
+Spaced $k$-mers allow substitutions in $k$-mers by allowing certain positions in the $k$-mer to be mismatches \cite{ma_patternhunber_2002}.
+Similarly, strobemers are used to find seeds across indels by linking multiple $k$-mers within a window together \cite{sahlin_strobemers_2021}.
 
+A universal hitting set (UHS) is an set of $k$-mers that is guaranteed to have a $k$-mer for any sequence of length $L$ \cite{ekim_randomized_2020,orenstein_compact_2016}.
+Although UHSs are theoretically useful, computing them is a difficult problem.
+
+
+
+%Could also include spaced seeds, sketching, strobmers, q-gram filter for gaps 
+
+\subsubsection{Text indexes}
+%also Slider, which uses merge sorting
+Text indexes can be queried to find exact matches between a read and a reference.
+A simple example of a text index is a suffix trie, which stores all suffixes of a template string in a tree structure where edges are labelled with characters, such that each suffix is represented in a path from the root of the tree down to a leaf \cite{li_survey_2010}.
+Because any substring of the template string must be a prefix of one of its suffixes, exact substring queries can be done in a walk down from the root of the suffix trie.
+Suffix trees represent the same information as suffix tries with reduced memory by compressing non-branching paths and replacing the characters with offsets in the original template string. 
+A suffix array represents the sort order of all suffixes of a template string.
+Using a suffix array, substring query can be done in a binary search in $O(Q + logT)$ time, where $Q$ is the length of the query and $T$ is the length of the template \cite{suffix_array_1993}. 
+The Burrows-Wheeler Transform (BWT) is found by sorting all rotations (a transformation of a string taking a prefix and moving it to the end of the string) of the template string, then taking the last character from each rotation \cite{burrows_wheeler_1994}.
+The BWT is reversible, highly compressible, and, using an additional data structure called the FM index, can perform exact match queries in time linear in the length of the query \cite{fm_index_2000}.
+The $r$-index further reduces the time for exact matching to be linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
+The $r$-index makes it feasible to index databases of whole genomes.
+
+Many existing mappers use suffix trees \cite{kurtz_versatile_2004}, suffix arrays \cite{abouelhoda_replacing_2004,hoffmann_fast_2009}, or FM indexes \cite{langmead_bowtie2_2012,li_bwa_mem_2013,li_soap2_2009,li_bwa_2009,langmead_bowtie_2009} to find exact matches as seeds.
+Unlike $k$-mer based methods, text indexes produce variable-length seeds that may be maximal exact matches or maximal unique matches.
+
+
+\subsubsection{Clustering and chaining}
 
 After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
 Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
 Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
 Clustering techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
 
-\subsection{Chaining}
 
+
+For mapping long reads, an unordered cluster of seeds was often insufficient for 
 Some algorithms replace clusters with chains, which additionally require that seeds be co-linear in the read and reference.
 
 
@@ -438,6 +471,8 @@ Some mappers use Single-Instruction Multiple-Data (SIMD) microprocessors to acce
 Banded alignment algorithms restrict the dynamic programming matrix to a diagonal ``band'' of a specified width, preventing large insertions or deletions that would exceed the width \cite{chao_aligning_1992}.
 BLAST's X-drop algorithm fills in the matrix row by row, and stops extending each row when the best possible score is a given value X less than the best score seen in the previous row \cite{altschul_blast_1990}.
 This has a similar effect to banded alignment in that it forces the alignment to remain close to the diagonal, preventing large insertions or deletions that could align the start of one sequence to the end of another.
+
+Some mappers don't use dynamic programming, but use a text index allowing inexact matching \cite{langmead_bowtie_2009,li_bwa_2009},
 
 %Wave front algorithm
 
@@ -590,7 +625,7 @@ The netgraph of a snarl is a view of the snarl where each of its child chains is
 
 Calculating distance in a graph is an extremely well studied topic.
 Many graph distance algorithms improve upon classical algorithms, such as Dijkstra's algorithm \cite{dijkstra_note_1959} and A* \cite{hart_formal_1968}, by storing precomputed data in indexes.
-These methods index the identities of important edges \cite{hutchison_partitioning_2005,lauther_extremely_2004} or distances between selected nodes \cite{dave_topcom:_2015,qiao_approximate_2012,goos_efficient_1997,akiba_fast_2013-1} then use the indexed information to speed up distance calculations.
+These methods index the identities of important edges \cite{hutchison_partitioning_2005,lauther_extremely_2004} or distances between selected nodes \cite{dave_topcom:_2015,qiao_approximate_2012,goos_efficient_1997,akiba_fast_2013} then use the indexed information to speed up distance calculations.
 Index-based algorithms must make a tradeoff between the size of the index and the speed of the distance query.
 
 \subsubsection{Distance in sequence graphs}
