@@ -396,7 +396,7 @@ For a scheme to be effective for seeding alignments, it must sparsely sample the
 
 Minimizers are a method for selecting $k$-mers that is used in several mappers.
 A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
-Lexicographical order is often used to select minimizers, but the selection $f$ can be optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
+Commonly used ordering function are lexicographic order, random hash functions, and other functions optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
 Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
 A minimizer index stores the locations of minimizers from all windows in a sequence.
 If two sequences share a subsequence of length at least $w+k-1$, then they are guaranteed to share a minimizer.
@@ -431,7 +431,8 @@ The $r$-index further reduces the time for exact matching to be linear in the le
 The $r$-index makes it feasible to index databases of whole genomes.
 
 Many existing mappers use suffix trees \cite{kurtz_versatile_2004}, suffix arrays \cite{abouelhoda_replacing_2004,hoffmann_fast_2009}, or FM indexes \cite{langmead_bowtie2_2012,li_bwa_mem_2013,li_soap2_2009,li_bwa_2009,langmead_bowtie_2009} to find exact matches as seeds.
-Unlike $k$-mer based methods, text indexes produce variable-length seeds that may be maximal exact matches or maximal unique matches.
+Unlike $k$-mer based methods, text indexes can produce variable-length seeds.
+These are often maximal exact matches (MEMs), which are exact matches that cannot be extended further on either side without a mismatch.
 
 
 \subsubsection{Clustering and chaining}
@@ -441,10 +442,8 @@ Some algorithms prioritize individual seeds based on properties of the seed, suc
 Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
 Clustering techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
 
-
-
-For mapping long reads, an unordered cluster of seeds was often insufficient for 
-Some algorithms replace clusters with chains, which additionally require that seeds be co-linear in the read and reference.
+In short read algorithms, the final alignment is generally found by extending individual seed alignments.
+For mapping long reads, this approach is intractable due to the cost of extending the alignment and clustering is generally replaced with a chaining step \cite{lr_review_2023}. 
 
 
 %TODO: This was in the lr giraffe paper. If it ends up in the actual version then this needs to be rewritten
