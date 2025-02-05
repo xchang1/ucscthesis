@@ -295,6 +295,21 @@ Edges in sequence graphs connect node sides and traversals of nodes must enter a
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
 The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs.
 
+\subsection{Variation graph representations}
+
+Standardized representations of variation graphs are important to allow interchange between tools.
+Most pangenome tools support reference Graphical Fragment Assembly (rGFA) format for representing a reference pangenome graph \cite{li_minigraph_2020}. 
+rGFA can be used as a stable reference coordinate system that extends that of the linear reference genome \cite{li_minigraph_2020}. 
+
+The vg toolkit originally supported two formats for representing variation graphs: the original VG format and XG format \cite{garrison_variation_2018}.
+Although the XG format is more memory-efficient than VG, it is a static format that does not allow for modifications.
+Three other memory-efficient, dynamic formats were later introduced: ODGI \cite{guarracino_odgi_2022}, HashGraph, and PackedGraph \cite{eizenga2020efficient}.
+VG, XG, HashGraph, and PackedGraph formats efficiently represent the sequence graph component of a variation graph but are less efficient for storing paths, and generally only a small number of reference haplotypes are included.
+The vg toolkit uses the Graph Burrows Wheeler Transform (GBWT) format for storing the full set of reference haplotypes for a variation graph \cite{siren_indexes_2020}.
+A GBZ represents a GBWT and the node sequences of the graph to represent the subset of edges in the variation graph that is supported by haplotype sequences.
+
+Indexes of graphs are discussed in Section \ref{sec:graph-mappers}.
+
 \subsection{Graph construction methods}
 \label{sec:graph-construction}
 A variation graph can be constructed using a variety of different methods, each of which produces graphs with distinct characteristics.
@@ -358,6 +373,7 @@ Based on this property, snarls and chains can be treated as nodes within their p
 A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
 In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
 
+
 \section{Read mapping}
 \label{sec:background:mapping}
 
@@ -382,8 +398,25 @@ These algorithms were later adapted to align longer reads and to align to graph 
 
 \subsection{Seeding}
 
-Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010}.
+Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010,lr_review_2023}.
 
+%also Slider, which uses merge sorting
+
+\subsubsection{Text indexes}
+Text indexes can be queried to find exact matches between a read and a reference.
+A simple example of a text index is a suffix trie, which stores all suffixes of a template string (a reference genome for example) in a tree structure where edges are labelled with characters, such that each suffix is represented in a path from the root of the tree down to a leaf \cite{li_survey_2010}.
+Because any substring of the template string must be a prefix of one of its suffixes, exact substring queries can be done in a walk down from the root of the suffix trie in time linear to the length of the query string.
+Suffix trees represent the same information as suffix tries with reduced memory by compressing non-branching paths and replacing the characters with offsets in the original template string. 
+A suffix array represents the sort order of all suffixes of a template string.
+Using a suffix array, substring query can be done in a binary search in $O(Q + logT)$ time, where $Q$ is the length of the query and $T$ is the length of the template \cite{suffix_array_1993}. 
+The Burrows-Wheeler Transform (BWT) is found by sorting all rotations (a transformation of a string taking a prefix and moving it to the end of the string) of the template string, then taking the last character from each rotation \cite{burrows_wheeler_1994}.
+The BWT is reversible, highly compressible, and, using an additional data structure called the FM index, can perform exact match queries in time linear in the length of the query \cite{fm_index_2000}.
+The $r$-index further reduces the time for exact matching to be linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
+The $r$-index makes it feasible to index databases of whole genomes \cite{rossi_moni_2022}.
+
+Many existing mappers use suffix trees \cite{kurtz_versatile_2004}, suffix arrays \cite{abouelhoda_replacing_2004,hoffmann_fast_2009}, or FM indexes \cite{langmead_bowtie2_2012,li_bwa_mem_2013,li_soap2_2009,li_bwa_2009,langmead_bowtie_2009} to find exact matches as seeds.
+Unlike $k$-mer based methods, text indexes can produce variable-length seeds.
+These are often maximal exact matches (MEMs), which are exact matches that cannot be extended further on either side without a mismatch.
 
 %MEMs and variants of MEMS
 
@@ -417,23 +450,6 @@ Although UHSs are theoretically useful, computing them is a difficult problem.
 
 %Could also include spaced seeds, sketching, strobmers, q-gram filter for gaps 
 
-\subsubsection{Text indexes}
-%also Slider, which uses merge sorting
-Text indexes can be queried to find exact matches between a read and a reference.
-A simple example of a text index is a suffix trie, which stores all suffixes of a template string in a tree structure where edges are labelled with characters, such that each suffix is represented in a path from the root of the tree down to a leaf \cite{li_survey_2010}.
-Because any substring of the template string must be a prefix of one of its suffixes, exact substring queries can be done in a walk down from the root of the suffix trie.
-Suffix trees represent the same information as suffix tries with reduced memory by compressing non-branching paths and replacing the characters with offsets in the original template string. 
-A suffix array represents the sort order of all suffixes of a template string.
-Using a suffix array, substring query can be done in a binary search in $O(Q + logT)$ time, where $Q$ is the length of the query and $T$ is the length of the template \cite{suffix_array_1993}. 
-The Burrows-Wheeler Transform (BWT) is found by sorting all rotations (a transformation of a string taking a prefix and moving it to the end of the string) of the template string, then taking the last character from each rotation \cite{burrows_wheeler_1994}.
-The BWT is reversible, highly compressible, and, using an additional data structure called the FM index, can perform exact match queries in time linear in the length of the query \cite{fm_index_2000}.
-The $r$-index further reduces the time for exact matching to be linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
-The $r$-index makes it feasible to index databases of whole genomes.
-
-Many existing mappers use suffix trees \cite{kurtz_versatile_2004}, suffix arrays \cite{abouelhoda_replacing_2004,hoffmann_fast_2009}, or FM indexes \cite{langmead_bowtie2_2012,li_bwa_mem_2013,li_soap2_2009,li_bwa_2009,langmead_bowtie_2009} to find exact matches as seeds.
-Unlike $k$-mer based methods, text indexes can produce variable-length seeds.
-These are often maximal exact matches (MEMs), which are exact matches that cannot be extended further on either side without a mismatch.
-
 
 \subsubsection{Clustering and chaining}
 
@@ -443,57 +459,70 @@ Others groups seeds by chaining or clustering and evaluate groups of seeds toget
 Clustering techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
 
 In short read algorithms, the final alignment is generally found by extending individual seed alignments.
-For mapping long reads, this approach is intractable due to the cost of extending the alignment and clustering is generally replaced with a chaining step \cite{lr_review_2023}. 
-
-
-%TODO: This was in the lr giraffe paper. If it ends up in the actual version then this needs to be rewritten
+For mapping long reads, this approach is intractable due to the cost of extending the alignment and clustering is generally replaced by or augmented with a chaining step \cite{lr_review_2023}. 
+The goal of chaining is to produce optimal sets of co-linear seeds, meaning that the seed occur in the same order in the read and the reference.
+Chaining can be solved using a dynamic programming approach to optimize a given scoring function.
+As a representative example, Minimap2 defines the score of a chain as the number of matching bases in the seeds minus the sum of the gap costs between consecutive seeds \cite{li_minimap2_2018}.
+The gap cost is based on the difference in distance between the seeds in the read and reference.
+The choice of gap cost function impacts both the properties of the final chain that is chosen as optimal and the cost of calculating the optimal chain \cite{lr_review_2023}. 
 %This recursion can be made more efficient using an auxiliary data structure for finding the best score within a range of previous anchors and a gap cost that can be efficiently computed without considering the sequence content of the read and reference \cite{myers_chaining_1995}.
-%The chaining problem is well studied in a linear context \cite{myers_chaining_1995,shibuya_linear_chaining_2003,abouelhoda_linear_chaining_2005,jain_linear_chaining_2022}, but fewer algorithms exist to do chaining against graph references.
-%Chaining becomes a more difficult problem in a graph context because the order and distance between anchors is ambiguous in a graph and can be expensive to compute.
 
-%Many existing graph chaining algorithms are based on an algorithm from Makinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
-%The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
-%The chaining algorithm in GraphChainer builds on this algorithm and allows overlaps of one node between anchors \cite{ma_graphchainer_2023}.
-%PanAligner's chaining algorithm expands this technique to cyclic graphs \cite{panaligner_2024}.
+\subsection{Alignment}
+
+
+The final base-level alignment is typically found using dynamic programming, either by extending seed alignments or by aligning the entire read to a region of the reference that is found by clustering.
+Most standard dynamic programming algorithms are based on the Smith-Waterman algorithm for local alignment and Needleman-Wunch algorithm for global alignment.
+These algorithms use a rectangular dynamic programming matrix of the score for aligning a base between the query and reference sequences.
+The cost of skipping bases in either sequence is defined by the gap cost; most modern algorithms use an affine gap penalty with a relatively high cost for opening a gap and a lower cost for extending it.
+
+Standard dynamic programming algorithms have prohibitive runtimes, so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
+Some mappers use Single-Instruction Multiple-Data (SIMD) microprocessors to accelerate dynamic programming by parallelizing computation of independent cells in the dynamic programming matrix \cite{farrar_striped_2007,rognes_six-fold_2000}.
+Banded alignment algorithms restrict the dynamic programming matrix to a diagonal ``band'' of a specified width, preventing large insertions or deletions that would exceed the width \cite{chao_aligning_1992}.
+BLAST's X-drop algorithm fills in the matrix row by row, and stops extending each row when the best possible score is a given value X less than the best score seen in the previous row \cite{altschul_blast_1990}.
+This has a similar effect to banded alignment in that it forces the alignment to remain close to the diagonal, preventing large insertions or deletions that could align the start of one sequence to the end of another.
+
+The Wave Front Algorithm (WFA) is a newer alignment algorithm that runs in time parametrized by the similarity between the two sequences \cite{marco-sola_fast_wfa_2021}.
+Instead of performing dynamic programming over the length of the sequence, the WFA algorithm runs through the diagonal of the dynamic programming matrix, making it faster for sequences that are similar and whose alignment would be found close to the diagonal \cite{marco-sola_fast_wfa_2021}.
+Later advancements to the algorithm reduces the space requirement to be linear in the alignment score \cite{eizenga_wfa_2022}.
+
+%Some mappers don't use dynamic programming, but use a text index allowing inexact matching \cite{langmead_bowtie_2009,li_bwa_2009},
+
+\subsection{Graph mappers}
+\label{sec:graph-mappers}
+
+Mapping reads to graph references is a much newer and far less well studied problem than mapping to linear references.
+In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
+Existing graph mappers generally follow the same seed-and-extend structure as linear mappers but use graph-specific adaptations for each step\cite{eizenga_pangenome_2020, baaijens_computational_2022}.
+
+Many graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}.
+$k$-mers can be found within the sequences of nodes, from the reference haplotype sequences, or from walks through the graph. 
+Others mappers use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019}.
+The Generalized Compressed Suffix Array (GCSA) is a BWT-based text index for graphs used by VG MAP to find seeds \cite{siren_indexing_2014,siren_indexes_2020}.
+
+
+Clustering or chaining seeds in a graph is more difficult than in a linear genome due to the added ambiguity of calculating distance in a graph.
+Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_variation_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
+In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum distance calculation and its use in clustering. 
+
+Many existing graph chaining algorithms are based on an algorithm from Makinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
+The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
+Further advancements to this algorithm have extended it to allow overlaps of one node between anchors \cite{ma_graphchainer_2023} and to chain through cyclic graphs \cite{panaligner_2024}.
 
 %Minigraph uses a chaining algorithm based on that of Minimap2.
 %Minigraph uses two rounds of chaining: it first produces linear chains within individual nodes in the graph, then makes chains of the linear chains taking into account the topology of the graph.
 %The second round of chaining finds graph distances by enumerating up to 16 shortest-path walks between between pairs of linear chains.
 %Of those paths, it chooses the path with length closest to the gap in the read for computing the gap cost \cite{minigraph_2020}.
 
-\subsection{Alignment}
 
-
-The final base-level alignment is found using dynamic programming, either by extending seed alignments or by aligning the entire reads to a region of the reference that is found by clustering.
-Standard dynamic programming algorithms, such as Smith-Waterman for local alignment, have prohibitive runtimes, so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
-Some mappers use Single-Instruction Multiple-Data (SIMD) microprocessors to accelerate dynamic programming by parallelizing computation of independent cells in the dynamic programming matrix \cite{farrar_striped_2007,rognes_six-fold_2000}.
-Banded alignment algorithms restrict the dynamic programming matrix to a diagonal ``band'' of a specified width, preventing large insertions or deletions that would exceed the width \cite{chao_aligning_1992}.
-BLAST's X-drop algorithm fills in the matrix row by row, and stops extending each row when the best possible score is a given value X less than the best score seen in the previous row \cite{altschul_blast_1990}.
-This has a similar effect to banded alignment in that it forces the alignment to remain close to the diagonal, preventing large insertions or deletions that could align the start of one sequence to the end of another.
-
-Some mappers don't use dynamic programming, but use a text index allowing inexact matching \cite{langmead_bowtie_2009,li_bwa_2009},
-
-%Wave front algorithm
-
-\subsection{Graph mappers}
-
-Mapping reads to graph references is a much newer and far less well studied problem than mapping to linear references.
-In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
-Existing graph mappers generally follow the same seed-and-extend structure as linear mappers \cite{eizenga_pangenome_2020}.
-Most graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}; others use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019}.
-%Specific indexes: GCSA, GBWT, r-index?
-
-Clustering or chaining seeds in a graph is more difficult than in a linear genome due to the added ambiguity of calculating distance in a graph.
-Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_variation_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
-In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum distance calculation and its use in clustering. 
-Many recent graph chaining algorithms are based on an algorithm from M??? et al. 
 
 Alignment is also more challenging in a graph context, particularly for cyclic graphs.
 Many mappers use linear dynamic programming algorithms that have been extended to a graph context.
 One such example is partial order alignment (POA), an algorithm for aligning to directed acyclic graphs (DAGs) \cite{lee_multiple_2002}.
 Most mappers are restricted to aligning to DAGs \cite{schneeberger_simultaneous_2009,kim_hisat2_2019,rakocevic_fast_2019}.
 VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_variation_2018}.
-GraphAligner maps to cyclic graphs using a graph extension of Myers' bit parallel alignment algorithm \cite{rautiainen_bit-parallel_2019}
+GraphAligner maps to cyclic graphs using graphs extension of Myers' bit parallel alignment algorithm and the \textit{Shift-And} algorithm for exact string matching \cite{rautiainen_bit-parallel_2019}
+
+A graph extension of the WFA \cite{zhang_fast_2022}.
 
 \subsection{Downstream applications of read mapping}
 %Variant calling, briefly

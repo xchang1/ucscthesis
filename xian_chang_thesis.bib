@@ -2850,3 +2850,117 @@ Genome variation graphs are natural candidates to represent a pangenome collecti
 	year = {2002},
 	pages = {440--445},
 }
+@misc{eizenga_wfa_2022,
+	title = {Improving the time and space complexity of the {WFA} algorithm and generalizing its scoring},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2022.01.12.476087},
+	doi = {10.1101/2022.01.12.476087},
+	language = {en},
+	urldate = {2024-10-02},
+	author = {Eizenga, Jordan M. and Paten, Benedict},
+	month = jan,
+	year = {2022},
+}
+
+@article{marco-sola_fast_wfa_2021,
+	title = {Fast gap-affine pairwise alignment using the wavefront algorithm},
+	volume = {37},
+	copyright = {http://creativecommons.org/licenses/by-nc/4.0/},
+	issn = {1367-4803, 1367-4811},
+	url = {https://academic.oup.com/bioinformatics/article/37/4/456/5904262},
+	doi = {10.1093/bioinformatics/btaa777},
+	abstract = {Abstract
+
+              Motivation
+              Pairwise alignment of sequences is a fundamental method in modern molecular biology, implemented within multiple bioinformatics tools and libraries. Current advances in sequencing technologies press for the development of faster pairwise alignment algorithms that can scale with increasing read lengths and production yields.
+
+
+              Results
+              In this article, we present the wavefront alignment algorithm (WFA), an exact gap-affine algorithm that takes advantage of homologous regions between the sequences to accelerate the alignment process. As opposed to traditional dynamic programming algorithms that run in quadratic time, the WFA runs in time O(ns), proportional to the read length n and the alignment score s, using O(s2) memory. Furthermore, our algorithm exhibits simple data dependencies that can be easily vectorized, even by the automatic features of modern compilers, for different architectures, without the need to adapt the code. We evaluate the performance of our algorithm, together with other state-of-the-art implementations. As a result, we demonstrate that the WFA runs 20–300× faster than other methods aligning short Illumina-like sequences, and 10–100× faster using long noisy reads like those produced by Oxford Nanopore Technologies.
+
+
+              Availability and implementation
+              The WFA algorithm is implemented within the wavefront-aligner library, and it is publicly available at https://github.com/smarco/WFA.},
+	language = {en},
+	number = {4},
+	urldate = {2024-10-02},
+	journal = {Bioinformatics},
+	author = {Marco-Sola, Santiago and Moure, Juan Carlos and Moreto, Miquel and Espinosa, Antonio},
+	editor = {Robinson, Peter},
+	month = may,
+	year = {2021},
+	pages = {456--463},
+}
+
+@article{baaijens_computational_2022,
+	title = {Computational graph pangenomics: a tutorial on data structures and their applications},
+	volume = {21},
+	issn = {1567-7818, 1572-9796},
+	shorttitle = {Computational graph pangenomics},
+	url = {https://link.springer.com/10.1007/s11047-022-09882-6},
+	doi = {10.1007/s11047-022-09882-6},
+	abstract = {Abstract
+
+              Computational pangenomics is an emerging research field that is changing the way computer scientists are facing challenges in biological sequence analysis. In past decades, contributions from combinatorics, stringology, graph theory and data structures were essential in the development of a plethora of software tools for the analysis of the human genome. These tools allowed computational biologists to approach ambitious projects at population scale, such as the 1000 Genomes Project. A major contribution of the 1000 Genomes Project is the characterization of a broad spectrum of genetic variations in the human genome, including the discovery of novel variations in the South Asian, African and European populations—thus enhancing the catalogue of variability within the reference genome. Currently, the need to take into account the high variability in population genomes as well as the specificity of an individual genome in a personalized approach to medicine is rapidly pushing the abandonment of the traditional paradigm of using a single reference genome. A graph-based representation of multiple genomes, or
+              a graph pangenome
+              , is replacing the linear reference genome. This means completely rethinking well-established procedures to analyze, store, and access information from genome representations. Properly addressing these challenges is crucial to face the computational tasks of ambitious healthcare projects aiming to characterize human diversity by sequencing 1M individuals (Stark et al. 2019). This tutorial aims to introduce readers to the most recent advances in the theory of data structures for the representation of graph pangenomes. We discuss efficient representations of
+              haplotypes
+              and the variability of
+              genotypes
+              in graph pangenomes, and highlight applications in solving computational problems in human and microbial (viral) pangenomes.},
+	language = {en},
+	number = {1},
+	urldate = {2025-02-05},
+	journal = {Natural Computing},
+	author = {Baaijens, Jasmijn A. and Bonizzoni, Paola and Boucher, Christina and Della Vedova, Gianluca and Pirola, Yuri and Rizzi, Raffaella and Sirén, Jouni},
+	month = mar,
+	year = {2022},
+	pages = {81--108},
+}
+
+@article{siren_indexing_2014,
+	title = {Indexing {Graphs} for {Path} {Queries} with {Applications} in {Genome} {Research}},
+	volume = {11},
+	copyright = {https://ieeexplore.ieee.org/Xplorehelp/downloads/license-information/IEEE.html},
+	issn = {1545-5963},
+	url = {http://ieeexplore.ieee.org/document/6698337/},
+	doi = {10.1109/TCBB.2013.2297101},
+	number = {2},
+	urldate = {2025-02-05},
+	journal = {IEEE/ACM Transactions on Computational Biology and Bioinformatics},
+	author = {Siren, Jouni and Valimaki, Niko and Makinen, Veli},
+	month = mar,
+	year = {2014},
+	pages = {375--388},
+}
+
+@article{rossi_moni_2022,
+	title = {{MONI}: {A} {Pangenomic} {Index} for {Finding} {Maximal} {Exact} {Matches}},
+	volume = {29},
+	copyright = {https://www.liebertpub.com/nv/resources-tools/text-and-data-mining-policy/121/},
+	issn = {1557-8666},
+	shorttitle = {{MONI}},
+	url = {https://www.liebertpub.com/doi/10.1089/cmb.2021.0290},
+	doi = {10.1089/cmb.2021.0290},
+	language = {en},
+	number = {2},
+	urldate = {2025-02-05},
+	journal = {Journal of Computational Biology},
+	author = {Rossi, Massimiliano and Oliva, Marco and Langmead, Ben and Gagie, Travis and Boucher, Christina},
+	month = feb,
+	year = {2022},
+	pages = {169--187},
+}
+
+@misc{zhang_fast_2022,
+	title = {Fast sequence to graph alignment using the graph wavefront algorithm},
+	url = {http://arxiv.org/abs/2206.13574},
+	doi = {10.48550/arXiv.2206.13574},
+	abstract = {Motivation: A pan-genome graph represents a collection of genomes and encodes sequence variations between them. It is a powerful data structure for studying multiple similar genomes. Sequence-to-graph alignment is an essential step for the construction and the analysis of pan-genome graphs. However, existing algorithms incur runtime proportional to the product of sequence length and graph size, making them inefficient for aligning long sequences against large graphs. Results: We propose the graph wavefront alignment algorithm (Gwfa), a new method for aligning a sequence to a sequence graph. Although the worst-case time complexity of Gwfa is the same as the existing algorithms, it is designed to run faster for closely matching sequences, and its runtime in practice often increases only moderately with the edit distance of the optimal alignment. On four real datasets, Gwfa is up to four orders of magnitude faster than other exact sequence-to-graph alignment algorithms. We also propose a graph pruning heuristic on top of Gwfa, which can achieve an additional \${\textbackslash}sim\$10-fold speedup on large graphs. Availability: Gwfa code is accessible at https://github.com/lh3/gwfa.},
+	urldate = {2025-02-05},
+	publisher = {arXiv},
+	author = {Zhang, Haowen and Wu, Shiqi and Aluru, Srinivas and Li, Heng},
+	month = jun,
+	year = {2022},
+	note = {arXiv:2206.13574},
+	keywords = {Quantitative Biology - Genomics, Quantitative Biology - Quantitative Methods},
+}
