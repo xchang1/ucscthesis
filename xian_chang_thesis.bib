@@ -2964,3 +2964,169 @@ Genome variation graphs are natural candidates to represent a pangenome collecti
 	note = {arXiv:2206.13574},
 	keywords = {Quantitative Biology - Genomics, Quantitative Biology - Quantitative Methods},
 }
+
+@misc{ivanov_astarix_2020,
+	title = {{AStarix}: {Fast} and {Optimal} {Sequence}-to-{Graph} {Alignment}},
+	copyright = {http://creativecommons.org/licenses/by/4.0/},
+	shorttitle = {{AStarix}},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2020.01.22.915496},
+	doi = {10.1101/2020.01.22.915496},
+	abstract = {Abstract
+
+            We present an algorithm for the
+            optimal alignment
+            of sequences to
+            genome graphs
+            . It works by phrasing the edit distance minimization task as finding a shortest path on an implicit alignment graph. To find a shortest path, we instantiate the A
+            ⋆
+            paradigm with a novel domain-specific heuristic function that accounts for the upcoming subsequence in the query to be aligned, resulting in a provably optimal alignment algorithm called AS
+            tarix
+            .
+
+
+            Experimental evaluation of AS
+            tarix
+            shows that it is 1–2 orders of magnitude faster than state-of-the-art optimal algorithms on the task of aligning Illumina reads to reference genome graphs. Implementations and evaluations are available at
+            https://github.com/eth-sri/astarix
+            .},
+	language = {en},
+	urldate = {2025-02-06},
+	author = {Ivanov, Pesho and Bichsel, Benjamin and Mustafa, Harun and Kahles, André and Rätsch, Gunnar and Vechev, Martin},
+	month = jan,
+	year = {2020},
+}
+
+@misc{bonizzoni_recalign_2025,
+	title = {{RecAlign}: {A}* recombination-aware sequence to graph mapping},
+	copyright = {http://creativecommons.org/licenses/by/4.0/},
+	shorttitle = {{RecAlign}},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2025.01.18.633308},
+	doi = {10.1101/2025.01.18.633308},
+	abstract = {Abstract
+
+            Pangenomics and long reads bring the promise of integrating read mapping with variant calling, since a pangenome encodes a reference genome that incorporates evolutionary or population aspects, while even a single long read can provide a good evidence of different kinds of variants (not only the single nucleotide variants that can be easily observed by short reads). This promise needs to be fulfilled by the development of new read mapping approaches that are tailored for that purpose. This paper focuses on integrating recombination events, that are key in bacteria, into read mapping. A first approach in that direction [ACBC
+            +
+            24] provides an exact dynamic programming algorithm that is too slow to manage multiple recombinations or long reads. We present a novel A* algorithm for recombination-aware sequence-to-graph mapping that significantly reduces running time by incorporating haplotype information and an efficient heuristic function. Our tool,
+            RecAlign
+            , demonstrates up to a two-order magnitude improvement in time and space complexity over [ACBC
+            +
+            24] and efficiently handles multiple recombinations.},
+	language = {en},
+	urldate = {2025-02-06},
+	author = {Bonizzoni, Paola and Monti, Davide Cesare and Della Vedova, Gianluca and Riccardi, Brian and Rizzi, Raffaella and Siren, Jouni},
+	month = jan,
+	year = {2025},
+}
+
+@article{avila_cartes_recgraph_2024,
+	title = {{RecGraph}: recombination-aware alignment of sequences to variation graphs},
+	volume = {40},
+	copyright = {https://creativecommons.org/licenses/by/4.0/},
+	issn = {1367-4811},
+	shorttitle = {{RecGraph}},
+	url = {https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btae292/7658945},
+	doi = {10.1093/bioinformatics/btae292},
+	abstract = {Abstract
+
+              Motivation
+              Bacterial genomes present more variability than human genomes, which requires important adjustments in computational tools that are developed for human data. In particular, bacteria exhibit a mosaic structure due to homologous recombinations, but this fact is not sufficiently captured by standard read mappers that align against linear reference genomes. The recent introduction of pangenomics provides some insights in that context, as a pangenome graph can represent the variability within a species. However, the concept of sequence-to-graph alignment that captures the presence of recombinations has not been previously investigated.
+
+
+              Results
+              In this paper, we present the extension of the notion of sequence-to-graph alignment to a variation graph that incorporates a recombination, so that the latter are explicitly represented and evaluated in an alignment. Moreover, we present a dynamic programming approach for the special case where there is at most a recombination—we implement this case as RecGraph. From a modelling point of view, a recombination corresponds to identifying a new path of the variation graph, where the new arc is composed of two halves, each extracted from an original path, possibly joined by a new arc. Our experiments show that RecGraph accurately aligns simulated recombinant bacterial sequences that have at most a recombination, providing evidence for the presence of recombination events.
+
+
+              Availability and implementation
+              Our implementation is open source and available at https://github.com/AlgoLab/RecGraph.},
+	language = {en},
+	number = {5},
+	urldate = {2025-02-06},
+	journal = {Bioinformatics},
+	author = {Avila Cartes, Jorge and Bonizzoni, Paola and Ciccolella, Simone and Della Vedova, Gianluca and Denti, Luca and Didelot, Xavier and Monti, Davide Cesare and Pirola, Yuri},
+	editor = {Valencia, Alfonso},
+	month = may,
+	year = {2024},
+	pages = {btae292},
+}
+
+@article{gao_abpoa_2021,
+	title = {{abPOA}: an {SIMD}-based {C} library for fast partial order alignment using adaptive band},
+	volume = {37},
+	copyright = {https://academic.oup.com/journals/pages/open\_access/funder\_policies/chorus/standard\_publication\_model},
+	issn = {1367-4803, 1367-4811},
+	shorttitle = {{abPOA}},
+	url = {https://academic.oup.com/bioinformatics/article/37/15/2209/5962085},
+	doi = {10.1093/bioinformatics/btaa963},
+	abstract = {Abstract
+
+              Summary
+              Partial order alignment, which aligns a sequence to a directed acyclic graph, is now frequently used as a key component in long-read error correction and assembly. We present abPOA (adaptive banded Partial Order Alignment), a Single Instruction Multiple Data (SIMD)-based C library for fast partial order alignment using adaptive banded dynamic programming. It can work as a stand-alone multiple sequence alignment and consensus calling tool or be easily integrated into any long-read error correction and assembly workflow. Compared to a state-of-the-art tool (SPOA), abPOA is up to 10 times faster with a comparable alignment accuracy.
+
+
+              Availability and implementation
+              abPOA is implemented in C. A stand-alone tool and a C/Python software interface are freely available at https://github.com/yangao07/abPOA.
+
+
+              Supplementary information
+              Supplementary data are available at Bioinformatics online.},
+	language = {en},
+	number = {15},
+	urldate = {2025-02-06},
+	journal = {Bioinformatics},
+	author = {Gao, Yan and Liu, Yongzhuang and Ma, Yanmei and Liu, Bo and Wang, Yadong and Xing, Yi},
+	editor = {Janet, Kelso},
+	month = aug,
+	year = {2021},
+	pages = {2209--2211},
+}
+
+@inproceedings{jain_accelerating_2019,
+	address = {Rio de Janeiro, Brazil},
+	title = {Accelerating {Sequence} {Alignment} to {Graphs}},
+	copyright = {https://ieeexplore.ieee.org/Xplorehelp/downloads/license-information/IEEE.html},
+	isbn = {9781728112466},
+	url = {https://ieeexplore.ieee.org/document/8821047/},
+	doi = {10.1109/IPDPS.2019.00055},
+	urldate = {2025-02-06},
+	booktitle = {2019 {IEEE} {International} {Parallel} and {Distributed} {Processing} {Symposium} ({IPDPS})},
+	publisher = {IEEE},
+	author = {Jain, Chirag and Misra, Sanchit and Zhang, Haowen and Dilthey, Alexander and Aluru, Srinivas},
+	month = may,
+	year = {2019},
+	pages = {451--461},
+}
+
+@article{darby_vargas_2020,
+	title = {Vargas: heuristic-free alignment for assessing linear and graph read aligners},
+	volume = {36},
+	copyright = {http://creativecommons.org/licenses/by/4.0/},
+	issn = {1367-4803, 1367-4811},
+	shorttitle = {Vargas},
+	url = {https://academic.oup.com/bioinformatics/article/36/12/3712/5823884},
+	doi = {10.1093/bioinformatics/btaa265},
+	abstract = {Abstract
+
+              Motivation
+              Read alignment is central to many aspects of modern genomics. Most aligners use heuristics to accelerate processing, but these heuristics can fail to find the optimal alignments of reads. Alignment accuracy is typically measured through simulated reads; however, the simulated location may not be the (only) location with the optimal alignment score.
+
+
+              Results
+              Vargas implements a heuristic-free algorithm guaranteed to find the highest-scoring alignment for real sequencing reads to a linear or graph genome. With semiglobal and local alignment modes and affine gap and quality-scaled mismatch penalties, it can implement the scoring functions of commonly used aligners to calculate optimal alignments. While this is computationally intensive, Vargas uses multi-core parallelization and vectorized (SIMD) instructions to make it practical to optimally align large numbers of reads, achieving a maximum speed of 456 billion cell updates per second. We demonstrate how these ‘gold standard’ Vargas alignments can be used to improve heuristic alignment accuracy by optimizing command-line parameters in Bowtie 2, BWA-maximal exact match and vg to align more reads correctly.
+
+
+              Availability and implementation
+              Source code implemented in C++ and compiled binary releases are available at https://github.com/langmead-lab/vargas under the MIT license.
+
+
+              Supplementary information
+              Supplementary data are available at Bioinformatics online.},
+	language = {en},
+	number = {12},
+	urldate = {2025-02-06},
+	journal = {Bioinformatics},
+	author = {Darby, Charlotte A and Gaddipati, Ravi and Schatz, Michael C and Langmead, Ben},
+	editor = {Birol, Inanc},
+	month = jun,
+	year = {2020},
+	pages = {3712--3718},
+}

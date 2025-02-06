@@ -490,15 +490,15 @@ Later advancements to the algorithm reduces the space requirement to be linear i
 \subsection{Graph mappers}
 \label{sec:graph-mappers}
 
-Mapping reads to graph references is a much newer and far less well studied problem than mapping to linear references.
+Mapping reads to pangenome graph references is a much newer and far less well studied problem than mapping to linear references.
 In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
 Existing graph mappers generally follow the same seed-and-extend structure as linear mappers but use graph-specific adaptations for each step\cite{eizenga_pangenome_2020, baaijens_computational_2022}.
 
 Many graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}.
-$k$-mers can be found within the sequences of nodes, from the reference haplotype sequences, or from walks through the graph. 
-Others mappers use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019}.
-The Generalized Compressed Suffix Array (GCSA) is a BWT-based text index for graphs used by VG MAP to find seeds \cite{siren_indexing_2014,siren_indexes_2020}.
-
+$k$-mers can be found within the sequences of nodes, from walks in the graph, or from the reference haplotype sequences. 
+Chapter \ref{chapter:sr-giraffe} describes the minimizers of haplotypes used in vg giraffe.
+Others mappers use generalizations of the BWT for indexing graphs \cite{garrison_variation_2018,kim_hisat2_2019,siren_indexing_2014,siren_indexes_2020} or collections of genomes \cite{rossi_moni_2022}.
+%The Generalized Compressed Suffix Array (GCSA) is a BWT-based text index for graphs used by VG MAP to find seeds \cite{siren_indexing_2014,siren_indexes_2020}.
 
 Clustering or chaining seeds in a graph is more difficult than in a linear genome due to the added ambiguity of calculating distance in a graph.
 Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_variation_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
@@ -506,7 +506,7 @@ In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum di
 
 Many existing graph chaining algorithms are based on an algorithm from Makinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
 The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
-Further advancements to this algorithm have extended it to allow overlaps of one node between anchors \cite{ma_graphchainer_2023} and to chain through cyclic graphs \cite{panaligner_2024}.
+Further extensions to this algorithm have extended it to allow overlaps of one node between anchors \cite{ma_graphchainer_2023} and to chain through cyclic graphs \cite{panaligner_2024}.
 
 %Minigraph uses a chaining algorithm based on that of Minimap2.
 %Minigraph uses two rounds of chaining: it first produces linear chains within individual nodes in the graph, then makes chains of the linear chains taking into account the topology of the graph.
@@ -517,12 +517,17 @@ Further advancements to this algorithm have extended it to allow overlaps of one
 
 Alignment is also more challenging in a graph context, particularly for cyclic graphs.
 Many mappers use linear dynamic programming algorithms that have been extended to a graph context.
-One such example is partial order alignment (POA), an algorithm for aligning to directed acyclic graphs (DAGs) \cite{lee_multiple_2002}.
-Most mappers are restricted to aligning to DAGs \cite{schneeberger_simultaneous_2009,kim_hisat2_2019,rakocevic_fast_2019}.
-VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_variation_2018}.
-GraphAligner maps to cyclic graphs using graphs extension of Myers' bit parallel alignment algorithm and the \textit{Shift-And} algorithm for exact string matching \cite{rautiainen_bit-parallel_2019}
+One such example is partial order alignment (POA), an algorithm for constructing and aligning to multiple sequence alignments \cite{lee_multiple_2002}.
+This algorithm is limited to aligning to directed acyclic graphs (DAGs) and while later algorithms have accelerated alignment using SIMD and other optimizations \cite{jain_accelerating_2019,gao_abpoa_2021,darby_vargas_2020}, most aligners and mappers are still restricted to DAGs \cite{kim_hisat2_2019,rakocevic_fast_2019,li_minigraph_2020,ma_graphchainer_2023}.
+Other mappers align to cyclic graphs by converting them to DAGs before using an acyclic aligner \cite{garrison_variation_2018} or use graph extensions of linear alignment algorithms \cite{rautiainen_bit-parallel_2019,zhang_fast_2022}. 
+%A graph extension of the WFA has been proposed to align similar sequences to sequence graphs more quickly than traditional methods \cite{zhang_fast_2022}.
+%VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_variation_2018}.
+%GraphAligner maps to cyclic graphs using graphs extension of Myers' bit parallel alignment algorithm and the \textit{Shift-And} algorithm for exact string matching \cite{rautiainen_bit-parallel_2019}
 
-A graph extension of the WFA \cite{zhang_fast_2022}.
+Another class of sequence-to-graph aligners use shortest-distance queries to support alignment.
+In this paradigm, the problem of minimizing edit distance is viewed as finding the shortest path in an alignment graph that represents edits in an alignment between the query sequence and reference graph.
+The shortest path problem can then be solved using the A* algorithm to find the optimal alignment \cite{ivanov_astarix_2020,bonizzoni_recalign_2025}.
+This strategy has been extended to allow recombination-aware alignment \cite{bonizzoni_recalign_2025}.
 
 \subsection{Downstream applications of read mapping}
 %Variant calling, briefly
