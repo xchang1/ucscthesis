@@ -104,7 +104,7 @@ Using a pangenome as a reference can mitigate the bias incurred by using the cur
 Mapping sequencing reads to a reference, the first step in many genomic pipelines, is a particularly challenging problem in a pangenome context. 
 In this dissertation I present my work developing data structures and algorithms to support read mapping to pangenome graphs.
 The pangenomic read mapping tools that I helped develop over the course of my PhD are as efficient as linear mappers and improve variant calling and genotyping results compared to standard tools.
-They are among the first practical pangenome mappers that are paving the way for the emerging field of pangenomics.% more accurate and unbiased genomic analyses.
+They are among the first practical pangenome mappers that are paving the way for the emerging field of pangenomics.
 
 
 \end{abstract}
@@ -146,11 +146,9 @@ As a result, existing pangenome tools tend to be slow, memory intensive, and can
 In order for pangenomes to reach their full potential as a standard reference, new methods must be developed to make them practical for common genomic tasks.
 
 Read mapping is one such fundamental task that is common to many modern genomic analyses.
-%The goal of read mapping is to take a read, the nucleotide sequence of a DNA fragment that has been read by a sequencing machine, and find the location in the reference genome where the sequences most closely match.
-%The alignment between sequencing reads and reference genomes can then be used in downstream analyses such as variant calling, which aims to detect variations between a sample and reference genome.
-Read mapping is a well studied problem in a linear context, but it becomes more difficult when mapping to a larger and more complex pangenome reference.
+Read mapping is a well-studied problem in a linear context, but it becomes more difficult when mapping to a larger and more complex pangenome reference.
 In this dissertation, I present my work developing data structures and algorithms for mapping sequencing reads to pangenome graphs.
-I first describe an index for finding the minimum distance between positions in a pangenome graph and an algorithm that uses it to cluster positions on the graph (Chapter~\ref{chapter:distance}.
+I describe an index for finding the minimum distance between positions in a pangenome graph and an algorithm that uses it to cluster positions on the graph (Chapter~\ref{chapter:distance}.
 Next, I describe a short read-to-pangenome mapper (Chapter~\ref{chapter:sr-giraffe}) and a long read-to-pangenome mapper (Chapter ~\ref{chapter:lr-giraffe}), and show how each improves variant calling and genotyping relative to standard linear pipelines.
 
 \chapter{Background}
@@ -163,19 +161,19 @@ A reference genome is a high-quality, annotated genome assembly that is taken as
 Nearly all aspects of modern genomics are in some way dependent on reference genomes.
 They are the basis against which we describe and interpret variants and they underpin the bioinformatics tools used to perform analyses.
 The completion of the Human Genome Project \cite{lander_initial_2001}, which produced the first human reference genome, was a landmark accomplishment and has been the foundation of much of modern genetic and genomic research.
-However, the human reference genome fundamentally cannot represent the entirety of the human species.
+However, the human reference genome is inherently flawed in that it cannot represent the genetic diversity of the human population.
 
 The initial copy of the human reference genome was assembled from the genetic sequences of eight people, primarily from a single individual \cite{lander_initial_2001}.
 This genome assembly is a ``linear'' genome that represents just one haplotype copy of a genome and no variations.
 Moreover, it is a mosaic of a few individuals and represents alleles that are unique to those individuals, and combinations of alleles that did not exist in any individual.
-The current reference genome, GRCh38 \cite{schneider_evaluation_2017}, has build upon the initial assembly by closing gaps, adding alternate loci, improving annotations, and generally improving the quality of the sequence.
+The current reference genome, GRCh38, has build upon the initial assembly by closing gaps, adding alternate loci, improving annotations, and generally improving the quality of the sequence \cite{schneider_evaluation_2017}.
 However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated \cite{schneider_evaluation_2017,nurk_complete_2022}.
-Furthermore, 93\% of the sequence in GRCh38 is derived from just eleven individuals and about 70\% is derived from a single individual.
+Furthermore, $93\%$ of the sequence in GRCh38 is derived from just eleven individuals and about $70\%$ is derived from a single individual.
 
-Many of these problems are improved upon in the recent CHM13 assembly, which is the first complete sequence of a human genome \cite{nurk_complete_2022}.
-Unlike the GRCh38 assembly, the CHM13 assembly is the sequence of a single individual (a haploid hydatidiform mole) and includes the 8\% of the genome that remained unsequenced in GRCh38\cite{nurk_complete_2022}.
+Many of these problems are improved upon by the recent CHM13 assembly, which is the first complete sequence of a human genome \cite{nurk_complete_2022}.
+Unlike the GRCh38 assembly, the CHM13 assembly is the sequence of a single individual (a haploid hydatidiform mole) and includes the $8\%$ of the genome that remained unsequenced in GRCh38 \cite{nurk_complete_2022}.
 Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haplotype sequence.
-Although the GRCh38 assembly contains some alternate loci, these are are limited to 176 genomic regions \cite{schneider_evaluation_2017} and it is still essentially a linear genome that does not represent genetic diversity.
+Although the GRCh38 assembly contains some alternate loci, these are limited to 176 genomic regions \cite{schneider_evaluation_2017} and it is still essentially a linear genome.
 
 %Surveys of human genetic variation: hapmap, 1000genomes, hgsvc
 
@@ -198,7 +196,7 @@ If no mapped reads cover the insertion, it cannot be called as a variant and the
 
 This reference bias can be mitigated by using a reference genome containing sequences that more closely resemble the sample of interest.
 There have been many proposals for how a reference can accomplish this.
-Rather than using a linear reference that is a mosaic of several individuals, such as GRCh38, the reference could be an ancestral genome that contains the most recent common ancestral allele at each locus, or a consensus genome that contains the most common allele at each locus.
+Rather than using a linear reference that is a mosaic of several individuals, such as GRCh38, the reference could be an ancestral genome that contains the most recent common ancestral allele at each locus, or a consensus genome that contains the most common allele at each locus \cite{ballouz_is_2019}.
 Another alternative is to use a national or ethnic genome to represent a specific population \cite{ballouz_is_2019,chinese_national_genome_2023,korean_national_genome_2016,vietnamese_national_genome_2015,danish_national_genome_2015,swedish_national_genome_2018,kowal_race_2019}.
 But while a population-specific reference may better capture variations that are frequent in that population, the benefit of such a reference will be minimal.
 Most human genetic variation occurs across populations, rather than within populations \cite{nih_understanding_2007}, meaning that even when using a population-specific reference, the majority of the genome will still be subject to the same reference bias as would stem from using any randomly selected reference genome. 
@@ -207,7 +205,7 @@ Most human genetic variation occurs across populations, rather than within popul
 \section{Towards a human reference pangenome}
 
 Although the idea of using a pangenome to mitigate reference bias is not new \cite{li_building_2010}, until recently, it has not been feasible to create a global human reference pangenome.
-The creation of such a resource requires several components: the ability to sequence hundreds of genomes with high quality, and the ability to select genomes to represent the genetic diversity human population.
+The creation of such a resource requires several components: the ability to generate reference-quality genome assemblies, and the ability to select genomes to represent the genetic diversity human population.
 Recent advancements in genome sequencing technologies, genome assembly algorithms, and a greater understanding of human population genetics has brought this prospect closer to a reality.
 
 \subsection{Sequencing technologies}
@@ -218,7 +216,7 @@ Sanger sequencing became the basis of the first sequencing machines, which produ
 Sanger sequencing has low throughput but it is highly accurate and it is still used for targeted sequencing of small regions.
 These early sequencing technologies, are collectively known as "first-generation sequencing".
 
-The next generation of sequencing technologies, known as "next-generation" or "second-generation" sequencing, parallelized the sequencing reactions to hugely increase throughput \cite{sequencing_review_2016}. 
+The next generation of sequencing technologies, known as "next-generation" or "second-generation" sequencing, parallelized the sequencing reactions to greatly increase throughput \cite{sequencing_review_2016}. 
 Illumina sequencing has become the dominant next-generation sequencing technology.
 Illumina reads have a major advantage of producing paired end reads comprised of two short sequences and an approximate distance between them.
 Modern Illumina sequencing machines can produce millions or even billions of paired end reads with lengths between $100$ and $300$ base pairs in a single run \cite{illumina_sequencing_nodate}.
@@ -229,15 +227,15 @@ Element Biosciences' Aviti platform produces reads with a similar lengths and th
 Ultima Genomics' UG 100 Platform is a low-cost option for short reads of $~300$ base pairs \cite{ultima_sequencing_2022}. 
 Other new technologies include MGI's DNBseq, Pacific Bioscience's Onso, Singular Genomics' G4, and Thermo Fisher Scientific's Ion Torrent \cite{sr_review_2025}.
 
-The term "third generation sequencing" is generally associated with long read, single molecule sequencing.
+The term "third-generation sequencing" is generally associated with long read, single molecule sequencing.
 Sequencing is performed on individual molecules of DNA, without a separate amplification step \cite{sequencing_review_2016}.
 Currently, the two predominant long read sequencing technologies are single-molecule real-time (SMRT) sequencing and nanopore sequencing \cite{lr_review_23}.
-Pacific Biosciences (PacBio) SMRT sequencing-based High Fidelity (HiFi) reads are between 10 and 25~kbp long with accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
+Pacific Biosciences' (PacBio) SMRT sequencing-based High Fidelity (HiFi) reads are between 10 and 25~kbp long with accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
 Nanopore sequencing machines from Oxford Nanopore Technologies can produce sequencing reads on the order of 10-100~kbp in length, and up to 882~kbp \cite{nanopore_ultralong_2018}, with accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
 
 Sequencing technologies can also capture information from the genome beyond the nucleotide sequence.
-Nanopores are also capable of detecting DNA base modifications such as methylation \cite{wang_nanopore_2021}. 
-Chromosome conformation capture techniques such as Hi-C capture the spacial proximity of pieces of DNA \cite{lieberman_hic_2009}. 
+Nanopores are capable of detecting DNA base modifications such as methylation \cite{wang_nanopore_2021}. 
+Chromosome conformation capture techniques, such as Hi-C, capture the spacial proximity of pieces of DNA \cite{lieberman_hic_2009}. 
 
 %Briefly, Sanger sequencing uses fluorescently-labelled nucleotides that stop DNA extension during DNA polymerization, resulting in random-length fragments of DNA that are terminated with a labelled nucleotide. 
 %The fragments are then separated by length using gel electrophoresis and the nucleotide at each position is detected from the fluorescent label \cite{sanger_sequencing_1977}. 
@@ -266,8 +264,8 @@ The first published draft of a human pangenome reference produced assemblies wit
 
 While the Human Genome Project provided a deep understanding of a single human genome, other large-scale projects aimed to provide a broad understanding of the genetic landscape of the human population \cite{international_hapmap_consortium_international_2003,international2005haplotype,1000_genomes_project_consortium_map_2010,1000gp_2015,chaisson_sv_2019}.
 These projects have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
-In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, produced catalogues of variants from thousands of individuals across diverse populations, eventually cataloging over $99\%$ of common variants.
-This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides a roadmap for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_2021}.
+In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, produced catalogs of variants from thousands of individuals across diverse populations, eventually cataloging over $99\%$ of common variants.
+This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides guidance for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_2021}.
 
 %Projects such as the dbSNP database \cite{sherry_dbsnp_2001}, International HapMap Consortium \cite{international_hapmap_consortium_international_2003,international2005haplotype}, ENCyclopedia of DNA Elements (ENCODE) project \cite{encode_project_consortium_encode_2004}, 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, and Human Genome Structural Variation Consortium (HGSVC) \cite{chaisson_sv_2019} have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
 
@@ -278,16 +276,15 @@ A pangenome is an alternative to a standard linear genome.
 Pangenomes are collections of genomic sequences from a population and the alignments among them.
 Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_pangenome_2023}.
 With recent advances in genome sequencing and assembly algorithms, it is now possible to produce reference-quality and even telomere-to-telomere genome sequences with ever-decreasing time and cost \cite{miga_envisioning_2023}.
-This technical capability coupled with our current understanding of population genetics makes it feasible to select and sequence genomes to accurately and efficiently represent the genetic diversity of a population. 
+This technical capability coupled with our current understanding of population genetics makes it feasible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
 
 The first human reference pangenomes are just beginning to be produced.
 The Human Pangenome Reference Consortium (HPRC) has build on the work of the Human Genome Project, the 1000 Genomes Project, and other sequencing projects to begin to establish a global human reference pangenome \cite{hprc_2022}.
 The HPRC aims to produce a pangenome comprised of at least 350 individuals' genomes selected to maximally represent the genetic variant present in the human population \cite{hprc_2022}.
-The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality (average quality value of $53.57$), phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines and prioritized for their coverage of genetic variants and biogeographic origin \cite{hprc_pangenome_2023}.
-The HPRC released three different alignments of these haplotype sequences, constructed using the Minigraph \cite{li_minigraph_2020}, Minigraph-Cactus (MC)\cite{minigraph_cactus_2024}, and PanGenome Graph Builder (PGGB) \cite{pggb_2024} pipelines (see section \ref{sec:graph-construction}). 
+The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality, phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines and prioritized for their coverage of genetic variants and biogeographic origin \cite{hprc_pangenome_2023}.
+The HPRC released three different alignments of these haplotype sequences, constructed using the Minigraph \cite{li_minigraph_2020}, Minigraph-Cactus (MC)\cite{minigraph_cactus_2024}, and PanGenome Graph Builder (PGGB) \cite{pggb_2024} pipelines (see Section \ref{sec:graph-construction}). 
 
-
-There have been several recent efforts to establish ancestry-specific pangenomes for underrepresented populations \cite{pacific_pangenome_2024,chinese_pangenome_2023,arab_pangenome_2024}.
+In addition to this global pangenome project, here have been several recent efforts to establish ancestry-specific pangenomes for underrepresented populations \cite{pacific_pangenome_2024,chinese_pangenome_2023,arab_pangenome_2024}.
 These pangenomes have been curated to represent the genetic diversity of Pacific, Chinese, or Arab populations.
 For example, the Chinese pangenome sampled individuals from the 36 of the 55 officially recognized ethnic minority groups and 8 linguistic groups, with the goal of eventually representing all recognized minority groups as well as unrecognized groups \cite{chinese_pangenome_2023}.
 These population-specific efforts aim to improve understanding of genetic variants and diseases that are specific to or more frequent in each population.
@@ -305,23 +302,25 @@ A sequence content human pangenome can easily reach hundreds of billions of base
 A popular method of representing pangenome is with sequence graphs (Figure \ref{fig:example_graph}).
 Nodes in a sequence graph are labeled with nucleotide sequences and longer sequences can be encoded as paths through the graph.
 Divergences in the graph represent variations in the sequences.
-Variation graphs are sequence graphs that additionally encode a set of reference paths through the graph.
-These paths typically correspond to reference genomes.
 
 Formally, a sequence graph is a bidirected graph $G = (V, E)$ where $V$ is the set of nodes and $E$ is the set of edges.
 A node $v$ in a bidirected graph has two node sides, $\{v^{-}, v^{+}\}$, which are arbitrarily designated as ``left'' and ``right'' respectively (Figure \ref{fig:example_graph}).
 Each node $v$ in a sequence graph is labeled with a nucleotide sequence, $s(v)$.
 Edges in sequence graphs connect node sides and traversals of nodes must enter and exit the node at opposite sides.
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
+
+Variation graphs are sequence graphs that additionally encode a set of reference paths through the graph.
+These paths provide a stable linear coordinate system, and are particularly useful for projecting pangenomic results back to the standard linear reference genome.
+They are also useful for restricting walks through the graph to those corresponding to known biological sequences.
 The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs.
 
-\subsubsection{Variation graph representations}
+\subsection{Variation graph representations}
 
 Standardized representations of variation graphs are important to allow interchange between tools.
 Most pangenome tools support reference Graphical Fragment Assembly (rGFA) format for representing a reference pangenome graph \cite{li_minigraph_2020}. 
 rGFA can be used as a stable reference coordinate system that extends that of the linear reference genome \cite{li_minigraph_2020}. 
 
-The vg toolkit originally supported two formats for representing variation graphs: the original VG format and XG format \cite{garrison_variation_2018}.
+The \texttt{vg} toolkit originally supported two formats for representing variation graphs: the original VG format and XG format \cite{garrison_variation_2018}.
 Although the XG format is more memory-efficient than VG, it is a static format that does not allow for modifications.
 Three other memory-efficient, dynamic formats were later introduced: ODGI \cite{guarracino_odgi_2022}, HashGraph, and PackedGraph \cite{eizenga2020efficient}.
 VG, XG, HashGraph, and PackedGraph formats efficiently represent the sequence graph component of a variation graph but are less efficient for storing paths, and generally only a small number of reference haplotypes are included.
@@ -330,11 +329,12 @@ A GBZ represents a GBWT and the node sequences of the graph to represent the sub
 
 Indexes of graphs are discussed in Section \ref{sec:graph-mappers}.
 
-\subsubsection{Graph construction methods}
+\subsection{Graph construction methods}
 \label{sec:graph-construction}
+
 A variation graph can be constructed using a variety of different methods, each of which produces graphs with distinct characteristics.
 One option for constructing a graph is to start with a set of variants, typically represented in a variant calling format (VCF) file.
-The \texttt{vg} toolkit's \texttt{vg construct} subcommand takes a reference and a set of variants called against that reference and produces a variation graph.
+The \texttt{vg} toolkit's \texttt{vg construct} tool takes a reference and a set of variants called against that reference and produces a variation graph.
 Variation graphs constructed with this method are generally topologically simple. 
 
 Graphs can also be constructed from genome assemblies.
@@ -362,13 +362,13 @@ In contrast, less collapsed graphs built with Minigraph are simpler and can more
 \end{figure}
 
 To help find organization in a sequence graph, it is often useful to describe common topological motifs.
-A simple variation such as a SNP or indel will be represented by one or two nodes representing the variant sequences, flanked by two nodes representing conserved sequences.
+A simple variation such as a single nucleotide polymorphism (SNP) or and insertion or deletion (indel) will be represented by one or two nodes representing the variant sequences, flanked by two nodes representing conserved sequences.
 In Figure \ref{fig:snarl_tree}A, nodes $h$ and $i$ represent the alleles of a SNP while nodes $g$ and $j$ represent conserved sequence.
 The subgraph between node sides $g^+$ and $j^-$ is called a snarl.
 A snarl is defined by a pair of node sides, $\{x^{-/+}, y^{-/+}\}$, that delimit a subgraph between them.
 The nodes $x$ and $y$ are referred to as the boundary nodes of the snarl.
 Two node sides define a snarl if they are (i) separable: splitting the boundary nodes into the their two node sides disconnects the snarl from the rest of the graph, and (ii) minimal: there is no node $z$ within the snarl that is separable with the boundary nodes.
-I will use the term ``snarl'' to refer to the two boundary nodes and the subgraph between them.
+%I will use the term ``snarl'' to refer to the two boundary nodes and the subgraph between them.
 
 Snarls frequently occur successively with a shared boundary node between them.
 A sequence of consecutive snarls is called a ``chain''.
@@ -383,10 +383,10 @@ In Figure \ref{fig:snarl_tree}A, the chain $\{e^+$, $j^-\}$ is contained in the 
 %A sequence graph can be entirely decomposed into nested snarls and chains.
 The nesting relationship of snarls and chains of a graph is described by its ``snarl tree'' (Figure \ref{fig:snarl_tree} A).
 Each snarl and chain in the graph is represented as a node in the snarl tree.
-A chain is a child of a snarl if it is contained in the snarl and no other descendent of the snarl.
+A chain is a child of a snarl if it is contained in the snarl and no other descendant of the snarl.
 A snarl is a child of a chain if it is a component of the chain.
 Every snarl is a child of a chain; a chain containing just one snarl is called a ``trivial chain''.
-Because of this, the snarl tree is composed of alternating layers of snarls and chains, starting with a top-level chain as the root.
+Because of this, the snarl tree is composed of alternating layers of snarls and chains, usually starting with a top-level chain as the root.
 
 Nodes, snarls, and chains all have the property that they are connected to the rest of the graph by two node sides.
 Based on this property, snarls and chains can be treated as nodes within their parents, obscuring the presence of a subgraph between the boundaries of the child.
@@ -398,7 +398,7 @@ In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced wi
 \label{sec:background:mapping}
 
 Read mapping is often the first step of a genomic pipeline.
-The problem of read mapping is to take sequencing reads from a sample and find the optimal placement of the reads in a reference.
+The problem of read mapping is to take sequencing reads from a sample and find a placement of the reads in a reference.
 The terms ``mapping'' and ``alignment'' are often used interchangeably.
 For the sake of clarity, I will use ``mapping'' to refer to the problem of finding the location of a read in a reference, and ``alignment'' to refer to the problem of finding the optimal base-level alignment.
 Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
@@ -423,22 +423,29 @@ Existing liner mappers generally use either suffix tree-based text indexes or $k
 %also Slider, which uses merge sorting
 
 \subsubsection{Text indexes}
-Text indexes can be queried to find exact matches between a read and a reference.
-A simple example of a text index is a suffix trie, which stores all suffixes of a template string (a reference genome for example) in a tree structure where edges are labelled with characters, such that each suffix is represented in a path from the root of the tree down to a leaf \cite{li_survey_2010}.
+
+Text indexes provide two basic operations: counting occurrences of a substring within in a template string and locating their positions.
+This can be used for finding exact matches between a read and a reference sequence.
+A simple example of a text index is a suffix trie, which stores all suffixes of a template string in a tree structure where edges are labeled with characters such that each suffix is represented in a path from the root of the tree down to a leaf \cite{li_survey_2010}.
 Because any substring of the template string must be a prefix of one of its suffixes, exact substring queries can be done in a walk down from the root of the suffix trie in time linear to the length of the query string.
 Suffix trees represent the same information as suffix tries with reduced memory by compressing non-branching paths and replacing the characters with offsets in the original template string. 
 A suffix array represents the sort order of all suffixes of a template string.
 Using a suffix array, substring query can be done in a binary search in $O(Q + logT)$ time, where $Q$ is the length of the query and $T$ is the length of the template \cite{suffix_array_1993}. 
 The Burrows-Wheeler Transform (BWT) is found by sorting all rotations (a transformation of a string taking a prefix and moving it to the end of the string) of the template string, then taking the last character from each rotation \cite{burrows_wheeler_1994}.
-The BWT is reversible, highly compressible, and, using an additional data structure called the FM index, can perform exact match queries in time linear in the length of the query \cite{fm_index_2000}.
-The $r$-index further reduces the time for exact matching to be linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
+The BWT is reversible, highly compressible, and, using an additional data structure called the FM-index, can perform exact match queries in time linear in the length of the query \cite{fm_index_2000}.
+The FM-index's memory requirement scales with the size of the template sequence, and while it has been instrumental in indexing the single human reference genome, it doesn't scale to collections of genomes.
+
+%This should maybe go in the graph section but it's easier to read here
+The Run-Length FM-Index (RLFM-index) can index multiple genomes, represented as a single concatenated sequence, with a memory requirement linear in the number of runs of the same character in the BWT \cite{makinen_succinct_2005,makinen_storage_2010}.
+A compression scheme dependent on the repetitiveness of the template sequence is very effective for genome sequences, but using this index to locate substrings requires an additional data structure that increases memory requirement.
+The $r$-index can find exact matches in time linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
 The $r$-index makes it feasible to index databases of whole genomes \cite{rossi_moni_2022}.
 
 Many existing mappers use suffix trees \cite{kurtz_versatile_2004}, suffix arrays \cite{abouelhoda_replacing_2004,hoffmann_fast_2009}, or FM indexes \cite{langmead_bowtie2_2012,li_bwa_mem_2013,li_soap2_2009,li_bwa_2009,langmead_bowtie_2009} to find exact matches as seeds.
 Unlike $k$-mer based methods, text indexes can produce variable-length seeds.
 These are often maximal exact matches (MEMs), which are exact matches that cannot be extended further on either side without a mismatch.
 
-%MEMs and variants of MEMS
+%MEMs, MUMs, SMEMs, etc
 
 \subsubsection{k-mer indexes}
 
@@ -453,25 +460,18 @@ Commonly used ordering function are lexicographic order, random hash functions, 
 Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
 A minimizer index stores the locations of minimizers from all windows in a sequence.
 If two sequences share a subsequence of length at least $w+k-1$, then they are guaranteed to share a minimizer.
-Minimizers can be further prioritized based on their frequency in the reference.
-Weighted minimizers increase the likelihood of selecting minimizers that are less frequent in the reference, improving the number of false-positive matches \cite{jain_winnowmap_2020}.
-
-Syncmers are another alternative to minimizers that selects $k$-mers based on the properties of the $s$-mers within a $k$-mer \cite{edgar_syncmers_2021}.
-Unlike minimizers, syncmers are selected solely based on the $k$-mers and do not depend on their context.
+Minimizers can be further prioritized based on their frequency in the reference, improving the number of false-positive matches \cite{jain_winnowmap_2020}.
 
 Some $k$-mer methods allow inexact matches, also known as fuzzy seeds.
 Spaced $k$-mers allow substitutions in $k$-mers by allowing certain positions in the $k$-mer to be mismatches \cite{ma_patternhunber_2002}.
 Similarly, strobemers are used to find seeds across indels by linking multiple $k$-mers within a window together \cite{sahlin_strobemers_2021}.
 
-A universal hitting set (UHS) is an set of $k$-mers that is guaranteed to have a $k$-mer for any sequence of length $L$ \cite{ekim_randomized_2020,orenstein_compact_2016}.
-Although UHSs are theoretically useful, computing them is a difficult problem.
+%Syncmers are another alternative to minimizers that selects $k$-mers based on the properties of the $s$-mers within a $k$-mer \cite{edgar_syncmers_2021}.
+%Unlike minimizers, syncmers are selected solely based on the $k$-mers and do not depend on their context.
+%A universal hitting set (UHS) is an set of $k$-mers that is guaranteed to have a $k$-mer for any sequence of length $L$ \cite{ekim_randomized_2020,orenstein_compact_2016}.
+%Although UHSs are theoretically useful, computing them is a difficult problem.
 
-
-
-%Could also include spaced seeds, sketching, strobmers, q-gram filter for gaps 
-
-
-\subsubsection{Clustering and chaining}
+\subsection{Clustering and chaining}
 
 After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
 Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
@@ -489,9 +489,8 @@ The choice of gap cost function impacts both the properties of the final chain t
 
 \subsection{Alignment}
 
-
 The final base-level alignment is typically found using dynamic programming, either by extending seed alignments or by aligning the entire read to a region of the reference that is found by clustering.
-Most standard dynamic programming algorithms are based on the Smith-Waterman algorithm for local alignment and Needleman-Wunch algorithm for global alignment.
+Most standard dynamic programming algorithms are based on the Smith-Waterman-Gotoh algorithm for local alignment \cite{smith_waterman_1981,gotoh_1982} or Needleman-Wunch algorithm for global alignment \cite{needleman_wunsch_1970}.
 These algorithms use a rectangular dynamic programming matrix of the score for aligning a base between the query and reference sequences.
 The cost of skipping bases in either sequence is defined by the gap cost; most modern algorithms use an affine gap penalty with a relatively high cost for opening a gap and a lower cost for extending it.
 
@@ -524,7 +523,7 @@ Clustering or chaining seeds in a graph is more difficult than in a linear genom
 Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_variation_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
 In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum distance calculation and its use in clustering. 
 
-Many existing graph chaining algorithms are based on an algorithm from Makinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
+Many existing graph chaining algorithms are based on an algorithm from M{\"a}kinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
 The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
 Further extensions to this algorithm have extended it to allow overlaps of one node between anchors \cite{ma_graphchainer_2023} and to chain through cyclic graphs \cite{panaligner_2024}.
 
@@ -553,19 +552,17 @@ This strategy has been extended to allow recombination-aware alignment \cite{bon
 \subsection{Downstream applications of read mapping}
 
 Read mapping is the first step for many genomic analysis including variant calling, genotyping, and transcriptomic analysis. 
-Although these methods are not a focus of this thesis, I will briefly summarize some of the tools used in the analyses of my mapping algorithms.
+Although these methods are not a focus of this thesis, I will briefly summarize some of the tools used in the results that I present.
 Small variant calling is typically done by mapping reads then using statistical models to distinguish between sequencing errors and real variants in the sample \cite{bonfiglio_calling_2024}.
 DeepVariant is convolutional neural network-based variant caller for calling small variants \cite{poplin_universal_2018}. 
 In Chapters \ref{chapter:sr-giraffe} and \ref{chapter:lr-giraffe}, I present variant calling results using models of DeepVariant trained on reads mapped to a pangenome graph with vg giraffe.
 
-Calling structural variants (SVs) is a more challenging problem, particularly around highly repetitive regions.
+Calling structural variants is a more challenging problem, particularly around highly repetitive regions.
 Long reads are capable of spanning breakpoints and repeats and as a result have greatly improved SV calling methods.
 Sniffles is a commonly used structural variant caller that uses long reads alignments \cite{smolka_sniffles2_2024}.
 While variant calling methods identify new variants, genotyping methods determine the presence of known variants in a sample.
-vg call is a graph-based genotyper primarily used for genotyping structural variants \cite{hickey_vgsv_2020}.
+\texttt{vg call} is a graph-based genotyper primarily used for genotyping structural variants \cite{hickey_vgsv_2020}.
 It uses read coverage of edges in the pangenome graph to genotype the variants present in the graph.
-
-
 
 
 \chapter{Distance Indexing}
@@ -1620,7 +1617,6 @@ Recent advances in sequencing technologies and bioinformatics tools have made se
 This abundance of data has granted us greater insight into human genetic variation and its distribution in the human population.
 But as we learn more about human genetic diversity, there is a growing recognition that standard practices are insufficient for accurately and equitably detecting and interpreting genetic variants. 
 Pangenomes are a promising alternative to standard linear genomes that can better represent the genetic landscape of a species and reduce bias in analyses.
-With the recent progress in sequencing and population genomics, it is now possible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
 
 The first human reference pangenomes are just beginning to be produced and released to the public for general use.
 However, due to their novelty and the technical challenges of working with a larger and more complex data structure, methods for working with pangenomes are less mature than analogous methods for linear genomes.
@@ -1632,10 +1628,10 @@ The distance index has become a major barrier for mapping to topologically compl
 In order for Giraffe to function on graphs with more haplotypes, graphs representing species with more genetic divergence, or graphs that allow more collapsing of similar sequences, the distance index must be changed to more efficiently represent distances within snarls.
 
 This has been an area of recent exploration in the lab.
-One potential solution that I discussed with Simon Heumos is to use his layout algorithm from odgi to estimate a low-dimensional embedding of the netgraph.
-Odgi layout uses stochastic gradient descent to find the optimal set of 2-dimensional coordinates for each node such that the distance between all pairs of nodes in the coordinate plane best matches the distances between the nodes on embedded paths in the graph \cite{guarracino_odgi_2022}.
-An index like this would use $O(ND)$ space, where $N$ is the number of nodes and $D$ is the number of dimensions, but such an approach would allow distances between all pairs of nodes, even though most pairs of node sides are unreachable in a net graph.
-The embedding could be paired with a bit-vector representing reachability between nodes, but even a bit vector with quadratic cost may be too big for the largest snarls. 
+%One potential solution that I discussed with Simon Heumos is to use his layout algorithm from odgi to estimate a low-dimensional embedding of the netgraph.
+%Odgi layout uses stochastic gradient descent to find the optimal set of 2-dimensional coordinates for each node such that the distance between all pairs of nodes in the coordinate plane best matches the distances between the nodes on embedded paths in the graph \cite{guarracino_odgi_2022}.
+%An index like this would use $O(ND)$ space, where $N$ is the number of nodes and $D$ is the number of dimensions, but such an approach would allow distances between all pairs of nodes, even though most pairs of node sides are unreachable in a net graph.
+%The embedding could be paired with a bit-vector representing reachability between nodes, but even a bit vector with quadratic cost may be too big for the largest snarls. 
 Zia Truong, a rotation student whom I co-mentored with Adam Novak, explored using landmark-based distances for netgraphs.
 Her algorithm finds a set of landmark nodes that are expected to be included in most paths through the snarl, then stores the distance from each node to each landmark.
 Distances between nodes can be estimated by finding the distance from each node to a common landmark.

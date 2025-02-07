@@ -135,6 +135,10 @@
 \def\listtablename{List of Tables}
 %                  ~~~~~~~~~~~~~~
 %
+% \listofalgorithms:
+\def\listalgorithmname{List of Algorithms}
+%                  ~~~~~~~~~~~~~~
+%
 % \thebibliography:
 \def\bibname{Bibliography}
 %            ~~~~~~~~~~~~
@@ -149,6 +153,10 @@
 %
 % table environment:
 \def\tablename{Table}
+%              ~~~~~
+%
+% algorithm environment:
+\def\algorithmname{Algorithm}
 %              ~~~~~
 %
 % \chapter:
@@ -809,6 +817,18 @@ by\par
 
 \let\l@table\l@figure
 
+%TODO: This adds algorithms to the table of contents but then the list is empty
+% LIST OF ALGORITHMS
+%
+%\def\listofalgorithms{\@restonecolfalse
+%  \if@twocolumn\@restonecoltrue\onecolumn\fi
+%  \chapter*{\listalgorithmname\@mkboth{\uppercase{\listalgorithmname}}%
+%{\uppercase{\listalgorithmname}}}
+%   \addcontentsline{toc}{chapter}{\listalgorithmname}
+%   {\dsp\@starttoc{lof}}\if@restonecol
+%    \twocolumn\fi}
+%
+%\let\l@algorithm\l@figure
 
 
 %    ****************************************
