@@ -103,7 +103,7 @@ Pangenomes are an alternative representation of genomes that incorporate genetic
 Using a pangenome as a reference can mitigate the bias incurred by using the current standard reference genome, but because of the increased size and complexity of pangenomes, tools that use them tend to be slower and less reliable than tools that use standard references.
 Mapping sequencing reads to a reference, the first step in many genomic pipelines, is a particularly challenging problem in a pangenome context. 
 In this dissertation I present my work developing data structures and algorithms to support read mapping to pangenome graphs.
-The pangenomic read mapping tools that I helped develop over the course of my PhD are as efficient as linear mappers and improve variant calling results when used with standard tools.
+The pangenomic read mapping tools that I helped develop over the course of my PhD are as efficient as linear mappers and improve variant calling and genotyping results compared to standard tools.
 They are among the first practical pangenome mappers that are paving the way for the emerging field of pangenomics.% more accurate and unbiased genomic analyses.
 
 
@@ -122,8 +122,7 @@ the only person worthy of my company.
 
 
 \begin{acknowledgements}
-I want to ``thank'' my committee, without whose ridiculous demands, I
-would have graduated so, so, very much faster.
+Thanks 
 \end{acknowledgements}
 
 \end{frontmatter}
@@ -139,14 +138,12 @@ However, the human reference genome is a linear genome that represents a single 
 Because of its lack of diversity, the reference genome can differ significantly from an individual's genome and can bias new samples to appear more similar to the reference than they actually are.
 The human reference genome in its current iteration cannot represent the genetic diversity of the human population and is therefore limited in its utility as a reference for all humans.
 
-One emerging alternative to a linear reference genome is a pangenome reference that represents a collection of genomic sequences.
+One emerging alternative to a linear reference genome is a pangenome reference that represents a collection of genomic sequences and the homology among them.
 A pangenome can better represent the genetic makeup of a population and has been shown to improve genomic analyses by mitigating the reference bias inherent in using a linear genome.
-%Although pangenomes have shown promising results, there is a dearth of methods for working with them, in stark contrast to the myriad of linear genome methods.
-%Pangenomes are often represented using sequence graphs.
-%In a sequence graph, nodes represent nucleotide sequences and edges occur between sequences that are adjacent in the haplotypes of the pangenome.
-%While this is an efficient method for representing the large amount of repetitive sequence present in a pangenome, the structure of the graph can become topologically complex as more variants are added.
-%As a result, existing pangenome tools tend to be slow, memory intensive, and can be confounded by complex and repetitive regions of the genome.
-%In order for pangenomes to reach their full potential as a standard reference, new methods must be developed to make them practical for common genomic tasks.
+Pangenomes are commonly represented using a graph format where nodes represent nucleotide sequences and edges occur between sequences that are adjacent in the genome sequences of the pangenome.
+While this is an efficient method for representing the large amount of repetitive sequence present in a pangenome, the structure of the graph can become topologically complex as more variants are added.
+As a result, existing pangenome tools tend to be slow, memory intensive, and can be confounded by complex and repetitive regions of the genome.
+In order for pangenomes to reach their full potential as a standard reference, new methods must be developed to make them practical for common genomic tasks.
 
 Read mapping is one such fundamental task that is common to many modern genomic analyses.
 %The goal of read mapping is to take a read, the nucleotide sequence of a DNA fragment that has been read by a sequencing machine, and find the location in the reference genome where the sequences most closely match.
@@ -158,41 +155,6 @@ Next, I describe a short read-to-pangenome mapper (Chapter~\ref{chapter:sr-giraf
 
 \chapter{Background}
 \label{chapter:background}
-
-\section{Read sequencing technologies}
-\label{sec:background:sequencing}
-
-The earliest DNA sequencing techniques, including Sanger sequencing and Maxam-Gilbert sequencing, produced reads on the order of tens of base pairs \cite{sanger_sequencing_1975,sanger_sequencing_1977,maxam_sequencing_1980}
-Sanger sequencing became the basis of the first sequencing machines, which produced read hundreds of base pairs in length \cite{sequencing_review_2016}.
-Briefly, Sanger sequencing uses fluorescently-labelled nucleotides that stop DNA extension during DNA polymerization, resulting in random-length fragments of DNA that end with a labelled nucleotide. 
-The fragments are then separated by length using gel electrophoresis and the nucleotide at each position is detected from the fluorescent label \cite{sanger_sequencing_1977}. 
-Sanger sequencing has low throughput but it is highly accurate and it is still used for targeted sequencing of small regions.
-These early sequencing technologies, including Sanger sequencing, are collectively known as "first-generation sequencing".
-
-The next generation of sequencing technologies, known as "next-generation" or "second-generation" sequencing, parallelized the sequencing reactions to hugely increase throughput \cite{sequencing_review_2016}. 
-Illumina sequencing became the dominant next-generation sequencing technology.
-In Illumina sequencing, adapter sequences are ligated on each side of a DNA fragment, which bind to complementary oligonucleotides on a flow cell.
-The fragments are clonally amplified and each copy remains tethered to the flow cell to create clusters of identical fragments, which are then sequenced using a sequencing-by-synthesis technique that adds fluorescently-labelled nucleotides one at a time \cite{shendure_illumina_2008}.
-The DNA fragments are sequenced from both sides, producing paired end reads comprised of two short sequences and an approximate distance between them.
-Modern Illumina sequencing machines can produce millions or even billions of paired end reads with lengths between $100$ and $300$ base pairs in a single run \cite{illumina_sequencing_nodate}.
-
-Although Illumina has been the most prominent short read sequencing technology \cite{sr_review_2025}, the recent expiration of several of Illumina's patents has led to new emerging technologies.
-Element Biosciences' Aviti platform produces reads with a similar lengths and throughput as Illumina reads but with higher accuracy \cite{element_sequencing_2024}. 
-Ultima Genomics' UG 100 Platform is a low-cost option for short reads of $~300$ base pairs \cite{ultima_sequencing_2022}. 
-Other new technologies include MGI's DNBseq, Pacific Bioscience's Onso, Singular Genomics' G4, and Thermo Fisher Scientific's Ion Torrent \cite{sr_review_2025}.
-
-The term "third generation sequencing" is generally associated with long read single molecule sequencing.
-Sequencing is performed on individual molecules of DNA, without a separate amplification step \cite{sequencing_review_2016}.
-Currently, the two predominant long read sequencing technologies are single-molecule real-time (SMRT) sequencing or nanopore sequencing \cite{lr_review_23}.
-SMRT sequencing, developed by Pacific Biosciences (PacBio), uses hairpin adapters to circularize a double stranded fragment of DNA, which can be sequenced multiple times in a single pass \cite{pacbio_2019}.
-PacBio High Fidelity (HiFi) reads are between 10 and 25~kbp long with accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
-
-The other major long read sequencing technology, nanopore sequencing, uses an electric current to drive a DNA molecule through a nanopore embedded in a membrane.
-The current across the membrane changes according to the sequence that is passed through the nanopore, and the change in current can be translated into the DNA sequence using base calling algorithms \cite{wang_nanopore_2021}.
-Nanopore sequencing machines from Oxford Nanopore Technologies can produce sequencing reads on the order of 10-100~kbp in length, and up to 882~kbp \cite{nanopore_ultralong_2018}, with accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
-Nanopores are also capable of detecting DNA base modifications such as methylation \cite{wang_nanopore_2021}. 
-
-
 
 \section{Linear reference genomes}
 \label{sec:background:linear-genomes}
@@ -242,28 +204,86 @@ But while a population-specific reference may better capture variations that are
 Most human genetic variation occurs across populations, rather than within populations \cite{nih_understanding_2007}, meaning that even when using a population-specific reference, the majority of the genome will still be subject to the same reference bias as would stem from using any randomly selected reference genome. 
 %Furthermore, most human genetic variations are rare so no single reference scaffold will be able to represent all people equally. 
 
+\section{Towards a human reference pangenome}
+
+Although the idea of using a pangenome to mitigate reference bias is not new \cite{li_building_2010}, until recently, it has not been feasible to create a global human reference pangenome.
+The creation of such a resource requires several components: the ability to sequence hundreds of genomes with high quality, and the ability to select genomes to represent the genetic diversity human population.
+Recent advancements in genome sequencing technologies, genome assembly algorithms, and a greater understanding of human population genetics has brought this prospect closer to a reality.
+
+\subsection{Sequencing technologies}
+\label{sec:background:sequencing}
+
+The earliest DNA sequencing techniques, including Sanger sequencing and Maxam-Gilbert sequencing, produced reads on the order of tens of base pairs \cite{sanger_sequencing_1975,sanger_sequencing_1977,maxam_sequencing_1980}
+Sanger sequencing became the basis of the first sequencing machines, which produced read hundreds of base pairs in length \cite{sequencing_review_2016}.
+Sanger sequencing has low throughput but it is highly accurate and it is still used for targeted sequencing of small regions.
+These early sequencing technologies, are collectively known as "first-generation sequencing".
+
+The next generation of sequencing technologies, known as "next-generation" or "second-generation" sequencing, parallelized the sequencing reactions to hugely increase throughput \cite{sequencing_review_2016}. 
+Illumina sequencing has become the dominant next-generation sequencing technology.
+Illumina reads have a major advantage of producing paired end reads comprised of two short sequences and an approximate distance between them.
+Modern Illumina sequencing machines can produce millions or even billions of paired end reads with lengths between $100$ and $300$ base pairs in a single run \cite{illumina_sequencing_nodate}.
+These reads are generally very accurate, with most errors being substitution errors.
+
+Although Illumina has been the most prominent short read sequencing technology \cite{sr_review_2025}, the recent expiration of several of Illumina's patents has led to new emerging technologies.
+Element Biosciences' Aviti platform produces reads with a similar lengths and throughput as Illumina reads but with higher accuracy \cite{element_sequencing_2024}. 
+Ultima Genomics' UG 100 Platform is a low-cost option for short reads of $~300$ base pairs \cite{ultima_sequencing_2022}. 
+Other new technologies include MGI's DNBseq, Pacific Bioscience's Onso, Singular Genomics' G4, and Thermo Fisher Scientific's Ion Torrent \cite{sr_review_2025}.
+
+The term "third generation sequencing" is generally associated with long read, single molecule sequencing.
+Sequencing is performed on individual molecules of DNA, without a separate amplification step \cite{sequencing_review_2016}.
+Currently, the two predominant long read sequencing technologies are single-molecule real-time (SMRT) sequencing and nanopore sequencing \cite{lr_review_23}.
+Pacific Biosciences (PacBio) SMRT sequencing-based High Fidelity (HiFi) reads are between 10 and 25~kbp long with accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
+Nanopore sequencing machines from Oxford Nanopore Technologies can produce sequencing reads on the order of 10-100~kbp in length, and up to 882~kbp \cite{nanopore_ultralong_2018}, with accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
+
+Sequencing technologies can also capture information from the genome beyond the nucleotide sequence.
+Nanopores are also capable of detecting DNA base modifications such as methylation \cite{wang_nanopore_2021}. 
+Chromosome conformation capture techniques such as Hi-C capture the spacial proximity of pieces of DNA \cite{lieberman_hic_2009}. 
+
+%Briefly, Sanger sequencing uses fluorescently-labelled nucleotides that stop DNA extension during DNA polymerization, resulting in random-length fragments of DNA that are terminated with a labelled nucleotide. 
+%The fragments are then separated by length using gel electrophoresis and the nucleotide at each position is detected from the fluorescent label \cite{sanger_sequencing_1977}. 
+
+%In Illumina sequencing, adapter sequences are ligated on each side of a DNA fragment, which bind to complementary oligonucleotides on a flow cell.
+%The fragments are clonally amplified and each copy remains tethered to the flow cell to create clusters of identical fragments, which are then sequenced using a sequencing-by-synthesis technique that adds fluorescently-labelled nucleotides one at a time \cite{shendure_illumina_2008}.
+%The DNA fragments are sequenced from both sides, producing paired end reads comprised of two short sequences and an approximate distance between them.
+
+%SMRT sequencing, developed by Pacific Biosciences (PacBio), uses hairpin adapters to circularize a double stranded fragment of DNA, which can be sequenced multiple times in a single pass \cite{pacbio_2019}.
+
+%The other major long read sequencing technology, nanopore sequencing, uses an electric current to drive a DNA molecule through a nanopore embedded in a membrane.
+%The current across the membrane changes according to the sequence that is passed through the nanopore, and the change in current can be translated into the DNA sequence using base calling algorithms \cite{wang_nanopore_2021}.
+
+
+
+\subsection{Genome assembly}
+
+The first draft of the human genome was published in 2001, eleven years after the initial launch of the project, and cost about three billion dollars \cite{miga_need_2021}.
+Since then, the cost of genome assembly has dropped dramatically, largely due to new sequencing technologies and the algorithms that assemble reads into a genome sequence \cite{miga_envisioning_2023}.
+Modern assembly algorithms use long reads to resolve the most repetitive and complex regions of the genome \cite{cheng_hifiasm_2021,rautiainen_verkko_2023,shafin_shasta_2020}.
+Haplotype phasing, the problem of distinguishing between the maternal and paternal haplotype, can be done using chromosome conformation capture reads, ultra-long nanopore reads, or sequencing date from the parents \cite{cheng_hifiasm_2021}.
+A high quality, phased genome now costs between ten and fifteen thousand dollars \cite{miga_envisioning_2023}.
+The first published draft of a human pangenome reference produced assemblies with an average quality value of 53.57 \cite{hprc_pangenome_2023}.
 
 \subsection{Surveys of human genetic variation}
 
-While the Human Genome Project provided a deep understanding of a single human genome, other large-scale projects aimed to provide a broad understanding of the genetic landscape of the human population.
-Projects such as the dbSNP database \cite{sherry_dbsnp_2001}, International HapMap Consortium \cite{international_hapmap_consortium_international_2003,international2005haplotype}, ENCyclopedia of DNA Elements (ENCODE) project \cite{encode_project_consortium_encode_2004}, 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, and Human Genome Structural Variation Consortium (HGSVC) \cite{chaisson_sv_2019} have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
-Historically, many of these projects focused on European populations...
-As sequencing technologies \cite{} and genome assembly algorithms \cite{} have advanced, these projects have been producing increasingly high-quality genomes and variant catalogues. 
+While the Human Genome Project provided a deep understanding of a single human genome, other large-scale projects aimed to provide a broad understanding of the genetic landscape of the human population \cite{international_hapmap_consortium_international_2003,international2005haplotype,1000_genomes_project_consortium_map_2010,1000gp_2015,chaisson_sv_2019}.
+These projects have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
+In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, produced catalogues of variants from thousands of individuals across diverse populations, eventually cataloging over $99\%$ of common variants.
 This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides a roadmap for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_2021}.
 
-\section{Pangenomics}
+%Projects such as the dbSNP database \cite{sherry_dbsnp_2001}, International HapMap Consortium \cite{international_hapmap_consortium_international_2003,international2005haplotype}, ENCyclopedia of DNA Elements (ENCODE) project \cite{encode_project_consortium_encode_2004}, 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, and Human Genome Structural Variation Consortium (HGSVC) \cite{chaisson_sv_2019} have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
+
+\section{Pangenomes}
 \label{sec:background:pangenomes}
 
 A pangenome is an alternative to a standard linear genome.
 Pangenomes are collections of genomic sequences from a population and the alignments among them.
-Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_draft_2023}.
-With recent advances in genome sequencing and assembly algorithms, it is now feasible to produce reference-quality and even telomere-to-telomere genome sequences with ever-decreasing time and cost \cite{}.
+Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_pangenome_2023}.
+With recent advances in genome sequencing and assembly algorithms, it is now possible to produce reference-quality and even telomere-to-telomere genome sequences with ever-decreasing time and cost \cite{miga_envisioning_2023}.
 This technical capability coupled with our current understanding of population genetics makes it feasible to select and sequence genomes to accurately and efficiently represent the genetic diversity of a population. 
 
 The first human reference pangenomes are just beginning to be produced.
 The Human Pangenome Reference Consortium (HPRC) has build on the work of the Human Genome Project, the 1000 Genomes Project, and other sequencing projects to begin to establish a global human reference pangenome \cite{hprc_2022}.
 The HPRC aims to produce a pangenome comprised of at least 350 individuals' genomes selected to maximally represent the genetic variant present in the human population \cite{hprc_2022}.
-The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality (average quality value of $53.57$), phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines and prioritized for their coverage of genetic variants and biogeographic origin \cite{hprc_draft_2023}.
+The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality (average quality value of $53.57$), phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines and prioritized for their coverage of genetic variants and biogeographic origin \cite{hprc_pangenome_2023}.
 The HPRC released three different alignments of these haplotype sequences, constructed using the Minigraph \cite{li_minigraph_2020}, Minigraph-Cactus (MC)\cite{minigraph_cactus_2024}, and PanGenome Graph Builder (PGGB) \cite{pggb_2024} pipelines (see section \ref{sec:graph-construction}). 
 
 
@@ -273,7 +293,7 @@ For example, the Chinese pangenome sampled individuals from the 36 of the 55 off
 These population-specific efforts aim to improve understanding of genetic variants and diseases that are specific to or more frequent in each population.
 
 
-\section{Variation graphs}
+\subsection{Variation graphs}
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{example_graph.pdf}
@@ -295,7 +315,7 @@ Edges in sequence graphs connect node sides and traversals of nodes must enter a
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
 The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs.
 
-\subsection{Variation graph representations}
+\subsubsection{Variation graph representations}
 
 Standardized representations of variation graphs are important to allow interchange between tools.
 Most pangenome tools support reference Graphical Fragment Assembly (rGFA) format for representing a reference pangenome graph \cite{li_minigraph_2020}. 
@@ -310,7 +330,7 @@ A GBZ represents a GBWT and the node sequences of the graph to represent the sub
 
 Indexes of graphs are discussed in Section \ref{sec:graph-mappers}.
 
-\subsection{Graph construction methods}
+\subsubsection{Graph construction methods}
 \label{sec:graph-construction}
 A variation graph can be constructed using a variety of different methods, each of which produces graphs with distinct characteristics.
 One option for constructing a graph is to start with a set of variants, typically represented in a variant calling format (VCF) file.
@@ -324,7 +344,7 @@ As this algorithm is not designed to find small variants; graphs constructed wit
 The Minigraph-Cactus (MC) pipeline builds on graphs build with the Minigraph algorithm and adds smaller variants using the Cactus algorithm \cite{minigraph_cactus_2024}. 
 This introduces smaller variants, nested variants, and can create cycles in the graph.
 The PanGenome Graph Builder (PGGB) algorithm constructs a graph using a reference-free all-to-all comparison of genomes \cite{pggb_2024}.
-The PGGB pipeline tends to add more alignments between homologous sequences, particularly copy number variants, resulting in collapsing of repetitive sequences into a single copy \cite{hprc_draft_2023}.
+The PGGB pipeline tends to add more alignments between homologous sequences, particularly copy number variants, resulting in collapsing of repetitive sequences into a single copy \cite{hprc_pangenome_2023}.
 This creates large cycles and complicated nested structures.
 
 The choice of graph construction method is a trade off between the complexity of the graph and the homology that they represent.
@@ -332,7 +352,7 @@ PGGB graphs are the most topologically complicated, but the construction method 
 In contrast, less collapsed graphs built with Minigraph are simpler and can more clearly define the orthology among genomes, as the individual repeat copies are separately expressed and aligned \cite{li_minigraph_2020}. 
 
 
-\section{Snarl decomposition}
+\subsection{Snarl decomposition}
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{snarl_tree.pdf}
@@ -529,8 +549,21 @@ In this paradigm, the problem of minimizing edit distance is viewed as finding t
 The shortest path problem can then be solved using the A* algorithm to find the optimal alignment \cite{ivanov_astarix_2020,bonizzoni_recalign_2025}.
 This strategy has been extended to allow recombination-aware alignment \cite{bonizzoni_recalign_2025}.
 
+
 \subsection{Downstream applications of read mapping}
-%Variant calling, briefly
+
+Read mapping is the first step for many genomic analysis including variant calling, genotyping, and transcriptomic analysis. 
+Although these methods are not a focus of this thesis, I will briefly summarize some of the tools used in the analyses of my mapping algorithms.
+Small variant calling is typically done by mapping reads then using statistical models to distinguish between sequencing errors and real variants in the sample \cite{bonfiglio_calling_2024}.
+DeepVariant is convolutional neural network-based variant caller for calling small variants \cite{poplin_universal_2018}. 
+In Chapters \ref{chapter:sr-giraffe} and \ref{chapter:lr-giraffe}, I present variant calling results using models of DeepVariant trained on reads mapped to a pangenome graph with vg giraffe.
+
+Calling structural variants (SVs) is a more challenging problem, particularly around highly repetitive regions.
+Long reads are capable of spanning breakpoints and repeats and as a result have greatly improved SV calling methods.
+Sniffles is a commonly used structural variant caller that uses long reads alignments \cite{smolka_sniffles2_2024}.
+While variant calling methods identify new variants, genotyping methods determine the presence of known variants in a sample.
+vg call is a graph-based genotyper primarily used for genotyping structural variants \cite{hickey_vgsv_2020}.
+It uses read coverage of edges in the pangenome graph to genotype the variants present in the graph.
 
 
 
