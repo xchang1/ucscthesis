@@ -827,7 +827,7 @@ by\par
 %   \addcontentsline{toc}{chapter}{\listalgorithmname}
 %   {\dsp\@starttoc{lof}}\if@restonecol
 %    \twocolumn\fi}
-%
+
 %\let\l@algorithm\l@figure
 
 
