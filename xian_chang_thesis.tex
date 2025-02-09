@@ -103,7 +103,7 @@ The human reference genome is one of the most important foundational resources i
 Pangenomes are an alternative representation of genomes that incorporate genetic variations from a population of individuals.
 Using a pangenome as a reference can mitigate the bias incurred by using the current standard reference genome but because of the increased size and complexity of pangenomes, tools that use them tend to be slower and less reliable than tools that use standard references.
 Mapping sequencing reads to a reference, the first step in many genomic pipelines, is a particularly challenging problem in a pangenome context. 
-In this dissertation I present my work developing data structures and algorithms to support read mapping to pangenome graphs.
+In this dissertation, I present my work developing data structures and algorithms to support read mapping to pangenome graphs.
 The pangenomic read mapping tools that I helped develop over the course of my PhD are as efficient as linear mappers and improve variant calling and genotyping results compared to standard tools.
 They are among the first practical pangenome mappers that are paving the way for the emerging field of pangenomics.
 
@@ -403,7 +403,7 @@ For the sake of clarity, I will use ``mapping'' to refer to the problem of findi
 Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
 
 Most mapping algorithms follow a common seed-and-extend framework comprised of three main steps.
-In the first step, seeding, short ``seed'' alignments are found between the read and reference.
+In the first step, seeding, short ``seed'' alignments are found between the read and reference (Figure~\ref{fig:mapping_overview}).
 Next, the seeds may be grouped together based on their locations in the reference to identify regions of the genome that are likely targets of mapping.
 This step is either done by clustering or chaining, and is omitted entirely by some mappers.
 In clustering, partitions of seeds are found such that seeds that are close to each other on the reference are placed in the same partition.
@@ -415,6 +415,13 @@ Read mapping algorithms vary depending on the type of input reads and whether th
 Earlier algorithms were designed to aligner shorter reads to linear genomes.
 These algorithms were later adapted to align longer reads and to align to graph references.
 
+
+\begin{figure}
+\centering
+\includegraphics[width=0.8\columnwidth]{}
+\caption[Seed-and-extend mapping algorithm overview]{\textbf{Seed-and-extend mapping algorithm overview} (A) Short seed alignments between the read and reference are found using a text index or $k$-mer index. Seeds are grouped together into unordered clusters (B) or ordered chains (C). Alignment is done from individual seeds (D) or between seeds in a chain (E).}
+\label{fig:mapping_overview}
+\end{figure}
 \subsection{Seeding}
 
 Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010,lr_review_2023}.
@@ -580,8 +587,9 @@ It uses read coverage of edges in the pangenome graph to genotype the variants p
 \section{Preface}
 This chapter is the full text of my paper "Distance Indexing and Seed Clustering in Sequence Graphs" \cite{chang_distance_2020}, which I presented and ISMB in 2020 and was published in Bioinformatics.
 I am the sole first author of this paper. 
-Jordan M. Eizenga originally conceptualized the idea of a snarl decomposition-based distance index and provided guidance and support throughout the process of software development and writing.
-Jordan M. Eizenga, Adam M. Novak, and Jouni Sirén provided to minor contributions to the software development and conceptualization. 
+Benedict Paten and David Haussler originally conceptualized the idea of a snarl decomposition-based distance index.
+Jordan M. Eizenga contributed to the design of the distance index and provided guidance and support throughout the process of software development and writing.
+Jordan M. Eizenga, Adam M. Novak, and Jouni Sirén provided minor contributions to the software development and conceptualization. 
 
 While the majority of my work is done for variation graphs, the distance index is generalizable to sequence graphs as well.
 Some notation in this chapter may differ from the rest of the thesis but the underlying structures they describe are the same.
@@ -1102,7 +1110,7 @@ Jouni Sirén, Adam M. Novak, and I did the majority of the software development 
 I integrated the distance index and clustering algorithm from the previous chapter into the Giraffe implementation, adapted the single end algorithm to paired-end mapping, contributed to the paired-end rescue implementation, and contributed to the overall software development and optimization of the Giraffe tool.
 Jouni Sirén implemented the GBWT data structure and related algorithms including the minimizer index, seeding, haplotype sampling, and gapless extension.
 Adam M. Novak integrated the components of Giraffe into the full working tool, built the graphs for evaluations, and contributed to the optimization of Giraffe.
-Jordan M. Eizenga wrote the alignment algorithms and mapping quality code that Giraffe uses.
+Jordan M. Eizenga contributed to the alignment algorithms and mapping quality code that Giraffe uses.
 Jean Monlong performed all the structural variant analyses.
 I performed the simulated read mapping experiments, runtime and memory analyses, and reference bias analyses. 
 Charlie Markello performed the short variant calling analyses.
@@ -1653,7 +1661,6 @@ Pangenomes cannot grow indefinitely and no single pangenome will be able to repr
 However, a pangenome graph could be used as a more versatile reference that can be modified for specific applications.
 The recent personalized pangenomes paper demonstrates how variants can be removed from a pangenome to better represent an individual sample \cite{siren_personalized_2024}. 
 Conversely, variants specific to a population, disease, or individual could be added to a reference pangenome.
-%TODO: Include the Emblask-weaver pipeline if it is published
 Adding variants to a graph is more difficult than removing them because the graph must be re-indexed in order to map to it.
 While any modification to the graph will change the indexes, re-indexing a reduced graph may not be necessary if the new index will be a subset of the old and, as in the case of the personalized pangenome workflow, the new graph may be small enough for indexing to be very fast.
 Re-indexing a graph with additional variants, particularly larger variants connecting disparate regions of the genome, is a more difficult task. 
