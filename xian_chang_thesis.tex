@@ -1345,7 +1345,7 @@ We built a comprehensive pangenome containing SVs that combines variants from th
 The combined catalog represents 16 samples from diverse human populations and is estimated to cover most of the common insertions and deletions in the human population \cite{audano_hgsvc}.
 Near-duplicate versions of variants (i.e., SVs with slightly different breakpoints) are often present within and across SV catalogs.
 A naïve integration of all these variants can lead to redundancy in the graph that can affect read mapping and variant genotyping.
-We remapped sequencing data and integrated variants iteratively into the graph to progressively build a nonredundant, compact SV graph (Section \ref{subsec:aim2:svpangenome}).
+We remapped sequencing data and integrated variants iteratively into the graph to progressively build a nonredundant, compact SV graph (Section \ref{subsec:svpangenome}).
 The final SV graph was constructed from 123,785 SVs from the original catalogs: 53,663 deletions and 70,122 insertions.
 Overall, the graph contained 26.2 Mbp of nonreference sequences in the form of insertions. Using a graph decomposition \cite{paten_superbubbles_2018}, we identified 228,405 subgraphs that represent variant sites.
 Some of these correspond to smaller variants nested inside larger ones. After combining these cases, there were 96,644 non-nested, nonoverlapping SV subgraphs.
@@ -2196,8 +2196,298 @@ Replicating a previous approach \cite{crysnanto_bovine_2020}, we used \texttt{bc
 This strategy was chosen to restrict analysis to sites that we are confident are heterozygous in NA19239 and are supported by the read set used.
 \texttt{mpileup} and \texttt{call} were run on each chromosome in parallel using GNU Parallel \cite{Tange2011a}.
 
+\subsection{Genotyping and evaluating short variants with Dragen}
+\label{subsec:aim2:dragen}
+
+We mapped $\sim$830~million~paired-end, 150-bp-long reads (Precision FDA Challenge V2 Illumina $\sim$35x~coverage) from the HG002 sample to the 1000GP graph.
+We also separately evaluated mapping $\sim$1.08 billion 250-bp-long reads ($\sim$40-50x~coverage of Illumina HiSeq~2500) from HG002 to see if using longer reads and higher coverage would affect the results.
+For the genome graph mappers, we evaluated variant calling performance by using \texttt{vg~surject} to produce BAM representations of our graph alignments projected onto the linear reference assembly, and then using Dragen version~3.7.5 to call variants against the \texttt{hs38d1} reference for each set of alignments.
+Dragen was used as the primary variant caller because Illumina, who sells it, has found it to produce robust results\cite{illumina_dragen_2019,illumina_dragen_pfda_2017,illumina_dragen_pfda_2020}.
+Its speed was also useful for the purposes of rapid evaluation of whole genome alignments of real read data.
+No training or calibration was performed for any of the generated mappings other than those performed by default by Dragen itself.
+
+All pipelines evaluated for short variant calling performance had the same structure.
+First, we mapped reads to the appropriate GRCh38-based linear or graph reference using the pipeline's mapper.
+Then, we genotyped the resulting alignments using Illumina’s ``Dragen Bio-IT Platform'' product, version~3.7.5, against an index generated from the \texttt{hs38d1} human genome reference.
+The mappers for each pipeline evaluated were Illumina’s Dragen internal aligner, BWA-MEM, VG-MAP, Giraffe, and Giraffe in fast mode.
+The Genome In a Bottle HG002 version 4.2.1 high-confidence VCFs were used as the truth sets for evaluating performance of variant calling\cite{chin2020diploid}.
+The VCF was obtained from \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz} and the high confidence regions evaluated were based on the BED files obtained from \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed}.
+We used RTG's \texttt{vcfeval} \cite{cleary2015comparing} and Illuminas \texttt{hap.py} \url{https://github.com/Illumina/hap.py} to evaluate variant calling concordance with truth sets.
+All pipelines used the computational resources of the NIH HPC Biowulf cluster (\url{http://hpc.nih.gov}).
 
 
+\subsubsection{Graph construction} \label{subsec:aim2:graph_construction}
+For the variant calling experiments, graph references, and their indexes for running vg mappers, were constructed using different versions of vg ranging from \texttt{1.20.0} to \texttt{1.31.0}, orchestrated by \texttt{toil-vg~construct}.
+
+The graph references for GRCh38-based experiments were constructed using vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:v1.31.0}, using the cannonical \texttt{hs38d1} FASTA reference file as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/linear_references/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna} and the 1000 Genomes Project Phase 3 phased VCFs that were lifted over from old GRCh37-based joint-called datasets as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000gp_data/ALL.chr*_GRCh38.genotypes.20170504.rename.vcf.gz}.
+\vocab{Primary} graphs and indexes were constructed using just the linear reference FASTA with vg version \texttt{v1.26.0-180-gdc119fa04} as packaged in container \texttt{quay.io/vgteam/vg:ci-2284-dc119fa046aa7131a1a8e026be36da2d79bc2f22}.
+\vocab{1000GP} graphs and indexes were constructing using both the FASTA and the VCFs after filtering out variants belonging to segmental duplication regions of greater than 10 kilobases in length as defined in the bed file \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/genome-stratifications/v2.0/GRCh38/SegmentalDuplications/GRCh38_segdups_gt10kb.bed.gz} with vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:ci-2890-655a9622c3d60e87f14b88d943fbd8554214a975}.
+
+\subsubsection{Read sets}
+Two different read sets were used to evaluate performance
+One was the 150~bp paired-end FASTQ set from sample HG002 as obtained from the FDA Precision Challenge dataset.
+These reads are available as paired FASTQs at \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002.NovaSeq.pcr-free.35x.R1.fastq.gz} and \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002.NovaSeq.pcr-free.35x.R2.fastq.gz}.
+The other read set consisted of 250~bp paired-end FASTQ reads from sample HG002, obtained from the GIAB NovoAligned BAM at \url{ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/NIST_Illumina_2x250~bps/novoalign_bams/HG002.hs37d5.2x250.bam}.
+These reads in paired FASTQ format are available at \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002_read_pair_1.fq.gz} and \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002_read_pair_2.fq.gz}.
+
+\subsubsection{Read mapping}
+The HISAT2 mapping runs were done using version~\texttt{2.1.0}.
+Only default settings, with the addition of the \texttt{-{}-no-spliced-alignment} flag, were used during HISAT2 execution.
+
+One pipeline used Illumina's Dragen module for both mapping and alignment; both steps were run against the same index derived from the \texttt{hs38d1} human genome reference.
+
+The BWA-MEM mapping runs were done using version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference.
+
+The vg alignment runs used different graph indexes depending on the mapper used (VG-MAP or Giraffe).
+GRCh38-based experiment run details are given in Supplementary Table~\ref{tab:vgruns_grch38}.
+All runs used the \texttt{toil-vg~map} workflow for the alignment procedure and ABRA2\cite{mose2019improved} for indel realignment after alignment.
+GATK's Picard tool~\cite{Picard2019toolkit} was used to reorder aligned BAM files for contig consistency which is required by the Dragen variant calling algorithm.
+
+\subsubsection{DeepVariant calling}
+\label{subsec:aim2:deepvariant_calling}
+
+All pipelines for the DeepVariant experiment evaluation used BWA-MEM version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference or VG Giraffe against the same 1000GP graph as described in \ref{subsec:aim2:graph_construction}.
+Alignments were then indel realigned using ABRA2\cite{mose2019improved}.
+The DeepVariant v1.1.0 code base was used for all experiments.
+
+DeepVariant learns to call variants by training on input data from gold standard samples HG001-HG007.
+In all DeepVariant models, the HG003 sample is fully withheld from training, allowing a full genome sample to be evaluated.
+Because the DeepVariant production models for Illumina are trained on samples mapped with BWA, DeepVariant likely optimizes for the mapping accuracy and quality profile of BWA.
+We used DeepVariant v1.1.0 production model for the BWA-MEM experiments and a custom model for the GIRAFFE alignments that were trained using the same methods that were used to train the DeepVariant model for BWA-MEM alignments.
+The custom model data can be found here \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/deepvariant_models/model.ckpt-25600*}.
+
+
+\subsection{Genotyping and evaluating structural variants}
+\label{subsec:aim2:svgenotyping}
+
+We replicated the evaluation performed in Hickey et al.\cite{hickey_vgsv_2020} using two SV graphs made from the HGSVC\cite{chaisson_sv_2019} and GIAB v0.6\cite{zook_robust_2020} SV catalogs, respectively.
+The graphs had originally been built from VCF files provided by the HGSVC and GIAB consortia.
+To evaluate Giraffe, we built the necessary indexes.
+For the minimizer index, we used the default minimizer length of 29 and window size of 11.
+The GBWT index was created using the greedy path-cover algorithm and $n = 32$ paths.
+We then mapped and genotyped the SVs in four samples: HG00514, HG00733 and NA19240 for the HGSVC graph; HG002 for the GIAB graph.
+The genotyped were compared to the truth-set using \texttt{sveval}\cite{hickey_vgsv_2020}.
+We use non-repeat regions, i.e. regions of the genome that don't overlap simple-repeats and segmental duplications, as high-confidence regions for the HGSVC graph and the combined SV graphs that are both on GRCh38.
+For the GIAB graph, which uses GRCh37, we use the high-confidence regions provided by the GIAB consortium\cite{zook_robust_2020}.
+The scripts to build the pangenomes, genotype the SVs and evaluate the genotyping performance are available in the repository (see Section{sec:aim2:code-data}).
+
+(see section \ref{sec:aim2:code-data}).
+
+\subsection{Combining long-read catalogs for an SV pangenome}
+\label{subsec:svpangenome}
+
+We combined variants from the three SV catalogs used previously in Hickey et al.\cite{hickey_vgsv_2020}: HGSVC \cite{chaisson_sv_2019}, GIAB\cite{zook_robust_2020}, and SVPOP \cite{audano_hgsvc}.
+The three catalogs were first normalized and merging using bcftools version 1.9 \cite{li_samtools_2011}.
+
+
+To minimize issues with near-duplicate variants, we first mapped short reads from 17 diverse samples to a local graph containing all versions of a variant, and kept one version if substantially supported by the reads.
+Near-duplicate variants often exists because they contain errors around their breakpoints.
+Our aim was to filter out the most obvious errors before starting to build the SV graph.
+We identified near-duplicates by overlapping the SVs in this combined catalog.
+At this stage, we defined near-duplicate SVs as deletions with a reciprocal overlap at least 80\% or insertions located at less than 50 bp from each other and sizes at least 80\% reciprocally similar.
+A network was build from this ``near-duplicate'' relationships to identify connected components of near-duplicate variants, which we referred to as SV clusters.
+We identified 34,010 such clusters of near-duplicates SVs, each with on average 2.6 SVs.
+For each SV cluster, we extracted the reference sequence and variants to create a local SV graph of the region.
+We then aligned short-reads pooled from 17~diverse individuals selected to span different populations in the 1000 Genomes Project and HGSVC.
+The reads aligning to the region of interest were extracted using SAMtools\cite{li_samtools_2011} from the aligned reads publicly available.
+A subset of SV clusters didn't have SV-supporting reads, because they originally couldn't be mapped to the linear reference, were too difficult to map in general, or the variants were rare enough that none of the 17 individuals carried them.
+Out of the 23,929 clusters with read support, 43.1\% had one variant supported by more than 50\% of the SV-supporting reads.
+When reads supported one variant better than the other near-duplicates in the SV cluster, the near-duplicates were discarded.
+This filtering step removed 55,330~near-duplicate SVs.
+
+
+Although many obvious duplicates had been removed, many SVs sharing sequence remained.
+For example if SVs were not covered by the short-reads used above or if they were too different to match the near-duplicate definition used above.
+Instead of building a pangenome naively from the variant definition, we used a hybrid approach using iterative graph augmentation.
+The goal is to collapse as much as possible variants that share sequence content by iteratively aligning and adding variants into the SV graph.
+The graph was built in chunks separated by at least 10~kbp without any variants.
+We focused on SVs shorter than 1~kbp which represented the vast majority of the near-duplicate variants and allowed us to parallelize this iterative graph augmentation approach.
+For each chunk, we clustered SVs using a less stringent criterion as above: deletions with at least 30\% reciprocal overlap; insertion located at less than 100bp from each other and with at least 30\% reciprocally similar sizes.
+The 18,286 clusters of SVs identified contained an average of 3.24 SVs.
+A graph was built for the chunk using one variant per SV cluster.
+One by one, the other variants were then added by aligning them to the graph and augmenting the graph.
+We used \texttt{vg~mpmap} \cite{sibbesen2021haplotype} to align large sequences representing the SV variation flanked by 5~kbp of sequence context.
+The alignment was added to the graph using \texttt{vg~augment}.
+The chunked graphs was merged using \texttt{vg~concat}.
+
+inally, we added unplaced and unlocated contigs from the GRCh38 reference assembly to the pangenome.
+We also added the \texttt{hs38d1} decoy sequences (accession GCA\_000786075.2).
+
+The scripts used to build this pangenomes are documented in the repository (see Section \ref{sec:aim2:code-data}).
+
+\subsection{Population scale analysis of SVs}
+
+\subsubsection{Whole-genome sequencing datasets}
+
+The MESA whole-genome sequencing dataset was obtained from NHLBI’s TOPMed program (\url{www.nhlbiwgs.org}), freeze 5b.
+Paired-end 150bp reads had been sequenced on Illumina HiSeq X Ten instruments and achieved a mean depth of at least 30x.
+All sequencing had used PCR-free library preparation kits.
+
+For the 1000 Genomes Project samples, we used public whole-genome sequencing data generated at the New York Genome Center\cite{1000gp_nygc_2021} (see Section \ref{sec:aim2:code-data}).
+Samples had been sequenced to a minimum of 30x mean genome coverage using PCR-free sequencing libraries on the Illumina NovaSeq 6000 sequencing instrument, with 150bp paired-end reads.
+All cell lines had been obtained from the Coriell Institute for Medical Research and had been consented for full public release of genomic data.
+
+Of note, the reads were downsampled to 20x in both datasets and mapped with Giraffe fast mode to reduce the computing cost.
+
+
+\subsubsection{Pangenome genotyping workflow}
+
+A genotyping pipeline was implemented in WDL and ran using the BioData Catalyst ecosystem\cite{bdc2020} providing access to the TOPMed and 1000 Genomes Project datasets.
+The WDL pipeline was deposited on Dockstore\cite{vgsv_dockstore} and ran on Terra.
+TOPMed data was accessed through Gen3.
+The estimated cost per sample was estimated from Google Billing Reports.
+Resources used for each sample or step in the workflow were extracted using \texttt{terra-utils} notebooks from the \href{https://biodatacatalyst.nhlbi.nih.gov/platforms/terra}{BioData Catalyst Powered by Terra}.
+On average, genotyping a sample took 194.4 cpu-hours of compute and cost between \$1.11 and \$1.56 (Figure~\ref{fig:sv-wdl-graph}A, Tables~\ref{tab:svwdl-corehours} and \ref{tab:svwdl-task}).
+Around 71\% of the time is spent mapping reads, 18\% genotyping the variants, and the remainder downloading and preparing the raw reads (Table~\ref{tab:svwdl-task}).
+
+
+
+\subsubsection{Diverse sample selection from the MESA cohort}
+\label{subsec:aim2:mesaselection}
+
+The MESA cohort is a medical research study involving white, African American, Hispanic/Latino, and Chinese adults from 6 U.S. communities \cite{bild2002multi}.
+We selected a subset of 2~thousand individuals in the MESA cohort from the TOPMed freeze 5b.
+The individuals were selected to cover as uniformly as possible the space defined by the top 11 principal components provided by the TOPMed consortium.
+These principal components (PCs) were derived from SNVs genotypes across the full TOPMed dataset.
+Briefly, the selection process started with the two individuals that located the furthest from each other in the PC space.
+New individuals were then selected, one by one, to maximize their distance to already selected individuals.
+
+
+
+\subsubsection{Combining SV genotypes across samples}
+\label{subsec:aim2:svcombining}
+
+SVs were merged using bcftools version 1.9 \cite{li_samtools_2011}.
+For each sample, we split multi-allelic variants, normalize them and sort the output VCF.
+The output of \texttt{vg~call} is derived from paths in the graph (like haplotypes) that traverse the SV site.
+For large SV sites, it means that one called variant may contain multiple smaller canonical SVs.
+In addition, this path-based reporting of the variants can sometimes separate homozygous canonical variants into two heterozygous variants embedded within larger paths.
+Hence, during normalization, we aligned the reference and alternate alleles in the VCF file to break down each variant into canonical SVs.
+We also combined heterozygous variants that matched exactly into homozygous calls.
+These SVs were then left-aligned and sorted using bcftools.
+Finally, the VCF files were combined using \texttt{bcftools merge} using the \verb~-0 -m none~ parameters to avoid multi-allelic records.
+The corresponding WDL workflow has been deposited on Dockstore\cite{svmerge_dockstore}.
+
+
+\subsubsection{Clustering SV alleles into SV sites}
+\label{subsec:aim2:svclustering}
+
+Deletions were matched if their reciprocal overlap was at least 80\%.
+Insertions were matched if located at less than 20 and their sizes were reciprocally similar at least 80\%.
+Annotated simple repeats were also used to extend the range used to match SVs because similar variants might be placed in different position of an annotated VNTR.
+We built a network using these matches to identify connected component representing SV sites where similar alleles cluster.
+If the component formed a clique, i.e. all SVs matched all other SVs, the SV site contained alleles that differed by small variants (relative to the SV size).
+If not, the SV site contained alleles with significant differences, usually due to important repeat expansion or contraction at a VNTR site.
+For most analysis at the SV site level, we used the most frequent allele's information, such as boundaries or size.
+The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
+
+\subsubsection{Allele frequency patterns across populations}
+\label{subsec:aim2:sv-pop-freq}
+
+
+We performed a principal component analysis of the individuals using the allele counts across all SV sites.
+The allele counts represent the number of non-reference alleles called in each individual at each SV locus.
+
+For the MESA cohort, we compared the principal components derived from the SV allele counts to the principal components produced by the TOPMed consortium using short variants.
+Population information was not available for these individuals, so we used the top three principal components from our SV analysis to cluster them and explore population patterns further.
+We used hierarchical clustering (\verb!ward.D! method in R's \verb!hclust! function) and cut the tree to obtain 6 clusters.
+
+For the 1000 Genomes Project dataset, we used public information about the samples' super populations to color the PCA graphs and explore population patterns.
+
+For each SV site, we compared the allele frequencies between the clusters/super populations.
+To illustrate global population differences, we computed the range of allele frequencies across clusters/super populations.
+This distribution was compared to an empirical null distribution produced by shuffling the population assignments.
+As population-centric metric, we contrasted the allele frequency at each SV site in a super population versus the median allele frequency across all super populations.
+Again, we used the null dataset to illustrate the enrichment in SVs whose frequency in the super population of interest is different from the global allele frequency.
+We highlight SVs with a frequency differing by more than 10\% from the median frequency, a threshold at which only a few SVs are expected to show population patterns based on the permuted dataset.
+The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
+
+\subsubsection{Comparison with existing large-scale SV catalogs}
+
+We compared the variants genotyped in this study with three SV catalogs that screened large populations:
+
+\begin{enumerate}
+\item The 1000 Genomes Project phase 3\cite{1000gp_sv_2015} (2,504 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase3/integrated_sv_map/supporting/GRCh38_positions/ALL.wgs.mergedSV.v8.20130502.svs.genotypes.GRCh38.vcf.gz}
+\item gnomAD-SV\cite{gnomadsv_2020} v2 (more than 14~thousand individuals), lifted over to GRCh38
+\item SVPOP\cite{audano_hgsvc} (440 individuals) downloaded from \url{http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20181025_EEE_SV-Pop_1/VariantCalls_EEE_SV-Pop_1/EEE_SV-Pop_1.ALL.genotypes.20181204.vcf.gz}.
+\end{enumerate}
+
+
+These three public catalogs provide allele frequency estimate that we compared with the frequency of matched variants in our datasets.
+Variants were matched with weaker matching criteria than before to avoid over-estimating the amount of novel variants.
+We matched deletions with at least 30\% reciprocal overlap and insertions located at less than 200 bp from each other and at least 30\% reciprocally similar sizes.
+Annotated simple repeats were also used to extend the range used to match SVs.
+The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
+
+\subsubsection{Fine-tuning structural variants with frequencies}
+\label{subsec:aim2:svfinetuning}
+
+
+The frequency pattern across the different alleles at a SV site can help identify the discard alleles that contain errors.
+We have found thousands of SV sites where one allele is much more frequent than the other.
+Our most stringent definition selected 6,175 SV sites where the major allele is the only one with a frequencyhigher than 1\% while also being at least three times more frequent than any other alleles.
+
+These alleles were indeed of better quality at the base level when we compared them to the GIAB catalog\cite{zook_robust_2020}, a SV catalog of unprecendented base quality.
+Out of the 22 of those SV sites that were found in GIAB, 3 (13.6\%) matched exactly in terms of start/end position and size.
+We show that it is significantly more than expected using permutation.
+We permuted the frequency estimates 10,000 times and showed that, on average, only 2.9\% of SV sites would match GIAB exactly by chance (p-value $<$ 0.0001).
+
+\subsubsection{Annotation of the SVs}
+
+The RepeatMasker and SimpleRepeat annotation downloaded from the UCSC Genome Browser FTP server.
+We considered a SV to overlap simple repeats if at least 50\% of its region overlapped with the SimpleRepeat track or repeats from the {\it Simple\_repeat} class in the RepeatMasker annotation.
+Low-complexity regions were extracted from the RepeatMasker annotation.
+The SVs were overlapped with gene annotation from Genecode v35.
+Promoter regions were defined from 2~kbp up-stream to 200 bp downstream of the transcription start site.
+We annotated SVs that overlapped coding regions, UTRs, promoters or introns of protein-coding genes, in this order.
+This means that a SVs spanning a full gene is annotated as {\it coding}, or, for example, that a {\it promoter} SV overlapped neither coding nor untranslated regions.
+Because the gene expression in the GEUVADIS is from lymphoblastoid cell lines, we used candidate regulatory regions for GM12878 from the ENCODE project\cite{encode1,encode2} (\href{https://www.encodeproject.org/files/ENCFF590IMH/}{ENCFF590IMH}) when annotating SV-eQTLs.
+As before, a SV was preferentially annotated using the following order: coding, UTR, promoter, intron, regulatory region, intergenic region.
+
+
+
+\subsubsection{Expression Quantitative Trait Locus discovery}
+\label{subsec:aim2:eqtldiscovery}
+
+We used gene expression provided by the GEUVADIS consortium\cite{geuvadis_2013}.
+We tested for cis-eQTLs using a 1 Mbp range around the gene's transcription start site using Matrix eQTL\cite{matrix_eqtl_2012}.
+First, all 445 samples with gene expression information were analyzed jointly.
+Additionally, we also analyzed the CEU, FIN, GBR, and TSI samples together, and the YRI population separately.
+In each analysis, we only tested SVs with a minor allele frequencies of at least 1\% and at least two samples with non-reference alleles.
+The gene expression had been corrected for batch effects by the GEUVADIS consortium using PEER\cite{geuvadis_2013}.
+To facilitate comparison of the predicted effect sizes, the gene expression distribution was centered and standardized before eQTL testing using the \verb!RowStandardizeCentered! function in Matrix eQTL.
+Covariates of the model included sex and the top four principal components derived from the SV genotypes.
+The p-values were corrected for multiple-testing using Benjamini-Hochberg correction.
+We report eQTLs with an adjusted p-value (false discovery rate) of 1\%.
+The p-value distributions and QQ plots were inspected for quality control.
+
+
+We tested enrichment of SV-eQTLs in gene families extracted from the ``Families'' dataset of the HUGO Gene Nomenclature Committee (HGNC) BioMart server (downloaded March 15, 2021 from \url{https://biomart.genenames.org/}).
+The 1,552 gene families were tested using a hypergenometric test comparing genes with eQTLs versus genes that were tested in the eQTL analysis.
+The p-values were corrected for multiple testing using the Benjamini-Hochberg method.
+
+We annotated each SV-eQTL using the gene annotation (see above).
+SVs were split between SVs associated with increased or decreased gene expression.
+As baseline for the functional overlaps, we selected genes with similar sizes as the genes involved in eQTLs.
+We then selected all common SVs (allele frequency $\geq$ 1\%) and located at less than 1 Mbp of these genes.
+
+
+Separate analysis of the four European-ancestry populations together, and the YRI population alone, identified respectively 44 and 139 SVs where an association with the expression of protein-coding genes was detected only in the smaller analysis.
+Possible reasons for this include the 5\% frequency cutoff imposed on SV-eQTL candidates (which produced different sets of eligible variants in the different groups), the limited statistical power of the test (as the absence of a finding of an SV-eQTL is not the same as the finding of an absence of an SV-eQTL), and interactions between the candidate SV-eQTLs and the frequencies of other alleles or environmental factors which vary between the populations.
+As expected, a number of these population-specific SV-eQTLs had shown strong inter-super-population frequency patterns (see Section \ref{subsec:aim2:inter-super-pop}):
+19 out of the 44 CEU-FIN-GBR-TSI-specific SV-eQTLs and 10 out of the 139 YRI-specific SV-eQTLs showed such patterns.
+
+
+We also performed a joint analysis that included the public SNV and indel calls generated at the New York Genome Center\cite{1000gp_nygc_2021}.
+Phased SNVs and indels in the autosomes and with minor allele frequencies of at least 1\% were used for the eQTL analysis.
+The same approach as described above was performed.
+We defined the lead eQTL as the most significant association in a gene.
+
+To evaluate the enrichment of SVs as lead eQTLs, we permuted the p-values within each gene 10,000 times to compute an empirical null distribution for the rate of lead SV-eQTL.
+We also used permutation to test for an enrichment of SV-eQTLs or SNV/indel-eQTLs among highly expressed genes.
+Genes were split in 20 expression classes based on their quantiles.
+We then computed an empirical p-value for the proportion of eQTLs in each expression class using an empirical distribution derived from permuting the expression classes 10,000 times.
+The p-values were corrected for multiple testing using the Benjamini-Hochberg method.
 
 \newpage
 
@@ -2214,13 +2504,6 @@ This strategy was chosen to restrict analysis to sites that we are confident are
     \label{fig:first}
 \end{figure}
 
-
-\begin{figure}[H]
-    \includegraphics[width=.5\linewidth]{aim2_supplement_regiondiagram.pdf}
-    \caption[Diagram of minimizers, agglomerations, and regions]{{\bf Diagram of minimizers, agglomerations, and regions.} In this example, we use a minimizer length of $k=3$, and a window size of $w=4$. (A) shows where three example minimizers fall in the read. (B) shows the agglomerations of these minimizers, if the minimizers happen to be minimal for all windows they appear in. For agglomeration $i=1$, we have $\aggstart{1}=1$, $\aggend{1}=5$, $\minstart{1}=2$, and $\minend{1}=4$. (C) shows the regions, which we use to decompose the part of the diagram covered by agglomerations, with breaks wherever an agglomeration begins or ends. For the region $r=3$, we have $\rtop{3}=1$, $\rbottom{3}=2$, $\rleft{3}=4$, and $\rright{3}=5$.
-  }
-  \label{fig:aim2_supplement_regions}
-\end{figure}
 
 
 \begin{figure}[H]
@@ -2271,9 +2554,231 @@ This strategy was chosen to restrict analysis to sites that we are confident are
 
 \begin{figure}[H]
     \centering
+    \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_250bp.wgs.vcfevalroc.pdf}
+    \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 250bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. The ROC curve discrimination threshold is based on variant call quality.}
+    \label{fig:250bp_genotyping}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_150bp.wgs.vcfevalroc.1000GP_only.pdf}
+    \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers in 1000GP regions only]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 150bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions only within 1000GP variant regions. The ROC curve discrimination threshold is based on variant call quality.}
+    \label{fig:150bp_genotyping_1000GP_only}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{HG002_v4.2.1_high_conf.35x_150bp.wgs.vcfevalroc.1000GP_excluded.pdf}
+    \caption[Genotyping evaluation for the Dragen genotyper with projected mappings from Giraffe and other mappers in 1000GP excluded regions]{True positive and false positive genotypes made using the Dragen genotyper with projected mappings from Giraffe and other mappers, using 150bp paired-end reads from the HG002 GIAB sample and evaluated against the HG002 GIAB v4.2.1 truth variant call sets in high confidence regions with 1000GP variant regions excluded. The ROC curve discrimination threshold is based on variant call quality.}
+    \label{fig:150bp_genotyping_1000GP_excluded}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{HG003_trained_deepvariant_genotyping.pdf}
+    \caption[Genotyping evaluation for the DeepVariant genotyper with projected mappings from Giraffe and other mappers]{True positive and false positive genotypes made using the DeepVariant genotyper trained on alignments of 150bp paired-end reads from HG002 and HG004 GIAB samples and tested on 150bp paired-end reads from the HG003 GIAB sample and evaluated against the HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Dragen genotyper results are included for performance comparison. The ROC curve discrimination threshold is based on variant call quality.}
+    \label{fig:trained_deepvariant_genotyping}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth, page=2]{fig-sveval.pdf}
+    \caption[SV evaluation of vg and GraphTyper on HGSVC and GIAB]{{\bf SV evaluation of vg and GraphTyper on HGSVC and GIAB.}
+      SV were genotyped with vg and GraphTyper and compared to the truthset from HGSVC\cite{chaisson_sv_2019} and GIAB\cite{zook_robust_2020}.
+      When genotyping the HGSVC catalog, we used short-reads from the three individuals and one set of simulated reads for one individual.
+      When genotyping the GIAB catalog, we genotyped SV from short-read for HG002.
+      The y-axis shows the F1 score when assessing the presence/absence of a SV (semi-transparent bars) or exact genotype (opaque bars), for vg (red) and GraphTyper (blue).
+      GraphTyper outputs multiple entries for the same variant which decreases the genotyping accuracy when including all the variants (light blue).
+      To improve the genotyping performance, we selected one prediction per variant for GraphTyper (darker blue).
+      Finally, insertions and deletions were evaluated separately (top vs bottom) on the whole genome or high-confidence regions (x-axis).
+      Panels A, B, and C show the F1 score, precision, and recall, respectively.
+      }
+    \label{fig:graphtyper_eval}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
     \includegraphics[width=.7\linewidth]{speed_yeast.pdf}
     \caption[Mapping speed on yeast data]{\textbf{Mapping speed on yeast data.} Each mapper was run on a dataset of 1 million real HiSeq 2500 reads from the DBVPG6044 strain on an AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
     \label{fig:speed_yeast}
+\end{figure}
+
+\begin{figure}[htp]
+    \centering
+    \includegraphics[width=.9\linewidth]{aim2_supplement_wdl-sveval.pdf}
+    \caption[Structural variant genotyping workflow]{\textbf{Structural variant genotyping workflow.}
+      (A, B, C) SV genotyping F1, precision, and recall (respectively) for the SV graph combining HGSVC \cite{chaisson_sv_2019}, SVPOP \cite{audano_hgsvc} and GIAB \cite{zook_robust_2020}, and for individual SV graphs containing only HGSVC or GIAB as used in Hickey et al.\cite{hickey_vgsv_2020}.
+      The genotypes predicted from the long-read sequencing data in the original studies are used as truthset.
+      (D) Workflow overview with average resources used for each task for a typical sample (Table \ref{tab:svwdl-task}). Note: the core hours estimates include the time spent copying files between computing instances.
+    }
+    \label{fig:sv-wdl-graph}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth, page=1]{fig-sveval.pdf}
+    \caption[Minimal effect of down-sampling reads to 20x depth on the SV genotyping performance]{{\bf Minimal effect of down-sampling reads to 20x depth on the SV genotyping performance.}
+      HG00514 was genotyped using the SV graph combining HGSVC, SVPOP and GIAB.
+      Panels A, B, and C show the F1 score, precision, and recall, respectively.
+    }
+    \label{fig:sveval-depth}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth]{fig-sv-mesa-stats-2.pdf}
+    \caption[SV alleles and SV sites in the MESA cohort]{{\bf SV alleles and SV sites in the MESA cohort.}
+      (A) Proportion of SV loci in clique formation, i.e. with alleles different by only small variants (SNVs, indels) as opposed to large allelic variation such as VNTRs.
+      The more alleles in a SV site the more likely it is to show VNTR-like allelic patterns.
+      (B) Fold-change between the major allele and the second most frequent allele in a SV loci (y-axis), grouped by the number of alleles in the locus (x-axis).
+      The number of loci with a fold-change higher than 3 (dotted line) are labeled.
+    }
+    \label{fig:svsites_mesa}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  %~~~(A)\hfill{(B)~~~}
+
+  %\includegraphics[width=.49\linewidth, page=1]{examples-svsites-mesa.pdf}
+  %\includegraphics[width=.49\linewidth, page=2]{examples-svsites-mesa.pdf}
+
+  %~~~(C)\hfill{(D)~~~}
+
+  %\includegraphics[width=.49\linewidth, page=3]{examples-svsites-mesa.pdf}
+  %\includegraphics[width=.49\linewidth, page=4]{examples-svsites-mesa.pdf}
+  \includegraphics[width=\linewidth]{examples-svsites-mesa-all.pdf}
+  \caption[Four examples of SV sites in the MESA cohort]{{\bf Four examples of SV sites in the MESA cohort.}
+    For each site, the top left panel shows a representation of their configuration in the genomic region, the top right panel shows the distribution of allele frequencies across the 2000 MESA samples, and the bottom panel shows the result of a multiple-sequence alignment of the inserted/deleted sequences.
+    In (A) and (B), the insertions' alleles are only different due to small variants while (C) and (D) shows an insertion and deletion site with significant size variation between the alleles.
+    In (A), there is one major allele while multiple alleles of (B) are frequent in the population. }
+  \label{fig:mesa-svsite-examples}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fig-sv-1kgp-stats.pdf}
+    \caption[Structural variants in 2,504 unrelated individuals from the 1000 Genomes Project]{\textbf{Structural variants in 2,504 unrelated individuals from the 1000 Genomes Project.}
+      (A) Allele frequency distribution of the major allele for each SV loci.
+      (B) Size distribution of the major allele for each SV loci.
+      (C) Cumulative proportion of SV loci depending on the maximum number of alleles (x-axis) in the locus.
+      (D) Proportion of SV loci in clique formation, i.e. with alleles different by only small variants (SNVs, indels) as opposed to large allelic variation such as VNTRs.
+      The more alleles in a SV site the more likely it is to show VNTR-like allelic patterns.
+      (E) Fold-change between the major allele and the second most frequent allele in a SV loci (y-axis), grouped by the number of alleles in the locus (x-axis).
+      The number of loci with a fold-change higher than 3 (dotted line) are labeled.
+    }
+    \label{fig:sv-1kgp-stats}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{fig-sv-trio-eval.pdf}
+  \caption[SV evaluation using 602 trios from the 1000 Genomes Project]{{\bf SV evaluation using 602 trios from the 1000 Genomes Project}
+    (A) Mendelian error (y-axis) for different minimum genotype quality thresholds (x-axis), i.e. considering all variants where the minimum genotype quality in the trio is X or higher.
+    (B) Proportion of transmitted allele from an heterozygous parent (y-axis) for the same minimum genotype quality thresholds (x-axis).
+    In (A) and (B), the vertical lines represent the full error range across all trios while the point represents the median error.
+    (C) Proportion of variants (y-axis) passing each minimum genotype quality threshold (x-axis).
+  }
+  \label{fig:sv-trio-eval}
+\end{figure}
+
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{fig-sv-freq-comp.pdf}
+  \caption[Allele frequency of SVs in this study and public studies]{{\bf Allele frequency of SVs in this study and public studies.}
+    (A) Allele frequency distribution of common variants (frequency >1\%) in each dataset.
+    (B-D) show the difference in frequency between our results in the MESA cohort and each of the three public catalogs (1000 Genome Project phase 3, gnomAD-SV, SVPOP).
+    (E-F) show the difference in frequency between SVPOP and the two other public catalogs.}
+  \label{fig:sv-freq-comp}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth, page=3]{fig-sv-mesa-pcs.pdf}
+  \caption[Principal component analysis using the SV genotypes or SNVs in the MESA dataset]{{\bf Principal component analysis using the SV genotypes (y-axis) in the MESA dataset compared to the principal components derived from TOPMed-wide SNVs (x-axis).}
+    (A), (B), (C) compare the first, second and third components.}
+  \label{fig:mesa-topmed-pcs}
+\end{figure}
+
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{fig-pops-freq-mesa.pdf}
+  \caption[SV sites with population specific frequency patterns in the MESA cohort]{{\bf SV sites with population specific frequency patterns in the MESA cohort.}
+    The two thousand MESA samples were clustered in 6 clusters based on the top 3 principal components (A-B).
+    (C) The range of frequency, i.e. the difference between the maximum and minimum frequencies, across the sample clusters was larger than expected (permutation) for thousands of SV sites.
+    (D) Two clusters (x-axis) show high number of population-specific SV sites (y-axis), defined as deviating from the median allele frequency by at least 10\%, 25\%, or 50\% (panels).}
+  \label{fig:mesa-pop-freq}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{fig-sv-1kgp-pcs.pdf}
+  \caption[PCA of SV genotypes in the 1000 Genomes Project]{{\bf Principal component analysis from structural variant genotypes across the 2,504 unrelated individuals in the 1000 Genomes Project dataset. }
+    Principal component analysis was performed on the SV genotypes predicted by vg across the 166,199 SV loci.
+    Individuals are colored according to their assigned ``super population'' in the 1000 Genomes Project.
+    (A) shows the first and second principal components, (B) shows the third and fourth components.
+  }
+  \label{fig:1kgp-sv-pcs}
+\end{figure}
+\newpage
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{fig-pops-freq-kgp.pdf}
+  \caption[SV sites with population specific frequency patterns in the 2,504 individuals from the 1000 Genomes Project]{{\bf SV sites with population specific frequency patterns in the 2,504 individuals from the 1000 Genomes Project. }
+    (A) The range of frequency, i.e. the difference between the maximum and minimum frequencies, across the super-population was larger than expected (permutation) for thousands of SV sites.
+    (B) Super-populations (x-axis) show high number of population-specific SV sites (y-axis), defined as deviating from the median allele frequency by at least 10\%, 25\%, or 50\% (panels).}
+  \label{fig:1kgp-pop-freq}
+\end{figure}
+
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth]{fig-sv-eqtl.pdf}
+  \caption[P-value distribution of the SV vs gene expression tests in the GEUVADIS dataset]{{\bf P-value distribution of the SV vs gene expression tests in the GEUVADIS dataset.}
+    Three analysis were performed: joint European and Yoruba populations (A-B), European populations only (C-D), and the Yoruba population (YRI) only (E-F).
+    (A,C,E) show the p-value distribution, uniform except for the peak of low p-values.
+    (B,D,F) show the QQ plots for the three analysis.
+  }
+  \label{fig:eqtl_qc}
+  \end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth, page=2]{fig-sv-functional-summary.pdf}
+  \caption[Location of the SV-eQTLs around the associated gene]{{\bf Location of the SV-eQTLs around the associated gene}
+    The x-axis reports the proportion of SV-eQTLs overlapping each annotation group (panels).
+    A SV-eQTL is either positively (red) or negatively (blue) associated with gene expression, i.e. each additional SV allele correlates with increased or decreased gene expression respectively.
+    The control bar (green) represents the expected distribution of common SVs around control genes.
+    Control genes were chosen to match the size distribution of genes involved in eQTLs.
+    {\it UTR: untranslated region.}
+  }
+  \label{fig:eqtl_enr}
+\end{figure}
+
+\begin{figure}[H]
+  \includegraphics[width=\linewidth, page=1]{fig-sv-snv-indel-eqtl.pdf}
+  \caption[Enrichment of SV-eQTLs in highly expressed genes]{{\bf Enrichment of SV-eQTLs in highly expressed genes}
+    Genes were split in 20 expression groups of equal size (quantiles).
+    The graph shows the proportion of eQTLs (y-axis) in each expression quantile (x-axis).
+    We see a strong enrichment for SV-eQTLs (blue) in the last quantile representing the mist expressed genes.
+    The enrichment is also significant (point size) if only weaker for SNV/indel eQTLs.
+    The horizontal dotted line represents the expected value, i.e. 1/20 of the eQTLs in each quantile group.
+  }
+  \label{fig:eqtl_enr_ge}
+\end{figure}
+
+\begin{figure}[H]
+  \textsf{(A)} \hspace{15em} \textsf{(B)}
+
+  \includegraphics[trim={0 0em 0 20em}, clip, width=\linewidth, page=2]{fig-sv-snv-indel-eqtl.pdf}
+  \caption[Example of a SV lead-eQTL]{{\bf Example of SV lead-eQTL}
+    Association between an intronic 5,405 bp deletion and the gene expression of the {\it SLC44A5} gene.
+    (A) Each additional allele is associated with a decrease in gene expression.
+    (B) shows the position of significant eQTLs (SNV/indels in green, deletion in red, insertion in blue).
+    The y-axis represents the significance of the association, with the top eQTL being the highest point.
+    The deletion is the most significant eQTLs and the significance decreases the farther the variant is from it.
+  }
+  \label{fig:eqtl_ex}
 \end{figure}
 
 \begin{figure}[H]
@@ -2281,6 +2786,14 @@ This strategy was chosen to restrict analysis to sites that we are confident are
     \includegraphics[width=.75\linewidth]{aim2_supplement_speed.pdf}
     \caption[Mapping speed on human data]{\textbf{Mapping speed on human data.} Each mapper was run on a dataset of 1 million real NovaSeq 6000 (A,B), HiSeq X Ten (C,D), or HiSeq 2500 (E,F) reads on a AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
     \label{fig:aim2_supplement_speed}
+\end{figure}
+
+
+\begin{figure}[H]
+    \includegraphics[width=.5\linewidth]{aim2_supplement_regiondiagram.pdf}
+    \caption[Diagram of minimizers, agglomerations, and regions]{{\bf Diagram of minimizers, agglomerations, and regions.} In this example, we use a minimizer length of $k=3$, and a window size of $w=4$. (A) shows where three example minimizers fall in the read. (B) shows the agglomerations of these minimizers, if the minimizers happen to be minimal for all windows they appear in. For agglomeration $i=1$, we have $\aggstart{1}=1$, $\aggend{1}=5$, $\minstart{1}=2$, and $\minend{1}=4$. (C) shows the regions, which we use to decompose the part of the diagram covered by agglomerations, with breaks wherever an agglomeration begins or ends. For the region $r=3$, we have $\rtop{3}=1$, $\rbottom{3}=2$, $\rleft{3}=4$, and $\rright{3}=5$.
+  }
+  \label{fig:aim2_supplement_regions}
 \end{figure}
 
 \subsection{Supplementary tables}
@@ -2622,6 +3135,320 @@ This strategy was chosen to restrict analysis to sites that we are confident are
 \end{table}
 
 
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|r|r|l|l|l|}
+     \hline
+    Pipeline                    & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
+     \hline
+    BWA-MEM                     & 3,866,030          & 22,519          & 24,392          & 0.9942          & 0.9937          & 0.9940          \\
+    DRAGEN                      & 3,867,353          & \textbf{17,369} & 23,071          & \textbf{0.9955} & 0.9941          & 0.9948
+         \\
+    VG-MAP                      & 3,868,494          & 20,393          & 21,929          & 0.9948          & 0.9944          & 0.9946          \\
+    Giraffe primary             & 3,869,525          & 18,308          & 20,909          & 0.9953          & 0.9946          & 0.9950          \\
+    Giraffe                     & \textbf{3,871,501} & 17,787          & \textbf{18,917} & 0.9954          & \textbf{0.9951} & \textbf{0.9953} \\
+    fast Giraffe                & 3,870,737          & 18,964          & 19,681          & 0.9951          & 0.9949          & 0.9950          \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation with VCFeval in HG002 using 150bp paired-end reads against the grch38-based graph reference]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
+\label{tab:vcfeval_high_conf_2x150_hg002_grch38}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|r|r|r|l|l|l|}
+     \hline
+    Pipeline                                     & Var Type & TP                 & FN              & FP             & Recall            & Precision         & F1                \\
+     \hline
+     \multirow{2}{*}{BWA-MEM}                    & INDELS   & 522,406            & 3,063           & 2,723          & 0.994171          & 0.995028          & 0.994599          \\
+                                                 & SNPS     & 3,343,857          & 21,270          & 19,780         & 0.993679          & 0.994121          & 0.993900          \\
+    \hline
+    \multirow{2}{*}{DRAGEN}                      & INDELS   & 522,618            & 2,851           & \textbf{2,478} & 0.994574          & \textbf{0.995475} & 0.995025 \\
+                                                 & SNPS     & 3,344,971          & 20,156          & \textbf{14,868}& 0.994010          & \textbf{0.995576} & 0.994793          \\
+    \hline
+    \multirow{2}{*}{VG-MAP}                      & INDELS   & 522,643            & 2,826           & 2,689          & 0.994622          & 0.995092          & 0.994857          \\
+                                                 & SNPS     & 3,346,085          & 19,042          & 17,677         & 0.994341          & 0.994746          & 0.994544          \\
+    \hline
+    \multirow{2}{*}{Giraffe primary}             & INDELS   & 522,657            & 2,812           & 2,608          & 0.994649          & 0.995239          & 0.994944          \\
+                                                 & SNPS     & 3,347,097          & 18,030          & 15,672         & 0.994642          & 0.995341          & 0.994991          \\
+    \hline
+    \multirow{2}{*}{Giraffe}                     & INDELS   & \textbf{522,864}   & \textbf{2,605}  & 2,550          & \textbf{0.995043} & 0.995346          & \textbf{0.995194}          \\
+                                                 & SNPS     & \textbf{3,348,882} & \textbf{16,245} & 15,213         & \textbf{0.995173} & 0.995479          & \textbf{0.995326} \\
+    \hline
+    \multirow{2}{*}{fast Giraffe}                & INDELS   & 522,825            & 2,644           & 2,583          & 0.994968          & 0.995286          & 0.995127          \\
+                                                 & SNPS     & 3,348,156          & 16,971          & 16,358         & 0.994957          & 0.995139          & 0.995048          \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation with Hap.py in HG002 using 150bp paired-end reads against the grch38-based graph reference]{Hap.py performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
+\label{tab:happy_high_conf_2x150_hg002_grch38}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|r|r|l|l|l|}
+     \hline
+    Pipeline               & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
+     \hline
+    BWA-MEM                & 3,869,299          & 16,380          & 21,134          & 0.9958          & 0.9946          & 0.9952          \\
+    DRAGEN                 & 3,870,566          & \textbf{12,863} & 19,864          & \textbf{0.9967} & 0.9949          & 0.9958          \\
+    VG-MAP                 & 3,871,583          & 14,332          & 18,859          & 0.9963          & 0.9952          & 0.9957          \\
+    Giraffe primary        & 3,873,118          & 13,640          & 17,331          & 0.9965          & 0.9955          & 0.9960          \\
+    Giraffe                & \textbf{3,874,597} & 13,359          & \textbf{15,840} & 0.9966          & \textbf{0.9959} & \textbf{0.9962} \\
+    fast Giraffe           & 3,874,104          & 13,695          & 16,334          & 0.9965          & 0.9958          & 0.9961          \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation with VCFeval in HG002-exclusive variants using 250bp paired reads against the grch38-based graph reference]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 250bp paired reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
+\label{tab:vcfeval_high_conf_2x250_hg002_grch38}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|r|r|r|l|l|l|}
+     \hline
+    Pipeline                                     & Var Type & TP                 & FN              & FP             & Recall            & Precision         & F1                \\
+     \hline
+     \multirow{2}{*}{BWA-MEM}                    & INDELS   & 522,705            & 2,764           & 2,214          & 0.994740          & 0.995955          & 0.995347          \\
+                                                 & SNPS     & 3,346,810          & 18,317          & 14,146         & 0.994557          & 0.995792          & 0.995174          \\
+    \hline
+    \multirow{2}{*}{DRAGEN}                      & INDELS   & 522,672            & 2,797           & \textbf{2,043} & 0.994677          & \textbf{0.996265} & 0.995471 \\
+                                                 & SNPS     & 3,348,116          & 17,011          & \textbf{10,799}& 0.994945          & \textbf{0.996786} & 0.995865          \\
+    \hline
+    \multirow{2}{*}{VG-MAP}                      & INDELS   & 522,905            & 2,564           & 2,260          & 0.995121          & 0.995873          & 0.995497          \\
+                                                 & SNPS     & 3,348,892          & 16,235          & 12,052         & 0.995176          & 0.996415          & 0.995795          \\
+    \hline
+    \multirow{2}{*}{Giraffe primary}             & INDELS   & 522,834            & 2,635           & 2,316          & 0.994985          & 0.995771          & 0.995378          \\
+                                                 & SNPS     & 3,350,496          & 14,631          & 11,308         & 0.995652          & 0.996637          & 0.996144          \\
+    \hline
+    \multirow{2}{*}{Giraffe}                     & INDELS   & \textbf{523,148}   & \textbf{2,321}  & 2,177          & \textbf{0.995583} & 0.996026          & \textbf{0.995804}          \\
+                                                 & SNPS     & \textbf{3,351,672} & \textbf{13,455} & 11,167         & \textbf{0.996002} & 0.996680          & \textbf{0.996341} \\
+    \hline
+    \multirow{2}{*}{fast Giraffe}                & INDELS   & 523,119            & 2,350           & 2,178          & 0.995528          & 0.996024          & 0.995776          \\
+                                                 & SNPS     & 3,351,207          & 13,920          & 11,503         & 0.995863          & 0.996580          & 0.996222          \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation with Hap.py in HG002 using 250bp paired reads against the grch38-based graph reference]{Hap.py performance of linear and graph-based pipelines against grch38-based references using 250bp paired reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
+\label{tab:happy_high_conf_2x250_hg002_grch38}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|r|r|l|l|l|}
+     \hline
+    Pipeline                    & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
+     \hline
+    BWA-MEM                     & 3,370,702          & 1,678           & 4,248           & 0.9995          & 0.9987          & 0.9991         \\
+    DRAGEN                      & 3,371,710          & \textbf{1,462}  & 3,296           & \textbf{0.9996} & 0.9990          & 0.9993         \\
+    VG-MAP                      & 3,372,845          & 3,121           & 2,141           & 0.9991          & \textbf{0.9994} & 0.9992         \\
+    Giraffe primary             & 3,371,806          & 1,501           & 3,143           & \textbf{0.9996} & 0.9991          & 0.9993        \\
+    Giraffe                     & \textbf{3,373,044} & 1,543           & \textbf{1,934}  & 0.9995          & \textbf{0.9994} & \textbf{0.9995}\\
+    fast Giraffe                & 3,372,947          & 1,684           & 2,028           & 0.9995          & \textbf{0.9994} & 0.9994 \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation with VCFeval in HG002 using 150bp paired-end reads against the grch38-based graph reference in 1000GP variant regions]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions only found in the 1000GP variant set used in constructing the graph references used by VG-MAP and Giraffe. Best values in each column are highlighted in bold text.}
+\label{tab:vcfeval_high_conf_1000GP_only_2x150_hg002_grch38}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|r|r|l|l|l|}
+     \hline
+    Pipeline                    & TP                 & FP              & FN              & Precision       & Sensitivity     & F-measure       \\
+     \hline
+    BWA-MEM                     & 331,019            & 20,738          & 19,972          & 0.9410          & 0.9429          & 0.9420         \\
+    DRAGEN                      & 331,381            & \textbf{15,819} & 19,643          & \textbf{0.9544} & 0.9438          & 0.9491          \\
+    VG-MAP                      & 331,322            & 17,144          & 19,694          & 0.9508          & 0.9437          & 0.9472          \\
+    Giraffe primary             & 333,362            & 16,714          & 17,638          & 0.9523          & 0.9496          & 0.9509         \\
+    Giraffe                     & \textbf{334,122}   & 16,144          & \textbf{16,901} & 0.9539          & \textbf{0.9517} & \textbf{0.9528}\\
+    fast Giraffe                & 333,452            & 17,182          & 17,569          & 0.9510          & 0.9498          & 0.9504         \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation with VCFeval in HG002 using 150bp paired-end reads against the grch38-based graph reference in regions excluding the 1000GP variant set]{VCFeval performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions excluding the 1000GP variant set used in constructing the graph references used by VG-MAP and Giraffe. Best values in each column are highlighted in bold text.}
+\label{tab:vcfeval_high_conf_1000GP_excluded_2x150_hg002_grch38}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|r|r|l|l|l|}
+     \hline
+    Pipeline                    & TP                 & FP             & FN              & Precision       & Sensitivity     & F-measure       \\
+     \hline
+    BWA-MEM + Dragen            & 3,807,536          & 23,443         & 24,345          & 0.9939          & 0.9936          & 0.9938          \\
+    Giraffe + Dragen            & \textbf{3,812,963} & 18,143         & \textbf{18,922} & 0.9953          & \textbf{0.9951} & 0.9952          \\
+    Dragen MAP + Dragen         & 3,808,794          & 18,738         & 23,081          & 0.9951          & 0.9940          & 0.9945          \\
+    BWA-MEM + DeepVariant       & 3,808,209          & \textbf{6,680} & 24,173          & \textbf{0.9982} & 0.9937          & 0.9960          \\
+    Giraffe + DeepVariant       & 3,812,716          & 6,889          & 19,898          & \textbf{0.9982} & 0.9948          & \textbf{0.9965} \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation between DeepVariant calls of bwamem and giraffe 1000GP alignments against grch38-based references with RTG VCFeval in HG003 using 35x 150bp paired-end reads]{RTG VCFeval performance between DeepVariant and Dragen variant callers on grch38-based linear and giraffe 1000GP mappers using 150bp paired-end reads with respect to HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
+\label{tab:deepvariant_vcfeval_high_conf_2x150_50x_hg003_grch38}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|r|r|r|l|l|l|}
+     \hline
+    Pipeline                                     & Var Type & TP                & FN             & FP            & Recall            & Precision         & F1                \\
+    \hline
+    \multirow{2}{*}{BWA-MEM+Dragen}           & INDELS    & 501,574           & 2,927          & 2,789         & 0.994198          & 0.994696      & 0.994447 \\
+                                                & SNPS      & 3,306,162         & 21,331         & 20,642        & 0.993589          & 0.993797      & 0.993693 \\
+    \hline
+    \multirow{2}{*}{Giraffe+Dragen}           & INDELS    & \textbf{501,993}  & \textbf{2,508} & 2,566         & \textbf{0.995029} & 0.995122      & 0.995075 \\
+                                                & SNPS      & \textbf{3,311,179}& \textbf{16,317}& 15,563        & \textbf{0.995096} & 0.995323      & 0.995210 \\
+    \hline
+    \multirow{2}{*}{DragenMAP+Dragen}        & INDELS    & 501,770           & 2,731          & 2,644         & 0.994587          & 0.994972      & 0.994780 \\
+                                                & SNPS      & 3,307,236         & 20,260         & 16,078        & 0.993911          & 0.995163      & 0.994537 \\
+    \hline
+    \multirow{2}{*}{BWA-MEM+DeepVariant}      & INDELS    & 501,433           & 3,068          & \textbf{1,393}& 0.993919          & \textbf{0.997342} & 0.995627 \\
+                                                & SNPS      & 3,306,484         & 21,012         & 5,268         & 0.993685          & 0.998410          & 0.996042 \\
+    \hline
+    \multirow{2}{*}{Giraffe+DeepVariant}      & INDELS    & 501,919           & 2,582          & 1,851         & 0.994882          & 0.996476          & \textbf{0.995678} \\
+                                                & SNPS      & 3,310,338         & 17,158         & \textbf{5,015}& 0.994844          & \textbf{0.998488} & \textbf{0.996662} \\
+    \hline
+    \end{tabular}
+\caption[Genotyping evaluation between DeepVariant calls of bwamem and giraffe 1000GP alignments against grch38-based references with Hap.py in HG003 using 35x 150bp paired-end reads]{Hap.py performance between DeepVariant and Dragen variant callers on grch38-based linear and giraffe 1000GP mappers using 150bp paired-end reads with respect to HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
+\label{tab:deepvariant_happy_high_conf_2x150_50x_hg003_grch38}
+\end{table}
+
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}[t]{|r|l|r|r|}
+    \hline
+    Pre-empted jobs & Dataset & Workflows & Core.hour \\
+    \hline
+    0               & all     & 2910      & 194.388   \\
+    0               & MESA    & 1221      & 197.981   \\
+    0               & 1000GP  & 1689      & 191.791   \\
+    \hline
+    1               & all     & 1358      & 220.046   \\
+    1               & MESA    & 517       & 222.205   \\
+    1               & 1000GP  & 841       & 218.718   \\
+    \hline
+    2               & all     & 439       & 240.992   \\
+    2               & MESA    & 172       & 248.246   \\
+    2               & 1000GP  & 267       & 236.318   \\
+    \hline
+    3+              & all     & 209       & 270.351   \\
+    3+              & MESA    & 88        & 282.007   \\
+    3+              & 1000GP  & 121       & 261.874   \\
+    \hline
+  \end{tabular}
+  \caption[Computing resources used when genotyping 2,000 samples from the MESA cohort and 3,202 samples from the 1000 Genomes Project dataset]{{\bf Computing resources used when genotyping 2,000 samples from the MESA cohort and 3,202 samples from the 1000 Genomes Project dataset.}
+    Pre-emptible instances on Google Cloud were used for all jobs.
+    As expected, the average resource required was higher for workflows where some jobs were pre-empted.
+    Note: The sequencing reads were down-sampled to $\sim$20x coverage.}
+  \label{tab:svwdl-corehours}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}[t]{|l|c|c|c|l|}
+    \hline
+    \multirow{2}{*}{SV type} & \multicolumn{3}{|l|}{Number of non-reference alleles} & \multirow{2}{*}{Proportion of variants} \\
+                             & Offspring                                             & Mother & Father &                       \\
+    \hline
+    \multirow{5}{*}{Deletion}     & 1                                                     & 0      & 0      & 0.0255409             \\
+                             & 0                                                     & 2      & 0      & 0.0052011             \\
+                             & 0                                                     & 0      & 2      & 0.0049499             \\
+                             & 2                                                     & 0      & 0      & 0.0042598             \\
+                             & 1                                                     & 2      & 2      & 0.0021315             \\
+    \hline
+    \multirow{5}{*}{Insertion}     & 1                                                     & 0      & 0      & 0.0224647             \\
+                             & 1                                                     & 2      & 2      & 0.0045391             \\
+                             & 0                                                     & 2      & 0      & 0.0037815             \\
+                             & 0                                                     & 0      & 2      & 0.0036952             \\
+                             & 2                                                     & 0      & 0      & 0.0030867             \\
+    \hline
+  \end{tabular}
+  \caption[Most frequent Mendelian errors for SVs in the 1000GP trios]{{\bf Most frequent Mendelian error for SVs in the 1000GP trios.}
+    The table shows the 5 most frequent Mendelian error configurations for deletions and insertions.
+    For both SV types, the most frequent error is a predicted heterozygous variant in the offspring while both parents are predicted homozygous for the reference allele.
+    Here all variants were included, i.e. no filtering based on genotype qualities was applied.
+  }
+  \label{tab:sv-mend-error}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}[t]{|l|l|r|r|r|}
+    \hline
+    Public SV & Dataset & Novel & Prop. of SVs in        & Prop. of common SVs in \\
+    catalog   &         &       & public catalog covered & public catalog covered \\
+    \hline
+     1000GP   & MESA    & 0.932 & 0.160                  & 0.844                  \\
+              & 1000GP  & 0.932 & 0.160                  & 0.844                  \\
+    \hline
+    gnomAD-SV & MESA    & 0.673 & 0.088                  & 0.628                  \\
+              & 1000GP  & 0.670 & 0.087                  & 0.627                  \\
+    \hline
+  \end{tabular}
+  \caption[Comparing SVs genotyped in the two datasets with two public SV catalogs]{{\bf Comparing SVs genotyped in the two datasets (MESA: 2,000 samples; 1000GP: 2,504 samples) with two public SV catalogs.}
+    The table shows the proportion of novel SVs (not present in the public SV catalogs), and the proportion of SVs in the public catalog that are present in our results, either consering all variants or common variants (frequency greater or equal to 5\%).
+    Deletions were matched if their reciprocal overlap was at least 30\%, insertions if located at less than 200 bp from each other and their size at least 30\% similar.
+    Annotated simple repeats were used to extend the matching.
+  }
+  \label{tab:novel-sv}
+\end{table}
+
+
+\begin{table}[H]
+  {\href{https://www.science.org/doi/suppl/10.1126/science.abg8871/suppl_file/science.abg8871_table_s21.zip}{supptab-S18-sv-eqtl.xlsx}}
+  \caption[Gene families enriched in SV-eQTLs and eGenes with only SV-eQTLs]{{\bf Gene families enriched in SV-eQTLs and eGenes with only SV-eQTLs.}
+    Excel file containing two sheets.
+    The first lists gene families enriched in SV-eQTLs.
+    The gene families were defined using the HUGO Gene Nomenclature Committee (HGNC) resource.
+    The second lists the SV-eQTLs in genes where there are only SV associations, i.e. no SNV/indel eQTLs.
+  }
+  \label{tab:file-sveqtl}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}[t]{|l|r|r|l|l|}
+    \hline
+    Task            & CPU & Memory (Gb) & Dataset & Core.hour        \\
+    \hline
+    CRAM conversion & 8   & 50          & all     & 12.867 (7.6\%)   \\
+    CRAM conversion & 8   & 50          & MESA    & 13.22 (7.6\%)    \\
+    CRAM conversion & 8   & 50          & 1000GP  & 12.636 (7.6\%)   \\
+    \hline
+    mapping         & 32  & 100         & all     & 146.261 (75.2\%) \\
+    mapping         & 32  & 100         & MESA    & 157.66 (77.1\%)  \\
+    mapping         & 32  & 100         & 1000GP  & 138.782 (73.9\%) \\
+    \hline
+    genotyping      & 16  & 100         & all     & 24.891 (17.2\%)  \\
+    genotyping      & 16  & 100         & MESA    & 27.112 (15.4\%)  \\
+    genotyping      & 16  & 100         & 1000GP  & 23.433 (18.5\%)  \\
+    \hline
+  \end{tabular}
+  \caption[Computing resources for each task in the WDL genotyping workflow]{{\bf Computing resources for each task in the WDL genotyping workflow.}
+    The table shows numbers for the workflows where no jobs were pre-empted.}
+  \label{tab:svwdl-task}
+\end{table}
+
+
+%\todo{Tables below are not cited in main text}
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{c|c|c|c|c|c|c|c|c|c|c|c}
+    Mapper & Reads & Graph & vg version & Docker & xg & gcsa & lcp & gbwt & min & gg & dist  \\
+    \hline
+    VG-MAP & 150~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \mapindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter} \\
+    VG-MAP & 250~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \mapindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter} \\
+    Giraffe & 150~bp & Primary & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/primary_reference/primaryhs38d1}\\
+    Giraffe & 250~bp & Primary & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/primary_reference/primaryhs38d1}\\
+    Giraffe & 150~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
+    Giraffe & 250~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
+    Fast Giraffe & 150~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
+    Fast Giraffe & 250~bp & 1000GP & \vgcommit{08faee067037ece539a237a008bcdefc84b681b0}{v1.31.0} & \docker{quay.io/vgteam/vg:v1.31.0} & \giraffeindexes{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000GPlons_hs38d1_filter}\\
+  \end{tabular}
+  \caption{Table of parameters for GRCh38-based genotyping experiment vg runs}
+  \label{tab:vgruns_grch38}
+  \label{tab:last}
+\end{table}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
