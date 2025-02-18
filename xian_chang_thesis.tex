@@ -99,9 +99,9 @@
 \addcontentsline{toc}{chapter}{List of Algorithms}
 
 \begin{abstract}
-The human reference genome is one of the most important foundational resources in biological research, but its utility as a reference for all people is limited due to its lack of diversity.
+The human reference genome is one of the most important foundational resources in biological research but its utility as a reference for all people is limited due to its lack of diversity.
 Pangenomes are an alternative representation of genomes that incorporate genetic variations from a population of individuals.
-Using a pangenome as a reference can mitigate the bias incurred by using the current standard reference genome but because of the increased size and complexity of pangenomes, tools that use them tend to be slower and less reliable than tools that use standard references.
+Using a pangenome as a reference can mitigate the bias incurred by using the current standard reference genome, but because of the increased size and complexity of pangenomes, tools that use them tend to be slower and less reliable than tools that use standard references.
 Mapping sequencing reads to a reference, the first step in many genomic pipelines, is a particularly challenging problem in a pangenome context. 
 In this dissertation, I present my work developing data structures and algorithms to support read mapping to pangenome graphs.
 The pangenomic read mapping tools that I helped develop over the course of my PhD are as efficient as linear mappers and improve variant calling and genotyping results compared to standard tools.
@@ -114,16 +114,34 @@ They are among the first practical pangenome mappers that are paving the way for
 \null\vfil
 {\large
 \begin{center}
-To myself,\\\vspace{12pt}
-Perry H. Disdainful,\\\vspace{12pt}
-the only person worthy of my company.
+To my parents,\\\vspace{12pt}
+who let me walk my own path,\\\vspace{12pt}
+and supported me the whole way.\\\vspace{12pt}
+\hfill\break
+And to my siblings,\\\vspace{12pt}
+who were also there.
 \end{center}}
 \vfil\null
 \end{dedication}
 
 
 \begin{acknowledgements}
-Thanks 
+I would first like to thank my advisor, Benedict Paten, for his constant support and guidance and for all the opportunities he has given me.
+His mentorship has helped me grow as a scientist and as an individual and his example has been a source of inspiration and motivation throughout my PhD.
+I would also like to thank the other members of my committee, David Haussler, Russ Corbett-Detig, and Jian Ma, for their insights and feedback on my thesis proposal and dissertation.
+
+My time in Santa Cruz was shaped by my labmates and friends and I am very grateful for all their kindness and support.
+I would especially like to thank Jordan and Adam, who set an example of how to be a good bioinformatician and a good person and who were always generous with their time and expertise; Brandon, who was always there for me; and Zeal, who was a constant source of positivity. 
+I am very grateful to everyone who spent time with me climbing, hiking, eating burritos on the beach, staring at algorithms on a whiteboard, playing board games, plotting pranks, and everything else that made Santa Cruz special.
+
+I have always been very lucky in my friends and I feel privileged to have grown up with Emily, Laura, Caroline, Helen, Pia, and Nora who continue to inspire me in all that they do.
+
+Lastly and most importantly, I would like to thank my family.
+I would not be where I am now without my grandparents, whose hard work and dedication gave rise to all the opportunities my family now enjoys, and whose values continue to guide me; my Uncle Ray, who helped me take the first step in my education; and my innumerable aunts, uncles, and cousins, whose unconditional love and support make their presence felt even from afar.
+I would like to thank Sumnim, who, save my parents, had the greatest hand in shaping me.
+And, of course, I would like to thank my parents, Joe and Jo, who, between them, are everything that I strive to be, and my siblings, Ben and Ji, whose support, insights, wit, and random knowledge are the greatest constants in my life.
+And finally, I would like to thank Jean, my labmate, co-author, friend, and now partner in all that I do.
+
 \end{acknowledgements}
 
 \end{frontmatter}
@@ -135,7 +153,7 @@ The human reference genome is one of the most widely used resources in biologica
 It is the basis for studying the functional biology of the human genome, genetic variations and their implications in disease, evolutionary relationships between humans and other species, and countless other basic biological and clinical questions.
 As a ``reference'', the reference genome serves as a standard scaffold against which new genomic data is compared.
 In order for a reference to be effective, it must be similar enough to the sample that they can be meaningfully compared and differences between them identified and interpreted.
-However, the human reference genome is a linear genome that represents a single haplotype copy of a genome with a limited number of alternate alleles.
+However, the human reference genome is a linear genome that represents a single haploid copy of a genome with a limited number of alternate alleles.
 Because of its lack of diversity, the reference genome can differ significantly from an individual's genome and can bias new samples to appear more similar to the reference than they actually are.
 The human reference genome in its current iteration cannot represent the genetic diversity of the human population and is therefore limited in its utility as a reference for all humans.
 
@@ -146,11 +164,13 @@ While this is an efficient method for representing the large amount of repetitiv
 As a result, existing pangenome tools tend to be slow, memory intensive, and can be confounded by complex and repetitive regions of the genome.
 In order for pangenomes to reach their full potential as a standard reference, new methods must be developed to make them practical for common genomic tasks.
 
-Read mapping is one such fundamental task that is common to many modern genomic analyses.
-Read mapping is a well-studied problem in a linear context but it becomes more difficult when mapping to a larger and more complex pangenome reference.
+%Read mapping is one such fundamental task that is common to many modern genomic analyses.
+%Mapped reads are used in many downstream pipelines such as variant calling, the problem of identifying new variants in a sample, and genotyping, the problem of determining which set of alleles are present in a sample.
+Read mapping is one such fundamental task that is common to many modern genomic analyses such as variant calling, the problem of identifying new variants in a sample, and genotyping, the problem of determining which set of known alleles are present in a sample.
+Read mapping is a well-studied problem in a linear context, but it becomes more difficult when mapping to a larger and more complex pangenome reference.
 In this dissertation, I present my work developing data structures and algorithms for mapping sequencing reads to pangenome graphs.
 I describe an index for finding the minimum distance between positions in a pangenome graph and an algorithm that uses it to cluster positions on the graph (Chapter~\ref{chapter:distance}).
-Next, I describe a short read-to-pangenome mapper (Chapter~\ref{chapter:sr-giraffe}) and a long read-to-pangenome mapper (Chapter ~\ref{chapter:lr-giraffe}), and show how each improves variant calling and genotyping relative to standard linear pipelines.
+Next, I describe pangenome mappers for short (Chapter~\ref{chapter:sr-giraffe}) and a long reads (Chapter ~\ref{chapter:lr-giraffe}), and show how each improves variant calling and genotyping relative to standard linear pipelines.
 
 \chapter{Background}
 \label{chapter:background}
@@ -158,22 +178,22 @@ Next, I describe a short read-to-pangenome mapper (Chapter~\ref{chapter:sr-giraf
 \section{Linear reference genomes}
 \label{sec:background:linear-genomes}
 
-A reference genome is a high-quality, annotated genome assembly that is used as the standard against which others of the same species are compared. 
+A reference genome is a high-quality, annotated genome assembly used as a standard against which others of the same species are compared. 
 Nearly all aspects of modern genomics are in some way dependent on reference genomes.
-They are the basis against which we describe and interpret genetic variants and they underpin the bioinformatics tools used to perform analyses.
+They are the basis against which we describe and interpret genetic variants, and they underpin the bioinformatics tools used to perform analyses.
 The completion of the Human Genome Project \cite{lander_initial_2001}, which produced the first human reference genome, was a landmark accomplishment and has been the foundation of much of modern genetic and genomic research.
-However, the human reference genome is inherently flawed in that it cannot represent the genetic diversity of the human population.
+However, the human reference genome is inherently limited in that it cannot represent the genetic diversity of the human population.
 
 The initial copy of the human reference genome was assembled from the genetic sequences of eight people, primarily from a single individual \cite{lander_initial_2001}.
-This genome assembly is a ``linear'' genome that represents just one haplotype copy of a genome and no variations.
-Moreover, it is a mosaic of a few individuals and represents alleles that are unique to those individuals, and combinations of alleles that do not exist in any individual.
+This genome assembly is a ``linear'' genome that represents just one haploid copy of a genome with no variations.
+Moreover, it is a mosaic of a few individuals and contains alleles that are unique to those individuals, as well as combinations of alleles that do not exist in any individual.
 The current reference genome, GRCh38, has built on the initial assembly by closing gaps, adding alternate loci, improving annotations, and generally improving the quality of the sequence \cite{schneider_evaluation_2017}.
 However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated \cite{schneider_evaluation_2017,nurk_complete_2022}.
 Furthermore, $93\%$ of the sequence in GRCh38 is derived from just eleven individuals and about $70\%$ is derived from a single individual.
 
 Many of these problems are improved in the recent CHM13 assembly, the first complete sequence of a human genome \cite{nurk_complete_2022}.
-Unlike the GRCh38 assembly, the CHM13 assembly is the sequence of a single individual (a haploid hydatidiform mole) and includes the $8\%$ of the genome that remained unsequenced in GRCh38 \cite{nurk_complete_2022}.
-Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haplotype sequence.
+Unlike the GRCh38 assembly, CHM13 is the sequence of a single individual (a haploid hydatidiform mole) and includes the $8\%$ of the genome that remained unsequenced in GRCh38 \cite{nurk_complete_2022}.
+Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haploid sequence.
 Although the GRCh38 assembly contains some alternate loci, these are limited to 176 genomic regions \cite{schneider_evaluation_2017} and it is still essentially a linear genome.
 
 \subsection{Reference bias}
@@ -192,7 +212,6 @@ If no mapped reads cover the insertion, it cannot be called as a variant and the
 \end{figure}
 
 
-
 This reference bias can be mitigated by using a reference genome containing sequences that more closely resemble the sample of interest.
 There have been many proposals for how a reference can accomplish this.
 Rather than using a linear reference that is a mosaic of several individuals, such as GRCh38, the reference could be an ancestral genome that contains the most recent common ancestral allele at each locus, or a consensus genome that contains the most common allele at each locus \cite{ballouz_is_2019}.
@@ -203,21 +222,21 @@ Most human genetic variation occurs across populations, rather than within popul
 
 \section{Towards a human reference pangenome}
 
-Although the idea of using a pangenome to mitigate reference bias is not new \cite{li_building_2010}, until recently, it has not been feasible to create a global human reference pangenome.
-The creation of such a resource requires several components: the ability to generate reference-quality genome assemblies and the ability to select genomes to represent the genetic diversity human population.
+Pangenomes have previously been proposed to mitigate reference bias \cite{li_building_2010} but until recently, it has not been feasible to create a global human reference pangenome.
+The creation of such a resource requires several components: the ability to generate reference-quality genome assemblies and the ability to select genomes to represent the genetic diversity in human population.
 Recent advances in genome sequencing technologies, genome assembly algorithms, and a greater understanding of human population genetics have brought this prospect closer to reality.
 
 \subsection{Sequencing technologies}
 \label{sec:background:sequencing}
 
 The earliest DNA sequencing techniques, including Sanger sequencing and Maxam-Gilbert sequencing, produced reads on the order of tens of base pairs \cite{sanger_sequencing_1975,sanger_sequencing_1977,maxam_sequencing_1980}.
-Sanger sequencing became the basis of the first sequencing machines, which were able to produce read hundreds of base pairs in length \cite{sequencing_review_2016}.
+Sanger sequencing became the basis of the first sequencing machines, which were able to produce reads hundreds of base pairs in length \cite{sequencing_review_2016}.
 Sanger sequencing has low throughput but it is highly accurate and it is still used for targeted sequencing of small regions.
 These early sequencing technologies are collectively known as "first-generation sequencing".
 
 The next generation of sequencing technologies, known as "next-generation" or "second-generation" sequencing, parallelized the sequencing reactions to greatly increase throughput \cite{sequencing_review_2016}. 
 Illumina sequencing has become the dominant next-generation sequencing technology.
-Illumina reads have a major advantage of producing paired end reads comprised of two short sequences and an approximate distance between them.
+Illumina reads have a major advantage of producing paired end reads comprised of two short sequences with a known approximate distance between them.
 Modern Illumina sequencing machines can produce millions or even billions of paired end reads with lengths between $100$ and $300$ base pairs in a single run \cite{illumina_sequencing_nodate}.
 These reads are generally very accurate with most errors being substitution errors.
 
@@ -254,7 +273,7 @@ Strand-seq is a technique to sequence individual strands of DNA within single ce
 \subsection{Genome assembly}
 
 Advancements in sequencing technologies have driven improvements in the genome assemblies made from them.
-Modern long read assembly algorithms are capable of resolving repetitive and complex regions of the genome and can produce higher quality, more contiguous assemblies than short read methods \cite{cheng_hifiasm_2021,rautiainen_verkko_2023,shafin_shasta_2020}.
+Modern long read assembly algorithms are capable of resolving repetitive and complex regions of the genome and can produce higher quality and more contiguous assemblies than short read methods \cite{cheng_hifiasm_2021,rautiainen_verkko_2023,shafin_shasta_2020}.
 Haplotype phasing, the problem of distinguishing between the maternal and paternal haplotype, can be done using chromosome conformation capture reads, ultra-long nanopore reads, or sequencing data from the parents \cite{cheng_hifiasm_2021}.
 The cost of sequencing and assembling a high-quality phased human genome using these methods was recently estimated to be between ten and fifteen thousand dollars \cite{miga_envisioning_2023}.
 
@@ -262,7 +281,7 @@ The cost of sequencing and assembling a high-quality phased human genome using t
 
 While the Human Genome Project provided a deep understanding of a single human genome, other large-scale projects aimed to provide a broad understanding of the genetic landscape of the human population \cite{international_hapmap_consortium_international_2003,international2005haplotype,1000_genomes_project_consortium_map_2010,1000gp_2015,chaisson_sv_2019}.
 These projects have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
-In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, produced catalogs of variants from thousands of individuals across diverse populations, eventually cataloging over $99\%$ of common variants.
+In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, produced catalogs of variants from thousands of individuals across diverse populations, and have been estimated to have cataloged over $99\%$ of common variants \cite{miga_need_pangenome_2021}.
 This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides guidance for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_pangenome_2021}.
 
 %Projects such as the dbSNP database \cite{sherry_dbsnp_2001}, International HapMap Consortium \cite{international_hapmap_consortium_international_2003,international2005haplotype}, ENCyclopedia of DNA Elements (ENCODE) project \cite{encode_project_consortium_encode_2004}, 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, and Human Genome Structural Variation Consortium (HGSVC) \cite{chaisson_sv_2019}
@@ -271,16 +290,15 @@ This greater view of human genetic diversity both highlights the shortcomings of
 \label{sec:background:pangenomes}
 
 A pangenome is an alternative to a standard linear genome.
-Pangenomes are collections of genomic sequences from a population and the alignments among them.
+Pangenomes are collections of genome sequences from a population and the alignments among them.
 Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_pangenome_2023}.
-With recent advances in genome sequencing and assembly, it is now possible to produce reference-quality and even telomere-to-telomere genome sequences with ever-decreasing time and cost \cite{miga_envisioning_2023}.
-This technical capability coupled with our current understanding of population genetics makes it feasible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
+With recent advances in genome sequencing and assembly, coupled with our current understanding of population genetics, it is now feasible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
 
 The first human reference pangenomes are just beginning to be produced.
 The Human Pangenome Reference Consortium (HPRC) has build on the work of the Human Genome Project, the 1000 Genomes Project, and other sequencing projects to begin to establish a global human reference pangenome \cite{hprc_2022}.
 The HPRC aims to produce a pangenome comprised of at least 350 individuals' genomes selected to maximally represent the genetic variant present in the human population \cite{hprc_2022}.
-The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality (average quality value of 53.57), phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines and prioritized for their coverage of genetic variants and biogeographic origin \cite{hprc_pangenome_2023}.
-The HPRC released three different alignments of these haplotype sequences, constructed using the Minigraph \cite{li_minigraph_2020}, Minigraph-Cactus (MC) \cite{minigraph_cactus_2024}, and PanGenome Graph Builder (PGGB) \cite{pggb_2024} pipelines (see Section \ref{sec:graph-construction}). 
+The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality (average quality value of 53.57), phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines for their coverage of genetic variants and biogeographic origin \cite{hprc_pangenome_2023}.
+The HPRC released three different alignments of these haplotype sequences, constructed using the Minigraph \cite{li_minigraph_2020}, Minigraph-Cactus \cite{minigraph_cactus_2024}, and PanGenome Graph Builder (PGGB) \cite{pggb_2024} pipelines (see Section \ref{sec:graph-construction}). 
 
 In addition to this global pangenome project, there have been several recent efforts to establish ancestry-specific pangenomes for underrepresented populations \cite{pacific_pangenome_2024,chinese_pangenome_2023,arab_pangenome_2024}.
 These pangenomes have been curated to represent the genetic diversity of Pacific, Chinese, or Arab populations.
@@ -292,11 +310,11 @@ These population-specific efforts aim to improve understanding of genetic varian
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{example_graph.pdf}
-    \caption[Sequence graph]{\textbf{Sequence and variation graphs}. (A) A sequence graph representing two input sequences. Variations between the two sequences (in bold) are represented as bubbles in the graph. Each node in the sequence graph has a left (-) and right (+) side. Edges connect node sides. (B) The variation graph representation of the input sequences is comprised of the sequence graph and embedded haplotype paths through the graph representing the input sequences.}
+    \caption[Sequence and variation graphs]{\textbf{Sequence and variation graphs}. (A) A sequence graph representing two input sequences. Variations between the two sequences (in bold) are represented as bubbles in the graph. Each node in the sequence graph has a left (-) and right (+) side. Edges connect node sides. (B) The variation graph representation of the input sequences is comprised of the sequence graph and embedded haplotype paths through the graph representing the input sequences.}
     \label{fig:example_graph}
 \end{figure}
 
-A sequence content human pangenome can easily reach hundreds of billions of base pairs and compact data structures are needed to efficiently represent all of the sequences and the relationships among them. 
+The sequence content of a human pangenome can easily reach hundreds of billions of base pairs and compact data structures are needed to efficiently represent all of the sequences and the relationships among them. 
 A popular method of representing pangenome is with sequence graphs (Figure \ref{fig:example_graph} A).
 Nodes in a sequence graph are labeled with nucleotide sequences and longer sequences can be encoded as paths through the graph.
 Divergences in the graph represent variations in the sequences.
@@ -304,20 +322,21 @@ Divergences in the graph represent variations in the sequences.
 Formally, a sequence graph is a bidirected graph $G = (V, E)$ where $V$ is the set of nodes and $E$ is the set of edges.
 A node $v$ in a bidirected graph has two node sides, $\{v^{-}, v^{+}\}$, which are arbitrarily designated as ``left'' and ``right'' respectively (Figure \ref{fig:example_graph} A).
 Each node $v$ in a sequence graph is labeled with a nucleotide sequence, $s(v)$.
-Edges in sequence graphs connect node sides and traversals of nodes must enter and exit the node at opposite sides.
+Edges in sequence graphs connect node sides; traversals of nodes must enter and exit the node at opposite sides.
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
 
 Variation graphs are sequence graphs that additionally encode a set of reference paths through the graph (Figure \ref{fig:example_graph} B).
 These paths provide a stable linear coordinate system and are particularly useful for projecting pangenomic results back to the standard linear reference genome.
 They are also useful for restricting walks through the graph to those corresponding to known biological sequences.
-The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs.
 
 \subsection{Variation graph representations}
 
 Standardized representations of sequence graphs are important to allow interchange between tools.
-Most pangenome tools support reference Graphical Fragment Assembly (rGFA) format for representing a reference pangenome graph \cite{li_minigraph_2020}. 
-rGFA can be used as a stable reference coordinate system that extends that of the linear reference genome \cite{li_minigraph_2020}. 
+Most pangenome tools support Graphical Fragment Assembly (GFA) format for representing a reference pangenome graph \cite{eizenga_pangenome_2020}. 
+A version of the GFA format, the reference GFA (rGFA) format, has been proposed as a stable reference coordinate system that extends that of the linear reference genome \cite{li_minigraph_2020}. 
 
+The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs \cite{garrison_vg_2018}.
+All of the work presented in this dissertation is implemented as part of the \texttt{vg} toolkit.
 The \texttt{vg} toolkit originally supported two formats for representing variation graphs: the original VG format and XG format \cite{garrison_vg_2018}.
 Although the XG format is more memory-efficient than VG, it is a static format that does not allow for modifications.
 Three other memory-efficient, dynamic formats were later introduced: ODGI \cite{guarracino_odgi_2022}, HashGraph, and PackedGraph \cite{eizenga2020efficient}.
@@ -332,14 +351,14 @@ Graph indexes are discussed in Section \ref{sec:graph-mappers}.
 
 A variation graph can be constructed using a variety of different methods, each of which produces graphs with distinct characteristics.
 One option for constructing a graph is to start with a set of variants, typically represented in a variant calling format (VCF) file.
-The \texttt{vg} toolkit's \texttt{vg construct} tool takes a reference and a set of variants called against that reference and produces a variation graph.
+The \texttt{vg} toolkit's \texttt{vg construct} tool takes a reference and a set of variants called against that reference as input and produces a variation graph.
 Variation graphs constructed with this method are generally topologically simple. 
 
 Graphs can also be constructed from phased genome assemblies.
 There are currently three methods for constructing pangenome graphs from assemblies.
 The Minigraph algorithm starts from a single reference genome and progressively aligns and incorporates each additional genome into the graph \cite{li_minigraph_2020}.
-As this algorithm is not designed to find small variants; graphs constructed with Minigraph represent only larger structural variants and are generally simple and acyclic \cite{li_minigraph_2020}.
-The Minigraph-Cactus (MC) pipeline builds on graphs build with the Minigraph algorithm and adds smaller variants using the Cactus algorithm \cite{minigraph_cactus_2024}. 
+As this algorithm is not designed to find small variants, graphs constructed with Minigraph represent only larger structural variants and are generally simple and acyclic \cite{li_minigraph_2020}.
+The Minigraph-Cactus pipeline builds on graphs constructed with the Minigraph algorithm and adds smaller variants using the Cactus algorithm \cite{minigraph_cactus_2024}. 
 This introduces smaller variants, nested variants, and can create cycles in the graph.
 The PanGenome Graph Builder (PGGB) algorithm constructs a graph using a reference-free all-to-all comparison of genomes \cite{pggb_2024}.
 The PGGB pipeline tends to add more alignments between homologous sequences, particularly copy number variants, resulting in collapsing of repetitive sequences into a single copy \cite{hprc_pangenome_2023}.
@@ -354,41 +373,44 @@ In contrast, less collapsed graphs built with Minigraph are simpler and can more
 
 To help find organization in a sequence graph, it is often useful to describe common topological motifs.
 A simple variation such as a single nucleotide polymorphism (SNP) or and insertion or deletion (indel) will be represented by one or two nodes representing the variant sequences, flanked by two nodes representing conserved sequences.
-In Figure \ref{fig:snarl_tree}A, nodes $h$ and $i$ represent the alleles of a SNP while nodes $g$ and $j$ represent conserved sequence.
-The subgraph between node sides $g^+$ and $j^-$ is called a snarl.
+In Figure \ref{fig:snarl_tree} A, node $l$ represents an insertion that may be skipped by taking the edge between nodes $k$ and $m$.
+Nodes $k$ and $m$ represent conserved sequences that flank the indel.
+The subgraph between node sides $k^+$ and $m^-$ is called a snarl.
 A snarl is defined by a pair of node sides, $\{x^{-/+}, y^{-/+}\}$, that delimit a subgraph between them.
 The nodes $x$ and $y$ are referred to as the boundary nodes of the snarl.
-Two node sides define a snarl if they are (i) separable: splitting the boundary nodes into the their two node sides disconnects the snarl from the rest of the graph, and (ii) minimal: there is no node $z$ within the snarl that is separable with the boundary nodes.
+Two node sides define a snarl if they are (i) separable: splitting the boundary nodes into their two node sides disconnects the snarl from the rest of the graph, and (ii) minimal: there is no node $z$ within the snarl that is separable with the boundary nodes.
 %I will use the term ``snarl'' to refer to the two boundary nodes and the subgraph between them.
 
 Snarls frequently occur successively with a shared boundary node between them.
-A sequence of consecutive snarls is called a ``chain''.
-In Figure \ref{fig:snarl_tree}A, the snarls $\{e^+$, $g^-$\} and $\{g^+$, $j^-\}$ are in a chain $\{e^+$, $j^-\}$.
+A sequence of consecutive nodes and snarls is called a ``chain''.
+In Figure \ref{fig:snarl_tree}A, node $e$, snarl $\{e^+$, $g^-$\}, node $g$, snarl $\{g^+$, $j^-\}$, and node $j$ form in a chain $\{e$, $j\}$.
+Because chains contain entire nodes, they are defined by as a pair of nodes rather than a pair of node sides as for snarls.
+%Actually the definition should probably involve directionality or something to cover looping chains but I think that would be unnecessarily complicated
 
 Snarls and chains may be nested within each other.
-Conceptually, this can occur when multiple variants affect the same locus, for example an insertion that contains a SNP.
+Conceptually, this can occur when multiple variants affect the same locus, such as an insertion that contains a SNP.
 In a graph, a snarl contains another snarl if all of the nodes in the latter snarl are contained in the subgraph of the former.
 A snarl contains a chain if it contains all of the chain's component snarls.
-In Figure \ref{fig:snarl_tree}A, the chain $\{e^+$, $j^-\}$ is contained in the snarl $\{a^+$, $k^-\}$.
+In Figure \ref{fig:snarl_tree} A, the chain $\{e$, $j\}$ is contained in the snarl $\{a^+$, $k^-\}$.
 
 %A sequence graph can be entirely decomposed into nested snarls and chains.
 The nesting relationship of snarls and chains of a graph is described by its ``snarl tree'' (Figure \ref{fig:snarl_tree} A).
-Each snarl and chain in the graph is represented as a node in the snarl tree.
+Each node, snarl, and chain in the graph is represented as a node in the snarl tree.
 A chain is a child of a snarl if it is contained in the snarl and no other descendant of the snarl.
-A snarl is a child of a chain if it is a component of the chain.
-Every snarl is a child of a chain; a chain containing just one snarl is called a ``trivial chain''.
+A node or snarl is a child of a chain if it is a component of the chain.
+Every node and snarl is a child of a chain; a chain containing just one node is called a ``trivial chain''.
 Because of this, the snarl tree is composed of alternating layers of snarls and chains, usually starting with a top-level chain as the root.
 
 Nodes, snarls, and chains all have the property that they are connected to the rest of the graph by two node sides.
 Based on this property, snarls and chains can be treated as nodes within their parents, obscuring the presence of a subgraph between the boundaries of the child.
 A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
-In Figure \ref{fig:snarl_tree}B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
+In Figure \ref{fig:snarl_tree} B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
 
 \begin{figure}[htp]
     \centering
-    \includegraphics[width=\columnwidth]{snarl_tree.pdf}
-    \caption[Snarl decomposition]{\textbf{The snarl decomposition} (A) A sequence graph (left) and its corresponding snarl tree (right). Chains are represented by rectangular nodes in the snarl tree; snarls are represented by elliptical nodes.
-    (B) A view of the graph in (A) with snarls $\{a^+$,$k^-\}$ and $\{k^+$,$m^-\}$ highlighted in the graph and snarl tree. (C) A view of the graph in (A) with snarl $\{a^+$,$k^-\}$ replaced by its netgraph. In this view, the chains $\{b^+$, $d^-\}$ and $\{e^+$, $j^-\}$ are represented by nodes.}
+    \includegraphics[width=0.9\columnwidth]{snarl_tree.pdf}
+    \caption[The snarl decomposition]{\textbf{The snarl decomposition} (A) A sequence graph (left) and its corresponding snarl tree (right). Chains are represented by rectangular nodes in the snarl tree; snarls are represented by elliptical nodes. For simplicity, nodes are not shown on the snarl tree.
+    (B) Snarls $\{a^+$,$k^-\}$ and $\{k^+$,$m^-\}$ highlighted in the graph and snarl tree. (C) Chains $\{b$, $d\}$ and $\{e$, $j\}$ are highlighted in the variation graph and snarl tree. Below, a view of the graph with snarl $\{a^+$,$k^-\}$ replaced by its netgraph. In this view, the snarl's child chains $\{b$, $d\}$ and $\{e$, $j\}$ are represented by nodes.}
     \label{fig:snarl_tree}
 \end{figure}
 
@@ -402,18 +424,17 @@ For the sake of clarity, I will use ``mapping'' to refer to the problem of findi
 Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
 
 Most mapping algorithms follow a common seed-and-extend framework comprised of three main steps.
-In the first step, seeding, short ``seed'' alignments are found between the read and reference (Figure~\ref{fig:mapping_overview}).
+In the first step, seeding, short ``seed'' alignments are found between the read and reference (Figure~\ref{fig:mapping_overview} A).
 Next, the seeds may be grouped together based on their locations in the reference to identify regions of the genome that are likely targets of mapping.
-This step is either done by clustering or chaining, and is omitted entirely by some mappers.
-In clustering, partitions of seeds are found such that seeds that are close to each other on the reference are placed in the same partition.
-Chaining finds ordered sets of co-linear seeds that occur in the same order in the read and reference. 
-Once a likely location is found on the reference, the final alignment step is done.
+This step is either done by clustering  (Figure~\ref{fig:mapping_overview} B ) or chaining  (Figure~\ref{fig:mapping_overview} C), and is omitted entirely by some mappers.
+In clustering, partitions of seeds are found such that seeds that may originate from the same mapping are placed in the same partition.
+Chaining algorithms find ordered sets of co-linear seeds that occur in the same order in the read and reference. 
+Once a likely location is found on the reference, the final alignment step is done (Figure~\ref{fig:mapping_overview} D, E).
 In this step, the seed alignment is extended using a dynamic programming algorithm to find the final base-level alignment.
 
-Read mapping algorithms vary depending on the type of input reads and whether the target reference is a linear genome or a graph.
-Earlier algorithms were designed to aligner shorter reads to linear genomes.
+Read mapping algorithms differ depending on the type of input reads and whether the target reference is a linear genome or a graph.
+Earlier algorithms were designed to align shorter reads to linear genomes.
 These algorithms were later adapted to align longer reads and to align to graph references.
-
 
 \begin{figure}
 \centering
@@ -421,11 +442,43 @@ These algorithms were later adapted to align longer reads and to align to graph 
 \caption[Seed-and-extend mapping algorithm overview]{\textbf{Seed-and-extend mapping algorithm overview} (A) Short seed alignments between the read and reference are found using a text index or $k$-mer index. Seeds are grouped together into unordered clusters (B) or ordered chains (C). Alignment is done from individual seeds (D) or between seeds in a chain (E).}
 \label{fig:mapping_overview}
 \end{figure}
+
+
 \subsection{Seeding}
 
-Existing liner mappers generally use either suffix tree-based text indexes or $k$-mer indexes for seeding \cite{li_survey_2010,lr_review_2023}.
+Existing liner mappers generally use either $k$-mer indexes or suffix tree-based text indexes for seeding \cite{li_survey_2010,sahlin_survey_2023}.
 
 %also Slider, which uses merge sorting
+
+\subsubsection{$k$-mer indexes}
+
+$k$-mer based algorithms use an index that stores the locations of $k$-mers (subsequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
+$k$-mer indexes are often stored in a hash table, and these indexes are sometimes referred to as hash-based indexes.
+Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2021}.
+For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
+
+Minimizers are a used by several mappers as a method for selecting $k$-mers.
+A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
+Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
+Commonly used ordering function include lexicographic order, random hash functions, and other functions optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
+A minimizer index stores the locations of minimizers from all windows in a sequence.
+If two sequences share a subsequence of length at least $w+k-1$, then they are guaranteed to share a minimizer.
+
+Minimizers can be further prioritized based on their frequency in the reference, improving the number of false-positive matches \cite{jain_winnowmap_2020}.
+Prioritizing low frequency or high confidence seeds can also help prioritize reference alleles to map a read to the correct repeat copy. 
+This can be an advantage when the mapper would otherwise have mapped to a repeat with a better alignment to the read, but with fewer unique matches with the reference \cite{winnowmap2_2022}.
+%Winnowmap also tries to pick the same minimizer in a run of the same minimizer
+%Winnowmap2 does a first extension step to get minimal confidently alignable substrings (MCASs), which help it prioritize reference alleles, which are assumed to flank variants in the read in repeat units
+
+Some $k$-mer methods allow inexact matches, also known as fuzzy seeds.
+Spaced $k$-mers allow substitutions in $k$-mers by allowing certain positions in the $k$-mer to be mismatches \cite{ma_patternhunter_2002}.
+Similarly, strobemers are used to find seeds across indels by linking multiple $k$-mers within a window together \cite{sahlin_strobemers_2021}.
+
+%Syncmers are another alternative to minimizers that selects $k$-mers based on the properties of the $s$-mers within a $k$-mer \cite{edgar_syncmers_2021}.
+%Unlike minimizers, syncmers are selected solely based on the $k$-mers and do not depend on their context.
+%A universal hitting set (UHS) is an set of $k$-mers that is guaranteed to have a $k$-mer for any sequence of length $L$ \cite{ekim_randomized_2020,orenstein_compact_2016}.
+%Although UHSs are theoretically useful, computing them is a difficult problem.
+
 
 \subsubsection{Text indexes}
 
@@ -436,11 +489,13 @@ Suffix trees and suffix arrays have memory costs linear in the size of the templ
 The FM-index uses a Burrows Wheeler Transform (BWT) to improve upon the memory cost while maintaining the fast substring queries.
 The Burrows-Wheeler Transform (BWT) is found by sorting all rotations (a transformation of a string taking a prefix and moving it to the end of the string) of the template string, then taking the last character from each rotation \cite{burrows_wheeler_1994}.
 Because characters in the BWT are grouped according to their context, there tend to be long runs of the same character originating from repetitive regions, making the BWT highly compressible and especially useful for indexing a reference genome.
-However, the memory cost is still too high to be practical for indexing multiple reference genomes.
+
 
 %This should maybe go in the graph section but it's easier to read here
+While the BWT is common for indexing a single genome, the memory cost is still too high to be practical for indexing multiple reference genomes.
 The Run-Length FM-Index (RLFM-index) can index multiple genomes, represented as a single concatenated sequence, with a memory requirement linear in the number of runs in the BWT \cite{makinen_succinct_2005,makinen_storage_2010}.
 Because genome sequences are highly repetitive, the RLFM-index can store many genomes with low memory but using this index to locate substrings requires an additional data structure that increases memory requirement.
+This problem remained unsolved until the $r$-index was developed a decade later.
 The $r$-index can find exact matches in time linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
 The $r$-index makes it feasible to index and search databases of whole genomes \cite{rossi_moni_2022}.
 
@@ -461,54 +516,41 @@ These are often maximal exact matches (MEMs), which are exact matches that canno
 %The BWT is reversible, highly compressible, and, using an additional data structure called the FM-index, can perform exact match queries in time linear in the length of the query \cite{fm_index_2000}.
 %The FM-index's memory requirement scales with the size of the template sequence, and while it has been instrumental in indexing the single human reference genome, it doesn't scale to collections of genomes.
 
-\subsubsection{k-mer indexes}
-
-$k$-mer based algorithms use an index that stores the locations of $k$-mers (sequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
-$k$-mer indexes are often stored in a hash table, and these indexes are sometimes referred to as hash-based indexes.
-Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2021}.
-For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
-
-Minimizers are a method for selecting $k$-mers that is used in several mappers.
-A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
-Commonly used ordering function are lexicographic order, random hash functions, and other functions optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
-Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
-A minimizer index stores the locations of minimizers from all windows in a sequence.
-If two sequences share a subsequence of length at least $w+k-1$, then they are guaranteed to share a minimizer.
-Minimizers can be further prioritized based on their frequency in the reference, improving the number of false-positive matches \cite{jain_winnowmap_2020}.
-
-Some $k$-mer methods allow inexact matches, also known as fuzzy seeds.
-Spaced $k$-mers allow substitutions in $k$-mers by allowing certain positions in the $k$-mer to be mismatches \cite{ma_patternhunter_2002}.
-Similarly, strobemers are used to find seeds across indels by linking multiple $k$-mers within a window together \cite{sahlin_strobemers_2021}.
-
-%Syncmers are another alternative to minimizers that selects $k$-mers based on the properties of the $s$-mers within a $k$-mer \cite{edgar_syncmers_2021}.
-%Unlike minimizers, syncmers are selected solely based on the $k$-mers and do not depend on their context.
-%A universal hitting set (UHS) is an set of $k$-mers that is guaranteed to have a $k$-mer for any sequence of length $L$ \cite{ekim_randomized_2020,orenstein_compact_2016}.
-%Although UHSs are theoretically useful, computing them is a difficult problem.
-
 \subsection{Clustering and chaining}
 
 After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
 Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
 Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
-Clustering techniques partition seeds into groups of seeds that are near each other on the reference, in order to identify regions of the reference that contain potential alignments.
+Clustering techniques partition seeds into groups that are near each other on the reference or that are on the same diagonal line in the alignment matrix between the read and reference, in order to identify regions of the reference that contain potential alignments.
 
-In short read algorithms, the final alignment is generally found by extending individual seed alignments.
-For mapping long reads, this approach is intractable due to the cost of extending the alignment and clustering is generally replaced by or augmented with a chaining step \cite{lr_review_2023}. 
+Some mappers, particularly long read mappers, use a chaining step in addition to or instead of clustering \cite{sahlin_survey_2023}.
 The goal of chaining is to produce optimal sets of co-linear seeds, meaning that the seed occur in the same order in the read and the reference.
-Chaining can be solved using a dynamic programming approach to optimize a given scoring function.
-As a representative example, Minimap2 defines the score of a chain as the number of matching bases in the seeds minus the sum of the gap costs between consecutive seeds \cite{li_minimap2_2018}.
-The gap cost is based on the difference in distance between the seeds in the read and reference.
-The choice of gap cost function impacts both the properties of the final chain that is chosen as optimal and the cost of calculating the optimal chain \cite{lr_review_2023}. 
-%This recursion can be made more efficient using an auxiliary data structure for finding the best score within a range of previous anchors and a gap cost that can be efficiently computed without considering the sequence content of the read and reference \cite{myers_chaining_1995}.
+Chains provide more information than clusters and they are particularly useful for long reads because alignment can be done between consecutive seeds in the chain, instead of out from individual seeds.
+Chaining can be solved using a dynamic programming approach to optimize a chain scoring function.
+As a representative example used by many mappers, Minimap2 defines the score for a chain ending at the $i^{th}$ seed ($f(i)$) as follows \cite{minimap2_2021}:
+\begin{equation}
+    f(i) = \max\begin{cases}
+                \max_{i>j\geq 1} \{f(j) + \alpha(j,i) - \beta(j,i)\}\\
+                w_i
+                \end{cases}
+\end{equation}
+where $f(j)$ is the best score of a chain ending at the $j^{th}$ seed, $\alpha(j,i)$ is the number of bases that match between seeds $i$ and $j$, $\beta(j,i)$ is the gap cost, and $w_i$ is the score of taking just seed $i$ (the number of bases in the seed) \cite{minimap2_2021}.
+Minimap2's scoring function allows overlaps between consecutive seeds but penalizes them. 
+The gap cost is based on the difference in distance between the seeds in the read and the distance between them in the reference, as a way of estimating the indels that would be taken in an alignment between the seeds.
+Minimap2 uses a concave gap cost, where the additional cost of taking a longer gap decreases as the length of the gap increases \cite{sahlin_survey_2023}.
+Concave gap costs favor taking fewer, longer gaps over additional, small gaps, making them more biologically representative than linear gap costs, which increase linearly as the length of the gap increases \cite{sahlin_survey_2023}, but there are optimizations to improve the time complexity of chaining with linear gap cost that can't be used with concave gap costs \cite{abouelhoda_linear_chaining_2005}.
+
+
+%This recursion can be made more efficient using an auxiliary data structure for finding the best score within a range of previous seeds and a gap cost that can be efficiently computed without considering the sequence content of the read and reference \cite{myers_chaining_1995}.
 
 \subsection{Alignment}
 
 The final base-level alignment is typically found using dynamic programming, either by extending seed alignments or by aligning the entire read to a region of the reference that is found by clustering.
 Most standard dynamic programming algorithms are based on the Smith-Waterman-Gotoh algorithm for local alignment \cite{smith_waterman_1981,gotoh_1982} or Needleman-Wunch algorithm for global alignment \cite{needleman_wunsch_1970}.
-These algorithms use a rectangular dynamic programming matrix of the score for aligning a base between the query and reference sequences.
+These algorithms use a rectangular dynamic programming matrix of the score of aligning each base between the query and reference sequences.
 The cost of skipping bases in either sequence is defined by the gap cost; most modern algorithms use an affine gap penalty with a relatively high cost for opening a gap and a lower cost for extending it.
 
-Standard dynamic programming algorithms have prohibitive runtimes, so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
+Standard dynamic programming algorithms have prohibitive runtimes so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
 Some mappers use Single-Instruction Multiple-Data (SIMD) microprocessors to accelerate dynamic programming by parallelizing computation of independent cells in the dynamic programming matrix \cite{farrar_striped_2007,rognes_six-fold_2000}.
 Banded alignment algorithms restrict the dynamic programming matrix to a diagonal ``band'' of a specified width, preventing large insertions or deletions that would exceed the width \cite{chao_aligning_1992}.
 BLAST's X-drop algorithm fills in the matrix row by row, and stops extending each row when the best possible score is a given value X less than the best score seen in the previous row \cite{altschul_blast_1990}.
@@ -524,22 +566,22 @@ Later advancements to the algorithm reduces the space requirement to be linear i
 \label{sec:graph-mappers}
 
 Mapping reads to pangenome graph references is a much newer and far less well studied problem than mapping to linear references.
-In general, mapping to graph references is more accurate, but also requires more computational resources and improving read-to-graph mapping is still an open area of research.
+In general, mapping to graph references is more accurate, but also requires more computational resources, and improving read-to-graph mapping is still an open area of research.
 Existing graph mappers generally follow the same seed-and-extend structure as linear mappers but use graph-specific adaptations for each step \cite{eizenga_pangenome_2020, baaijens_computational_2022}.
 
 Many graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}.
 $k$-mers can be found within the sequences of nodes, from walks in the graph, or from the reference haplotype sequences. 
-Chapter \ref{chapter:sr-giraffe} describes the minimizers of haplotypes used in vg giraffe.
+Chapter \ref{chapter:sr-giraffe} describes the minimizers of haplotypes used in my mapping tool.
 Others mappers use generalizations of the BWT for indexing graphs \cite{garrison_vg_2018,kim_hisat2_2019,siren_indexing_2014,siren_indexes_2020} or collections of genomes \cite{rossi_moni_2022}.
 %The Generalized Compressed Suffix Array (GCSA) is a BWT-based text index for graphs used by VG MAP to find seeds \cite{siren_indexing_2014,siren_indexes_2020}.
 
 Clustering or chaining seeds in a graph is more difficult than in a linear genome due to the added ambiguity of calculating distance in a graph.
-Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_vg_2018}, the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
+Different tools use a variety of estimations of distance based on embedded linear paths \cite{garrison_vg_2018}, linear coordinates based on the snarl decomposition \cite{rautiainen_graphaligner_2020}, an embedded representation of the graph \cite{vaddadi_vmap_2019}, or by enumerating linear paths through the graph \cite{li_minigraph_2020}.
 In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum distance calculation and its use in clustering. 
 
-Many existing graph chaining algorithms are based on an algorithm from M{\"a}kinen et al. that uses a minimum path cover of the graph to determine reachability and distance \cite{makinen_dag_chaining_2019}.
+Many existing graph chaining algorithms are based on an algorithm from M{\"a}kinen et al. that uses a minimum path cover of the graph to determine reachability and distance in directed acyclic graphs (DAGs) \cite{makinen_dag_chaining_2019}.
 The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
-Further extensions to this algorithm have extended it to allow overlaps of one node between anchors \cite{ma_graphchainer_2023} and to chain through cyclic graphs \cite{panaligner_2024}.
+Further advancements to this algorithm have extended it to use different gap costs \cite{chandra_gap-sensitive_chaining_2023}, to be recombination-aware by penalizing haploytpe switches \cite{chandra_haplotype-aware_2024}, to allow overlaps of one node between seeds \cite{ma_graphchainer_2023}, and to chain through cyclic graphs \cite{panaligner_2024}.
 
 %Minigraph uses a chaining algorithm based on that of Minimap2.
 %Minigraph uses two rounds of chaining: it first produces linear chains within individual nodes in the graph, then makes chains of the linear chains taking into account the topology of the graph.
@@ -551,7 +593,7 @@ Further extensions to this algorithm have extended it to allow overlaps of one n
 Alignment is also more challenging in a graph context, particularly for cyclic graphs.
 Many mappers use linear dynamic programming algorithms that have been extended to a graph context.
 One such example is partial order alignment (POA), an algorithm for constructing and aligning to multiple sequence alignments \cite{lee_poa_2002}.
-This algorithm is limited to aligning to directed acyclic graphs (DAGs) and while later algorithms have accelerated alignment using SIMD and other optimizations \cite{jain_accelerating_2019,gao_abpoa_2021,darby_vargas_2020}, most aligners and mappers are still restricted to DAGs \cite{kim_hisat2_2019,rakocevic_fast_2019,li_minigraph_2020,ma_graphchainer_2023}.
+This algorithm is limited to aligning to DAGs and while later algorithms have accelerated alignment using SIMD and other optimizations \cite{jain_accelerating_2019,gao_abpoa_2021,darby_vargas_2020}, most aligners and mappers are still restricted to DAGs \cite{kim_hisat2_2019,rakocevic_fast_2019,li_minigraph_2020,ma_graphchainer_2023}.
 Other mappers align to cyclic graphs by converting them to DAGs before using an acyclic aligner \cite{garrison_vg_2018} or use graph extensions of linear alignment algorithms \cite{rautiainen_bit-parallel_2019,zhang_fast_2022}. 
 %A graph extension of the WFA has been proposed to align similar sequences to sequence graphs more quickly than traditional methods \cite{zhang_fast_2022}.
 %VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_vg_2018}.
@@ -565,26 +607,26 @@ This strategy has been extended to allow recombination-aware alignment \cite{bon
 
 \subsection{Downstream applications of read mapping}
 
-Read mapping is the first step for many genomic analysis including variant calling, genotyping, and transcriptomic analysis. 
+Read mapping is the first step for many genomic analyses including variant calling, genotyping, and transcriptomic analysis. 
 Although these methods are not a focus of this thesis, I will briefly summarize some of the tools used in the results that I present.
 
 Small variant calling is typically done by mapping reads then using statistical models to distinguish between sequencing errors and real variants in the sample \cite{bonfiglio_calling_2024}.
 DeepVariant is convolutional neural network-based variant caller for calling small variants \cite{deep_variant_2018}. 
-In Chapters \ref{chapter:sr-giraffe} and \ref{chapter:lr-giraffe}, I present variant calling results using models of DeepVariant trained on reads mapped to a pangenome graph with vg giraffe.
+In Chapters \ref{chapter:sr-giraffe} and \ref{chapter:lr-giraffe}, I present variant calling results using models of DeepVariant trained on reads mapped to a pangenome graph.
 
 Calling structural variants is a more challenging problem than calling small variants, particularly around highly repetitive regions.
 Long reads are capable of spanning breakpoints and repeats and as a result have greatly improved SV calling methods.
 Sniffles is a commonly used structural variant caller that uses long reads alignments \cite{smolka_sniffles2_2024}.
 While variant calling methods identify new variants, genotyping methods determine the presence of known variants in a sample.
 \texttt{vg call} is a graph-based genotyper primarily used for genotyping structural variants \cite{hickey_vgsv_2020}.
-It uses read coverage of edges in the pangenome graph to genotype the variants present in the graph.
+It uses read coverage of traversals in the pangenome graph to genotype the variants present in the graph.
 
 
 \chapter{Distance Indexing}
 \label{chapter:distance}
 
 \section{Preface}
-This chapter is the full text of my paper "Distance Indexing and Seed Clustering in Sequence Graphs" \cite{chang_distance_2020}, which I presented and ISMB in 2020 and was published in Bioinformatics.
+This chapter is the full text of my paper "Distance Indexing and Seed Clustering in Sequence Graphs" \cite{chang_distance_2020}, which I presented and ISMB in 2020 and which was published in Bioinformatics.
 I am the sole first author of this paper. 
 Benedict Paten and David Haussler originally conceptualized the idea of a snarl decomposition-based distance index.
 Jordan M. Eizenga contributed to the design of the distance index and provided guidance and support throughout the process of software development and writing.
@@ -1100,8 +1142,7 @@ This work was supported, in part, by the National Institutes of Health (award nu
 \label{chapter:sr-giraffe}
 \section{Preface}
 This chapter contains the full text of the paper "Pangenomics enables genotyping of known structural variants in $5202$ diverse genomes"\cite{sr_giraffe_2021}, published in Science in 2021.
-The portions of the paper's supplement that describe or are pertinent to my contributions can be found in the Appendix, Section \ref{sec:appendix_sr_giraffe}.
-The remainder of the supplement referenced by the main text can be found in the online supplement of the paper.
+The supplement can be found in the Appendix, Section \ref{sec:appendix_sr_giraffe}.
 The text contains minor edits to conform with the format of this thesis.
 
 I was a co-first author along with Jouni Sirén, Jean Monlong, Adam M. Novak, and Jordan M. Eizenga.
@@ -1177,7 +1218,7 @@ We conclude that pangenomics facilitates a more comprehensive characterization o
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{aim2_summary.pdf}
-    \caption[Overview of short read giraffe experiments]{\textbf{Overview of the experiments} Variant calls from long read–based and large-scale sequencing studies were used to construct pangenome reference graphs (top). Giraffe (and competing mappers) mapped reads to the graph or to linear references, and mapping accuracy, allele coverage balance, and speed were evaluated (middle). Then, mapped reads were used for variant calling, and variant call accuracy was evaluated (bottom). Structural variant calls were analyzed alongside expression data to identify eQTLs and population frequency estimates.}
+    \caption[Overview of short read Giraffe experiments]{\textbf{Overview of the experiments} Variant calls from long read–based and large-scale sequencing studies were used to construct pangenome reference graphs (top). Giraffe (and competing mappers) mapped reads to the graph or to linear references, and mapping accuracy, allele coverage balance, and speed were evaluated (middle). Then, mapped reads were used for variant calling, and variant call accuracy was evaluated (bottom). Structural variant calls were analyzed alongside expression data to identify eQTLs and population frequency estimates.}
     \label{fig:aim2_summary}
 \end{figure}
 
@@ -1601,30 +1642,32 @@ Project design: D.H., E.G., B.P. Giraffe implementation: J.S., X.C., A.M.N., J.M
 \subsection{Competing interests}
  P.-C.C. and A.C. are employees of Google and own Alphabet stock as part of the standard compensation package. The remaining authors declare no competing interests.
 
-subsection{Data and materials availability}
+\subsection{Data and materials availability}
 \label{sec:aim2:code-data}
-An overview of the data generated for this paper, and key input data to reproduce the analyses, is available at https://cglgenomics.ucsc.edu/giraffe-data/.
-The dataset is available through InterPlanetary File System (IPFS) at https://ipfs.io/ipfs/QmVo4Q5hCKqUGJJZyYLGJTaiHZdK9JWhJtGJbKa9ojrSjh.
+An overview of the data generated for this paper, and key input data to reproduce the analyses, is available at \url{https://cglgenomics.ucsc.edu/giraffe-data/}.
+The dataset is available through InterPlanetary File System (IPFS) at \raggedright{\url{https://ipfs.io/ipfs/QmVo4Q5hCKqUGJJZyYLGJTaiHZdK9JWhJtGJbKa9ojrSjh}}.
 Archived copies of the code and final reusable work products have been deposited at Zenodo \cite{zenodocode}.
 This archive also includes vg, toil-vg, and toil source code and Docker containers used in this work, as well as the giraffe-sv-paper orchestration scripts.
 “Final” versions of vg and toil-vg, including all features needed to reproduce this work, are 9907ab2 for vg and 99101f2 for toil-vg.
-The latest version of the vg toolkit, including the Giraffe mapper, is customarily distributed at https://github.com/vgteam/vg.
-The scripts used for the analysis presented in this study were developed at https://github.com/vgteam/giraffe-sv-paper, a git bundle of which is archived at Zenodo \cite{zenodocode}.
-Data used in the Giraffe read-mapping experiments—including the 1000GP, HGSVC, and yeast target graphs, the linear control graphs, the graphs used to simulate reads, and the simulated reads themselves—can be found at https://cgl.gi.ucsc.edu/data/giraffe/mapping/.
+The latest version of the vg toolkit, including the Giraffe mapper, is customarily distributed at \url{https://github.com/vgteam/vg}.
+The scripts used for the analysis presented in this study were developed at \url{https://github.com/vgteam/giraffe-sv-paper}, a git bundle of which is archived at Zenodo \cite{zenodocode}.
+Data used in the Giraffe read-mapping experiments—including the 1000GP, HGSVC, and yeast target graphs, the linear control graphs, the graphs used to simulate reads, and the simulated reads themselves—can be found at \url{https://cgl.gi.ucsc.edu/data/giraffe/mapping/}.
 The SV pangenomes and SV catalogs annotated with allele frequencies are hosted at 
-https://cgl.gi.ucsc.edu/data/giraffe/calling/ and archived at Zenodo \cite{zenodocode}.
+\url{https://cgl.gi.ucsc.edu/data/giraffe/calling/} and archived at Zenodo \cite{zenodocode}.
 This repository also includes SVs with strong inter-superpopulation frequency patterns, SV-eQTLs, and SVs that overlap protein-coding genes.
 To build the 1000GP and HGSVC graphs, we used the GRCh38 no-alt analysis set (accession no. GCA\_000001405.15) and the hs38d1 decoy sequences (accession no. GCA\_000786075.2), both available from the National Center for Biotechnology Information (NCBI), in addition to the variant call files distributed by the respective projects. To train read simulation and evaluate speed, we used human read sets ERR3239454, ERR309934, and SRR6691663 and yeast read sets SRR4074256, SRR4074257, SRR4074394, SRR4074384, SRR4074413, SRR4074358, and SRR4074383, all available from Sequence Read Archive (SRA).
-The public high-coverage sequencing dataset from the 1000 Genomes Project \cite{1000gp_nygc_2021} is available at www.internationalgenome.org/data-portal/data-collection/30x-grch38, including European Nucleotide Archive (ENA) projects PRJEB31736 and PRJEB36890.
-The gene-expression data were download from ArrayExpress E-GEUV-1 (GD462.GeneQuantRPKM.50FN.samplename.resk10.txt.gz).
-We downloaded the call sets from the ENCODE portal \cite{sloan_encode_2016} (www.encodeproject.org/) with the identifier ENCFF590IMH.
+The public high-coverage sequencing dataset from the 1000 Genomes Project \cite{1000gp_nygc_2021} is available at \url{www.internationalgenome.org/data-portal/data-collection/30x-grch38}, including European Nucleotide Archive (ENA) projects PRJEB31736 and PRJEB36890.
+The gene-expression data were download from ArrayExpress E-GEUV-1 (\texttt{GD462.GeneQuantRPKM.50FN.samplename.resk10.txt.gz}).
+We downloaded the call sets from the ENCODE portal \cite{sloan_encode_2016} (\url{www.encodeproject.org/}) with the identifier ENCFF590IMH.
 Individual WGS data for TOPMed whole genomes are available through dbGaP.
 The dbGaP accession no. for MESA is phs001416.
-Data in dbGaP can be downloaded by controlled access with an approved application submitted through their website: www.ncbi.nlm.nih.gov/gap.
+Data in dbGaP can be downloaded by controlled access with an approved application submitted through their website: \url{www.ncbi.nlm.nih.gov/gap}.
 
 \chapter{Long read mapping}
 \label{chapter:lr-giraffe}
 \section{Preface}
+This section contains the text of my pre-print "".
+
 
 \chapter{Discussion}
 
@@ -1636,7 +1679,7 @@ Pangenomes are a promising alternative to standard linear genomes that can bette
 
 The first human reference pangenomes are just beginning to be produced and released to the public for general use.
 However, due to their novelty and the technical challenges of working with a larger and more complex data structure, methods for working with pangenomes are less mature than analogous methods for linear genomes.
-In this dissertation, I presented tools for indexing pangenome graphs and for mapping long and short sequencing reads to them.
+In this dissertation, I presented tools for incdexing pangenome graphs and for mapping long and short sequencing reads to them.
 These mappers are among the first practical tools capable of mapping to pangenome graphs at large scales, a crucial step for many genomics pipelines.
 
 Although we have shown Giraffe to be efficient for the first draft of the HPRC graphs, there is still work to be done to ensure that it works with increasingly complicated graphs.
@@ -1659,7 +1702,7 @@ Efficiently indexing a graph is one of many problems that arise as pangenomes gr
 Pangenomes cannot grow indefinitely and no single pangenome will be able to represent all variants of interest for every study.
 However, a pangenome graph could be used as a more versatile reference that can be modified for specific applications.
 The recent personalized pangenomes paper demonstrates how variants can be removed from a pangenome to better represent an individual sample \cite{siren_personalized_2024}. 
-Conversely, variants specific to a population, disease, or individual could be added to a reference pangenome.
+Conversely, variants specific to a population, disease, or individual could be added to a reference pangenome \cite{denti_pangenome_2025}.
 Adding variants to a graph is more difficult than removing them because the graph must be re-indexed in order to map to it.
 While any modification to the graph will change the indexes, re-indexing a reduced graph may not be necessary if the new index will be a subset of the old and, as in the case of the personalized pangenome workflow, the new graph may be small enough for indexing to be very fast.
 Re-indexing a graph with additional variants, particularly larger variants connecting disparate regions of the genome, is a more difficult task. 
@@ -1677,10 +1720,10 @@ Using these rearrangements as added edges in the proposed algorithm, shorter rea
 
 
 \appendix
-\chapter{Additional short read giraffe materials}
+\chapter{Supplementary materials for short read Giraffe}
 \label{sec:appendix_sr_giraffe}
 \section{Preface}
-This section contains materials from the supplement of short read giraffe paper \cite{sr_giraffe_2021} that are referenced in the main text but not related to my portion of the paper. 
+This section contains the supplement of short read Giraffe paper in Chapter \ref{chapter:sr-giraffe}) \cite{sr_giraffe_2021}. 
 
 \section{Supplementary materials and methods}
 \subsection{Giraffe Algorithm}

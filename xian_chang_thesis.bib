@@ -3482,6 +3482,39 @@ Genome variation graphs are natural candidates to represent a pangenome collecti
 	year = {2023},
 	pages = {1182--1197},
 }
+
+@incollection{chandra_sequence_2023,
+	address = {Cham},
+	title = {Sequence to {Graph} {Alignment} {Using} {Gap}-{Sensitive} {Co}-linear {Chaining}},
+	volume = {13976},
+	isbn = {9783031291180 9783031291197},
+	url = {https://link.springer.com/10.1007/978-3-031-29119-7_4},
+	language = {en},
+	urldate = {2025-02-17},
+	booktitle = {Research in {Computational} {Molecular} {Biology}},
+	publisher = {Springer Nature Switzerland},
+	author = {Chandra, Ghanshyam and Jain, Chirag},
+	editor = {Tang, Haixu},
+	year = {2023},
+	doi = {10.1007/978-3-031-29119-7_4},
+	pages = {58--73},
+}
+
+@article{chandra_haplotype-aware_2024,
+	title = {Haplotype-aware sequence alignment to pangenome graphs},
+	volume = {34},
+	issn = {1088-9051, 1549-5469},
+	url = {http://genome.cshlp.org/lookup/doi/10.1101/gr.279143.124},
+	doi = {10.1101/gr.279143.124},
+	language = {en},
+	number = {9},
+	urldate = {2025-02-17},
+	journal = {Genome Research},
+	author = {Chandra, Ghanshyam and Gibney, Daniel and Jain, Chirag},
+	month = sep,
+	year = {2024},
+	pages = {1265--1275},
+}
 @article{damaraju_long-read_2024,
 	title = {Long-{Read} {DNA} and {RNA} {Sequencing} to {Streamline} {Clinical} {Genetic} {Testing} and {Reduce} {Barriers} to {Comprehensive} {Genetic} {Testing}},
 	volume = {9},
@@ -3628,4 +3661,25 @@ Genome variation graphs are natural candidates to represent a pangenome collecti
 	month = may,
 	year = {2019},
 	pages = {555--560},
+}
+
+@misc{denti_pangenome_2025,
+	title = {Pangenome graph augmentation from unassembled long reads},
+	copyright = {http://creativecommons.org/licenses/by-nd/4.0/},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2025.02.07.637057},
+	doi = {10.1101/2025.02.07.637057},
+	abstract = {Abstract
+          Pangenomes are becoming increasingly popular data structures for genomics analyses due to their ability to compactly represent the genetic diversity within populations. Constructing a pangenome graph, however, is still a time-consuming and expensive process. A promising approach for pangenome construction consists of progressively augmenting a pangenome graph with additional high-quality assemblies. Currently, there is no approach to augment a pangenome graph using unassembled reads from newly sequenced samples that does not require to align them and genotype the new individuals.
+          In this work, we present the first assembly-free and mapping-free approach for augmenting an existing pangenome graph using unassembled long reads from an individual not already present in the pangenome. Our approach consists of finding sample specific sequences in reads using efficient indexes, clustering reads corresponding to the same novel variant(s), and then building a consensus sequence to be added to the pangenome graph for each variant separately.
+          
+            Using simulated reads based on Human Pangenome Reference Consortium (HPRC) assemblies, we demonstrate the effectiveness of the proposed approach for progressively augmenting the pangenome with long reads, without the need for
+            de novo
+            assembly or predicting genetic variants of the new sample. The software is freely available at
+            https://github.com/ldenti/palss
+            .},
+	language = {en},
+	urldate = {2025-02-16},
+	author = {Denti, Luca and Bonizzoni, Paola and Brejova, Brona and Chikhi, Rayan and Krannich, Thomas and Vinar, Tomas and Hormozdiari, Fereydoun},
+	month = feb,
+	year = {2025},
 }
