@@ -19,12 +19,16 @@
 \usepackage[letterpaper, left=1.5in, right=1.25in, top=1.25in, bottom=1.25in, includefoot]{geometry}
 % Use PostScript fonts as required by UCSC Dissertation Preparation Guidelines
 \usepackage{pslatex}
+\usepackage[numbers]{natbib}
 \usepackage{graphicx}
 \usepackage{tabularx}
 \usepackage{float}
 \usepackage[ruled,vlined]{algorithm2e}
 \usepackage{amsmath,amsfonts,amssymb}
 \usepackage{multirow}
+\usepackage{pdflscape}
+\usepackage{threeparttable} % Used for notes in tables with threeparttable
+\usepackage{placeins} % For \FloatBarrier
 
 
 
@@ -139,7 +143,7 @@ I have always been very lucky in my friends and I feel privileged to have grown 
 Lastly and most importantly, I would like to thank my family.
 I would not be where I am now without my grandparents, whose hard work and dedication gave rise to all the opportunities my family now enjoys, and whose values continue to guide me; my Uncle Ray, who helped me take the first step in my education; and my innumerable aunts, uncles, and cousins, whose unconditional love and support make their presence felt even from afar.
 I would like to thank Sumnim, who, save my parents, had the greatest hand in shaping me.
-And, of course, I would like to thank my parents, Joe and Jo, who, between them, are everything that I strive to be, and my siblings, Ben and Ji, whose support, insights, wit, and random knowledge are the greatest constants in my life.
+And, of course, I would like to thank my parents, Joe and Jo, who, between them, are everything that I strive to be, and my siblings, Ben and Ji, whose support, insights, wit, and breadth of random knowledge are the greatest constants in my life.
 And finally, I would like to thank Jean, my labmate, co-author, friend, and now partner in all that I do.
 
 \end{acknowledgements}
@@ -180,7 +184,7 @@ Next, I describe pangenome mappers for short (Chapter~\ref{chapter:sr-giraffe}) 
 
 A reference genome is a high-quality, annotated genome assembly used as a standard against which others of the same species are compared. 
 Nearly all aspects of modern genomics are in some way dependent on reference genomes.
-They are the basis against which we describe and interpret genetic variants, and they underpin the bioinformatics tools used to perform analyses.
+They are the basis for describing and interpreting genetic variants, and they underpin the bioinformatics tools used to perform analyses.
 The completion of the Human Genome Project \cite{lander_initial_2001}, which produced the first human reference genome, was a landmark accomplishment and has been the foundation of much of modern genetic and genomic research.
 However, the human reference genome is inherently limited in that it cannot represent the genetic diversity of the human population.
 
@@ -191,7 +195,7 @@ The current reference genome, GRCh38, has built on the initial assembly by closi
 However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated \cite{schneider_evaluation_2017,nurk_complete_2022}.
 Furthermore, $93\%$ of the sequence in GRCh38 is derived from just eleven individuals and about $70\%$ is derived from a single individual.
 
-Many of these problems are improved in the recent CHM13 assembly, the first complete sequence of a human genome \cite{nurk_complete_2022}.
+Many of these problems are improved upon in the recent CHM13 assembly, the first complete sequence of a human genome \cite{nurk_complete_2022}.
 Unlike the GRCh38 assembly, CHM13 is the sequence of a single individual (a haploid hydatidiform mole) and includes the $8\%$ of the genome that remained unsequenced in GRCh38 \cite{nurk_complete_2022}.
 Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haploid sequence.
 Although the GRCh38 assembly contains some alternate loci, these are limited to 176 genomic regions \cite{schneider_evaluation_2017} and it is still essentially a linear genome.
@@ -199,7 +203,7 @@ Although the GRCh38 assembly contains some alternate loci, these are limited to 
 \subsection{Reference bias}
 
 Using a linear genome as a reference for analyzing new samples introduces a bias causing the new sample to appear more similar to the reference \cite{ballouz_is_2019,noauthor_computational_2016,eizenga_pangenome_2020}.
-This bias frequently arises when mapping to the reference genome, the first step of many common genomics pipelines.
+This bias frequently arises when mapping to the reference genome.
 Mapping to a linear reference can fail when there are significant differences between the sample and the reference, particularly when using short read sequences.
 For example, if the sample contains a large insertion relative to the reference, the reference may not contain the inserted sequence and any read originating from it will remain unmapped (Figure \ref{fig:mapping_example}).
 If no mapped reads cover the insertion, it cannot be called as a variant and the sample will likely appear to have the reference allele.
@@ -216,7 +220,7 @@ This reference bias can be mitigated by using a reference genome containing sequ
 There have been many proposals for how a reference can accomplish this.
 Rather than using a linear reference that is a mosaic of several individuals, such as GRCh38, the reference could be an ancestral genome that contains the most recent common ancestral allele at each locus, or a consensus genome that contains the most common allele at each locus \cite{ballouz_is_2019}.
 Another alternative is to use a national or ethnic genome to represent a specific population \cite{ballouz_is_2019,chinese_national_genome_2023,korean_national_genome_2016,vietnamese_national_genome_2015,danish_national_genome_2015,swedish_national_genome_2018,kowal_race_2019}.
-But while a population-specific reference may better capture variations that are frequent in that population, the benefit of such a reference will be minimal.
+But while a population-specific reference may better capture variants that are frequent in that population, the benefit of such a reference will be minimal.
 Most human genetic variation occurs across populations, rather than within populations \cite{nih_understanding_2007}, meaning that even when using a population-specific reference, the majority of the genome will still be subject to the same reference bias as would stem from using any randomly selected reference genome. 
 %Furthermore, most human genetic variations are rare so no single reference scaffold will be able to represent all people equally. 
 
@@ -281,7 +285,7 @@ The cost of sequencing and assembling a high-quality phased human genome using t
 
 While the Human Genome Project provided a deep understanding of a single human genome, other large-scale projects aimed to provide a broad understanding of the genetic landscape of the human population \cite{international_hapmap_consortium_international_2003,international2005haplotype,1000_genomes_project_consortium_map_2010,1000gp_2015,chaisson_sv_2019}.
 These projects have granted us a greater insight into human genetic variation, its role in functional biology, disease, and evolution, as well as its distribution across the globe.
-In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, produced catalogs of variants from thousands of individuals across diverse populations, and have been estimated to have cataloged over $99\%$ of common variants \cite{miga_need_pangenome_2021}.
+In particular, the International HapMap project \cite{international_hapmap_consortium_international_2003,international2005haplotype} and the later 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015} produced catalogs of variants from thousands of individuals across diverse populations, and have been estimated to have cataloged over $99\%$ of common variants \cite{miga_need_pangenome_2021}.
 This greater view of human genetic diversity both highlights the shortcomings of the human reference genome and provides guidance for how to create a reference that better represents all of humanity \cite{ballouz_is_2019,miga_need_pangenome_2021}.
 
 %Projects such as the dbSNP database \cite{sherry_dbsnp_2001}, International HapMap Consortium \cite{international_hapmap_consortium_international_2003,international2005haplotype}, ENCyclopedia of DNA Elements (ENCODE) project \cite{encode_project_consortium_encode_2004}, 1000 Genomes Project \cite{1000_genomes_project_consortium_map_2010,1000gp_2015}, and Human Genome Structural Variation Consortium (HGSVC) \cite{chaisson_sv_2019}
@@ -292,11 +296,11 @@ This greater view of human genetic diversity both highlights the shortcomings of
 A pangenome is an alternative to a standard linear genome.
 Pangenomes are collections of genome sequences from a population and the alignments among them.
 Because they can represent multiple sequences at each locus, they can better represent variations in a population and have been shown to reduce reference bias relative to using a linear genome \cite{sherman_pan-genomics_2020,noauthor_computational_2016,hprc_pangenome_2023}.
-With recent advances in genome sequencing and assembly, coupled with our current understanding of population genetics, it is now feasible to generate reference-quality genome assemblies at the scale necessary for creating a representative human reference pangenome.
+With recent advances in genome sequencing and assembly, coupled with our current understanding of population genetics, it is now feasible to generate reference-quality genome assemblies at the scale and scope necessary for creating a representative human reference pangenome.
 
 The first human reference pangenomes are just beginning to be produced.
-The Human Pangenome Reference Consortium (HPRC) has build on the work of the Human Genome Project, the 1000 Genomes Project, and other sequencing projects to begin to establish a global human reference pangenome \cite{hprc_2022}.
-The HPRC aims to produce a pangenome comprised of at least 350 individuals' genomes selected to maximally represent the genetic variant present in the human population \cite{hprc_2022}.
+The Human Pangenome Reference Consortium (HPRC) has built on the work of the Human Genome Project, the 1000 Genomes Project, and other sequencing projects to begin to establish a global human reference pangenome \cite{hprc_2022}.
+The HPRC aims to produce a pangenome comprised of at least 350 individuals' genomes selected to maximally represent the genetic variation present in the human population \cite{hprc_2022}.
 The initial draft of the HPRC's human reference pangenome contained the existing GRCh38 and CHM13 reference genomes as well as high-quality (average quality value of 53.57), phased, and annotated genomes of 47 individuals selected from existing 1000 Genomes Project cell lines for their coverage of genetic variants and biogeographic origin \cite{hprc_pangenome_2023}.
 The HPRC released three different alignments of these haplotype sequences, constructed using the Minigraph \cite{li_minigraph_2020}, Minigraph-Cactus \cite{minigraph_cactus_2024}, and PanGenome Graph Builder (PGGB) \cite{pggb_2024} pipelines (see Section \ref{sec:graph-construction}). 
 
@@ -321,7 +325,7 @@ Divergences in the graph represent variations in the sequences.
 
 Formally, a sequence graph is a bidirected graph $G = (V, E)$ where $V$ is the set of nodes and $E$ is the set of edges.
 A node $v$ in a bidirected graph has two node sides, $\{v^{-}, v^{+}\}$, which are arbitrarily designated as ``left'' and ``right'' respectively (Figure \ref{fig:example_graph} A).
-Each node $v$ in a sequence graph is labeled with a nucleotide sequence, $s(v)$.
+Each node $v$ in a sequence graph is labeled with a nucleotide sequence.
 Edges in sequence graphs connect node sides; traversals of nodes must enter and exit the node at opposite sides.
 A left-to-right traversal of a node is designated as a ``forward'' traversal and the nucleotide sequence is read in the forward direction; a right-to-left traversal is designated as a ``backward'' traversal and the nucleotide sequence is read as its reverse complement.
 
@@ -337,7 +341,7 @@ A version of the GFA format, the reference GFA (rGFA) format, has been proposed 
 
 The variation graph toolkit (\texttt{vg}) is a software suite for working with variation graphs \cite{garrison_vg_2018}.
 All of the work presented in this dissertation is implemented as part of the \texttt{vg} toolkit.
-The \texttt{vg} toolkit originally supported two formats for representing variation graphs: the original VG format and XG format \cite{garrison_vg_2018}.
+\texttt{vg} originally supported two formats for representing variation graphs: the original VG format and XG format \cite{garrison_vg_2018}.
 Although the XG format is more memory-efficient than VG, it is a static format that does not allow for modifications.
 Three other memory-efficient, dynamic formats were later introduced: ODGI \cite{guarracino_odgi_2022}, HashGraph, and PackedGraph \cite{eizenga2020efficient}.
 VG, XG, HashGraph, and PackedGraph formats efficiently represent the sequence graph component of a variation graph but are less efficient for storing paths, and generally only a small number of reference haplotypes are included.
@@ -383,8 +387,8 @@ Two node sides define a snarl if they are (i) separable: splitting the boundary 
 
 Snarls frequently occur successively with a shared boundary node between them.
 A sequence of consecutive nodes and snarls is called a ``chain''.
-In Figure \ref{fig:snarl_tree}A, node $e$, snarl $\{e^+$, $g^-$\}, node $g$, snarl $\{g^+$, $j^-\}$, and node $j$ form in a chain $\{e$, $j\}$.
-Because chains contain entire nodes, they are defined by as a pair of nodes rather than a pair of node sides as for snarls.
+In Figure \ref{fig:snarl_tree} A, node $e$, snarl $\{e^+$, $g^-$\}, node $g$, snarl $\{g^+$, $j^-\}$, and node $j$ form in a chain $\{e$, $j\}$.
+Because chains contain entire nodes, I define them here by a pair of nodes rather than by a pair of node sides as for snarls.
 %Actually the definition should probably involve directionality or something to cover looping chains but I think that would be unnecessarily complicated
 
 Snarls and chains may be nested within each other.
@@ -404,11 +408,11 @@ Because of this, the snarl tree is composed of alternating layers of snarls and 
 Nodes, snarls, and chains all have the property that they are connected to the rest of the graph by two node sides.
 Based on this property, snarls and chains can be treated as nodes within their parents, obscuring the presence of a subgraph between the boundaries of the child.
 A ``netgraph'' is a view of a snarl where its child chains are replaced by nodes.
-In Figure \ref{fig:snarl_tree} B, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
+In Figure \ref{fig:snarl_tree} C, the snarl $\{a^+$, $k^-\}$ has been replaced with its netgraph.
 
 \begin{figure}[htp]
     \centering
-    \includegraphics[width=0.9\columnwidth]{snarl_tree.pdf}
+    \includegraphics[width=0.8\columnwidth]{snarl_tree.pdf}
     \caption[The snarl decomposition]{\textbf{The snarl decomposition} (A) A sequence graph (left) and its corresponding snarl tree (right). Chains are represented by rectangular nodes in the snarl tree; snarls are represented by elliptical nodes. For simplicity, nodes are not shown on the snarl tree.
     (B) Snarls $\{a^+$,$k^-\}$ and $\{k^+$,$m^-\}$ highlighted in the graph and snarl tree. (C) Chains $\{b$, $d\}$ and $\{e$, $j\}$ are highlighted in the variation graph and snarl tree. Below, a view of the graph with snarl $\{a^+$,$k^-\}$ replaced by its netgraph. In this view, the snarl's child chains $\{b$, $d\}$ and $\{e$, $j\}$ are represented by nodes.}
     \label{fig:snarl_tree}
@@ -418,7 +422,7 @@ In Figure \ref{fig:snarl_tree} B, the snarl $\{a^+$, $k^-\}$ has been replaced w
 \label{sec:background:mapping}
 
 Read mapping is often the first step of a genomic pipeline.
-The problem of read mapping is to take sequencing reads from a sample and find a placement of the reads in a reference, which may include finding a base-level alignment to the reference.
+The problem of read mapping is to take sequencing reads from a sample and find a placement of the reads in a reference, usually as a base-level alignment to the reference.
 The terms ``mapping'' and ``alignment'' are often used interchangeably.
 For the sake of clarity, I will use ``mapping'' to refer to the problem of finding the location of a read in a reference, and ``alignment'' to refer to the problem of finding the optimal base-level alignment.
 Alignment is typically a component of a mapping algorithm, used to find the optimal alignment to a smaller region of the reference.
@@ -454,10 +458,10 @@ Existing liner mappers generally use either $k$-mer indexes or suffix tree-based
 
 $k$-mer based algorithms use an index that stores the locations of $k$-mers (subsequences of length $k$) in the reference, then look up $k$-mers from the read to find matches in the reference.
 $k$-mer indexes are often stored in a hash table, and these indexes are sometimes referred to as hash-based indexes.
-Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2021}.
+Rather than storing the locations of every $k$-mer in the reference, many algorithms use different schemes for selecting a subset of $k$-mers to be stored in the index \cite{li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018, edgar_urmap_2020,edgar_syncmers_2021}.
 For a scheme to be effective for seeding alignments, it must sparsely sample the reference to reduce the size of the index, evenly sample sequences so that the gap between two consecutive seeds is small, and consistently sample sequences so that if two sequences are similar, then the $k$-mers selected will be the same \cite{marcais_improving_2017}.
 
-Minimizers are a used by several mappers as a method for selecting $k$-mers.
+Minimizers are used by several mappers as a method for selecting $k$-mers.
 A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
 Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
 Commonly used ordering function include lexicographic order, random hash functions, and other functions optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
@@ -494,7 +498,7 @@ Because characters in the BWT are grouped according to their context, there tend
 %This should maybe go in the graph section but it's easier to read here
 While the BWT is common for indexing a single genome, the memory cost is still too high to be practical for indexing multiple reference genomes.
 The Run-Length FM-Index (RLFM-index) can index multiple genomes, represented as a single concatenated sequence, with a memory requirement linear in the number of runs in the BWT \cite{makinen_succinct_2005,makinen_storage_2010}.
-Because genome sequences are highly repetitive, the RLFM-index can store many genomes with low memory but using this index to locate substrings requires an additional data structure that increases memory requirement.
+Because genome sequences are highly similar and repetitive, the RLFM-index can store many genomes with low memory, but using this index to locate substrings requires an additional data structure that increases memory requirement.
 This problem remained unsolved until the $r$-index was developed a decade later.
 The $r$-index can find exact matches in time linear in the length of the query plus the number of occurrences, using an index whose size is linear in the number of runs in the BWT \cite{gagie_rindex_2020}.
 The $r$-index makes it feasible to index and search databases of whole genomes \cite{rossi_moni_2022}.
@@ -521,13 +525,13 @@ These are often maximal exact matches (MEMs), which are exact matches that canno
 After extracting short seed alignments between the read and reference, the seeds are prioritized to avoid performing an expensive dynamic programming step on unlikely seeds.
 Some algorithms prioritize individual seeds based on properties of the seed, such as the number of occurrences in the reference  \cite{langmead_bowtie2_2012}, and evaluate them in order of priority.
 Others groups seeds by chaining or clustering and evaluate groups of seeds together \cite{li_bwa_mem_2013,li_minimap2_2018,lee_mosaik_2014,jain_mashmap_2018}.
-Clustering techniques partition seeds into groups that are near each other on the reference or that are on the same diagonal line in the alignment matrix between the read and reference, in order to identify regions of the reference that contain potential alignments.
+Clustering techniques partition seeds into groups that are near each other on the reference or that are on the same diagonal line in the alignment matrix between the read and reference, in order to identify groups of seeds arising from the same alignment to the reference.
 
 Some mappers, particularly long read mappers, use a chaining step in addition to or instead of clustering \cite{sahlin_survey_2023}.
 The goal of chaining is to produce optimal sets of co-linear seeds, meaning that the seed occur in the same order in the read and the reference.
 Chains provide more information than clusters and they are particularly useful for long reads because alignment can be done between consecutive seeds in the chain, instead of out from individual seeds.
 Chaining can be solved using a dynamic programming approach to optimize a chain scoring function.
-As a representative example used by many mappers, Minimap2 defines the score for a chain ending at the $i^{th}$ seed ($f(i)$) as follows \cite{minimap2_2021}:
+As a representative example used by many mappers, Minimap2 defines the score for a chain ending at the $i^{th}$ seed as follows \cite{minimap2_2021}:
 \begin{equation}
     f(i) = \max\begin{cases}
                 \max_{i>j\geq 1} \{f(j) + \alpha(j,i) - \beta(j,i)\}\\
@@ -548,7 +552,7 @@ Concave gap costs favor taking fewer, longer gaps over additional, small gaps, m
 The final base-level alignment is typically found using dynamic programming, either by extending seed alignments or by aligning the entire read to a region of the reference that is found by clustering.
 Most standard dynamic programming algorithms are based on the Smith-Waterman-Gotoh algorithm for local alignment \cite{smith_waterman_1981,gotoh_1982} or Needleman-Wunch algorithm for global alignment \cite{needleman_wunsch_1970}.
 These algorithms use a rectangular dynamic programming matrix of the score of aligning each base between the query and reference sequences.
-The cost of skipping bases in either sequence is defined by the gap cost; most modern algorithms use an affine gap penalty with a relatively high cost for opening a gap and a lower cost for extending it.
+The cost of skipping bases in either sequence is defined by the gap cost; most modern algorithms use an affine gap penalty with a relatively high gap open penalty taken for opening any gap, and relatively low a gap extension penalty that is linear in the length of the gap.
 
 Standard dynamic programming algorithms have prohibitive runtimes so many mappers use different optimizations to speed up alignment and to reduce the search space of the dynamic programming matrix.
 Some mappers use Single-Instruction Multiple-Data (SIMD) microprocessors to accelerate dynamic programming by parallelizing computation of independent cells in the dynamic programming matrix \cite{farrar_striped_2007,rognes_six-fold_2000}.
@@ -567,11 +571,11 @@ Later advancements to the algorithm reduces the space requirement to be linear i
 
 Mapping reads to pangenome graph references is a much newer and far less well studied problem than mapping to linear references.
 In general, mapping to graph references is more accurate, but also requires more computational resources, and improving read-to-graph mapping is still an open area of research.
-Existing graph mappers generally follow the same seed-and-extend structure as linear mappers but use graph-specific adaptations for each step \cite{eizenga_pangenome_2020, baaijens_computational_2022}.
+Existing graph mappers generally follow the same seed-and-extend structure as linear mappers, but use graph-specific adaptations for each step \cite{eizenga_pangenome_2020, baaijens_computational_2022}.
 
 Many graph mappers use a $k$-mer index for seeding \cite{rautiainen_graphaligner_2020,rakocevic_fast_2019,vaddadi_vmap_2019,schneeberger_simultaneous_2009}.
 $k$-mers can be found within the sequences of nodes, from walks in the graph, or from the reference haplotype sequences. 
-Chapter \ref{chapter:sr-giraffe} describes the minimizers of haplotypes used in my mapping tool.
+Chapter \ref{chapter:sr-giraffe} describes the minimizers of haplotypes used in the mapping tools I helped develop.
 Others mappers use generalizations of the BWT for indexing graphs \cite{garrison_vg_2018,kim_hisat2_2019,siren_indexing_2014,siren_indexes_2020} or collections of genomes \cite{rossi_moni_2022}.
 %The Generalized Compressed Suffix Array (GCSA) is a BWT-based text index for graphs used by VG MAP to find seeds \cite{siren_indexing_2014,siren_indexes_2020}.
 
@@ -581,7 +585,7 @@ In Chapter \ref{chapter:distance}, I discuss my work on a snarl-based minimum di
 
 Many existing graph chaining algorithms are based on an algorithm from M{\"a}kinen et al. that uses a minimum path cover of the graph to determine reachability and distance in directed acyclic graphs (DAGs) \cite{makinen_dag_chaining_2019}.
 The cost of this algorithm is parameterized by the width of the graph, making it efficient for most current human pangenome graphs for which a minimum path cover can be achieved with a small number of paths \cite{makinen_dag_chaining_2019}.
-Further advancements to this algorithm have extended it to use different gap costs \cite{chandra_gap-sensitive_chaining_2023}, to be recombination-aware by penalizing haploytpe switches \cite{chandra_haplotype-aware_2024}, to allow overlaps of one node between seeds \cite{ma_graphchainer_2023}, and to chain through cyclic graphs \cite{panaligner_2024}.
+Further advancements to this algorithm have extended it to use different gap costs \cite{chandra_gap-sensitive_chaining_2023}, to be recombination-aware by penalizing haplotype switches \cite{chandra_haplotype-aware_2024}, to allow overlaps of one node between seeds \cite{ma_graphchainer_2023}, and to chain through cyclic graphs \cite{panaligner_2024}.
 
 %Minigraph uses a chaining algorithm based on that of Minimap2.
 %Minigraph uses two rounds of chaining: it first produces linear chains within individual nodes in the graph, then makes chains of the linear chains taking into account the topology of the graph.
@@ -593,7 +597,8 @@ Further advancements to this algorithm have extended it to use different gap cos
 Alignment is also more challenging in a graph context, particularly for cyclic graphs.
 Many mappers use linear dynamic programming algorithms that have been extended to a graph context.
 One such example is partial order alignment (POA), an algorithm for constructing and aligning to multiple sequence alignments \cite{lee_poa_2002}.
-This algorithm is limited to aligning to DAGs and while later algorithms have accelerated alignment using SIMD and other optimizations \cite{jain_accelerating_2019,gao_abpoa_2021,darby_vargas_2020}, most aligners and mappers are still restricted to DAGs \cite{kim_hisat2_2019,rakocevic_fast_2019,li_minigraph_2020,ma_graphchainer_2023}.
+Later algorithms have accelerated alignment with POA using SIMD and other optimizations \cite{jain_accelerating_2019,gao_abpoa_2021,darby_vargas_2020}
+However, this algorithm and most mappers based on it are limited to aligning to DAGs \cite{kim_hisat2_2019,rakocevic_fast_2019,li_minigraph_2020,ma_graphchainer_2023}.
 Other mappers align to cyclic graphs by converting them to DAGs before using an acyclic aligner \cite{garrison_vg_2018} or use graph extensions of linear alignment algorithms \cite{rautiainen_bit-parallel_2019,zhang_fast_2022}. 
 %A graph extension of the WFA has been proposed to align similar sequences to sequence graphs more quickly than traditional methods \cite{zhang_fast_2022}.
 %VG-MAP can align to graphs of arbitrary topology by ``unrolling'' a graph to convert it to a DAG then using POA \cite{garrison_vg_2018}.
@@ -634,6 +639,7 @@ Jordan M. Eizenga, Adam M. Novak, and Jouni Sirén provided minor contributions 
 
 While the majority of my work is done for variation graphs, the distance index is generalizable to sequence graphs as well.
 Some notation in this chapter may differ from the rest of the thesis but the underlying structures they describe are the same.
+The text contains minor edits to conform with the formatting of this thesis.
 
 \newpage
 
@@ -1141,7 +1147,7 @@ This work was supported, in part, by the National Institutes of Health (award nu
 \chapter{Short read mapping}
 \label{chapter:sr-giraffe}
 \section{Preface}
-This chapter contains the full text of the paper "Pangenomics enables genotyping of known structural variants in $5202$ diverse genomes"\cite{sr_giraffe_2021}, published in Science in 2021.
+This chapter contains the full text of the paper "Pangenomics enables genotyping of known structural variants in $5202$ diverse genomes" \cite{sr_giraffe_2021}, published in Science in 2021.
 The supplement can be found in the Appendix, Section \ref{sec:appendix_sr_giraffe}.
 The text contains minor edits to conform with the format of this thesis.
 
@@ -1217,7 +1223,7 @@ We conclude that pangenomics facilitates a more comprehensive characterization o
 
 \begin{figure}
     \centering
-    \includegraphics[width=.8\linewidth]{aim2_summary.pdf}
+   \includegraphics[width=.8\linewidth]{aim2_summary.pdf}
     \caption[Overview of short read Giraffe experiments]{\textbf{Overview of the experiments} Variant calls from long read–based and large-scale sequencing studies were used to construct pangenome reference graphs (top). Giraffe (and competing mappers) mapped reads to the graph or to linear references, and mapping accuracy, allele coverage balance, and speed were evaluated (middle). Then, mapped reads were used for variant calling, and variant call accuracy was evaluated (bottom). Structural variant calls were analyzed alongside expression data to identify eQTLs and population frequency estimates.}
     \label{fig:aim2_summary}
 \end{figure}
@@ -1273,7 +1279,7 @@ These heuristics are configurable, and we present two presets: default Giraffe (
 \begin{figure}
     \centering
     \includegraphics[width=.5\linewidth]{aim2_fig1.pdf}
-    \caption[Haplotype mapping]{\textbf{Haplotype mapping.} (A) A region of the CASP12 gene in the 1000GP graph, illustrating complex local variation. The observed haplotypes (the colored ribbons of width log-proportional to population frequency) represent only a subset of the possible paths through the graph. (B to F) An overview of Giraffe. Input structures are shown in (B): Giraffe takes as input each read to map, the sequence graph reference to map against, and the GBWT of known haplotypes to restrict to. The input read is represented as a series of colored rectangles. The haplotype sequences in the GBWT are similarly represented as series of rectangles, split according to the nodes they correspond to in the sequence graph. Nodes in the sequence graph and haplotypes in the GBWT are colored according to homology with the read. Haplotype minimizer seeding is shown in (C): Seeds are identified using an index of minimizers (subsets of sequences of specified length k)\cite{Roberts2004} over the sequences of all the GBWT haplotypes. A matching minimizer between the read and the GBWT haplotypes constitutes a seed. The minimizers (black boxes) in the read are enumerated and the matching minimizers in the haplotypes are identified using the minimizer index. Seed clustering is shown in (D): Minimizer instances in the graph are clustered by the minimum graph distance (t, measured in nucleotides) between them \cite{chang_distance_2020}. Seed extension along haplotypes is shown in (E): Minimizers in high-scoring clusters are extended linearly to form maximal gapless local alignments. Haplotype-restricted gapped alignment is shown in (F): Giraffe is designed on the assumption that for most reads, it will be possible to gaplessly extend seed alignments all the way to the ends of the read, allowing the algorithm to stop at the previous step. However, any remaining gaps in the alignment between read and graph are resolved by gapped alignment in this final step.}
+    \caption[Short read giraffe algorithm]{\textbf{Haplotype mapping.} (A) A region of the CASP12 gene in the 1000GP graph, illustrating complex local variation. The observed haplotypes (the colored ribbons of width log-proportional to population frequency) represent only a subset of the possible paths through the graph. (B to F) An overview of Giraffe. Input structures are shown in (B): Giraffe takes as input each read to map, the sequence graph reference to map against, and the GBWT of known haplotypes to restrict to. The input read is represented as a series of colored rectangles. The haplotype sequences in the GBWT are similarly represented as series of rectangles, split according to the nodes they correspond to in the sequence graph. Nodes in the sequence graph and haplotypes in the GBWT are colored according to homology with the read. Haplotype minimizer seeding is shown in (C): Seeds are identified using an index of minimizers (subsets of sequences of specified length k)\cite{Roberts2004} over the sequences of all the GBWT haplotypes. A matching minimizer between the read and the GBWT haplotypes constitutes a seed. The minimizers (black boxes) in the read are enumerated and the matching minimizers in the haplotypes are identified using the minimizer index. Seed clustering is shown in (D): Minimizer instances in the graph are clustered by the minimum graph distance (t, measured in nucleotides) between them \cite{chang_distance_2020}. Seed extension along haplotypes is shown in (E): Minimizers in high-scoring clusters are extended linearly to form maximal gapless local alignments. Haplotype-restricted gapped alignment is shown in (F): Giraffe is designed on the assumption that for most reads, it will be possible to gaplessly extend seed alignments all the way to the ends of the read, allowing the algorithm to stop at the previous step. However, any remaining gaps in the alignment between read and graph are resolved by gapped alignment in this final step.}
     \label{fig:aim2_fig1}
 \end{figure}
 
@@ -1298,7 +1304,7 @@ This suggests that the gains from using a genome graph are higher when the graph
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{aim2_fig2.pdf}
-    \caption[Simulated read mapping]{\textbf{Simulated read mapping} (A to F) Each panel shows recall versus false discovery rate (or 1 minus precision) for a simulated read-mapping experiment, comparing Giraffe with linear genome mappers (BWA-MEM, Bowtie2, and Minimap2) and other genome graph mappers (VG-MAP, GraphAligner, and HISAT2). Reads were simulated to match $\sim150$-bp Illumina NovaSeq (for human) or HiSeq 2500 (for yeast) reads, either as single-end reads [(A) to (C)] or as paired-end reads [(D) to (F)] (Section \ref{subsec:aim2:readsim}). Results for each mapper are shown stratified by reported read-mapping quality; the size of each point represents the log-scaled number of reads with the corresponding mapping quality. Three different mapping scenarios are assessed: [(A) and (D)] Comparing mapping to a graph derived from the 1000GP data to mapping to the linear reference genome assembly upon which it is based (GRCh38); [(B) and (E)] comparing mapping to a graph containing larger structural variants from the HGSVC project to mapping to the GRCh38 assembly upon which it is based; and [(C) and (F)] comparing mapping to a multiple sequence alignment–based yeast graph to mapping to the single S.c. S288C linear reference, for reads from the DBVPG6044 strain. For mapping with Giraffe, we used the full GBWT that contains six haplotypes to map to the HGSVC graph and the 64-haplotype sampled GBWT to map to the 1000GP graph. “Giraffe primary” represents mapping with Giraffe to the linear reference.}
+    \caption[Short read simulated read mapping]{\textbf{Simulated read mapping} (A to F) Each panel shows recall versus false discovery rate (or 1 minus precision) for a simulated read-mapping experiment, comparing Giraffe with linear genome mappers (BWA-MEM, Bowtie2, and Minimap2) and other genome graph mappers (VG-MAP, GraphAligner, and HISAT2). Reads were simulated to match $\sim150$-bp Illumina NovaSeq (for human) or HiSeq 2500 (for yeast) reads, either as single-end reads [(A) to (C)] or as paired-end reads [(D) to (F)] (Section \ref{subsec:aim2:readsim}). Results for each mapper are shown stratified by reported read-mapping quality; the size of each point represents the log-scaled number of reads with the corresponding mapping quality. Three different mapping scenarios are assessed: [(A) and (D)] Comparing mapping to a graph derived from the 1000GP data to mapping to the linear reference genome assembly upon which it is based (GRCh38); [(B) and (E)] comparing mapping to a graph containing larger structural variants from the HGSVC project to mapping to the GRCh38 assembly upon which it is based; and [(C) and (F)] comparing mapping to a multiple sequence alignment–based yeast graph to mapping to the single S.c. S288C linear reference, for reads from the DBVPG6044 strain. For mapping with Giraffe, we used the full GBWT that contains six haplotypes to map to the HGSVC graph and the 64-haplotype sampled GBWT to map to the 1000GP graph. “Giraffe primary” represents mapping with Giraffe to the linear reference.}
     \label{fig:aim2_fig2}
 \end{figure}
 
@@ -1328,7 +1334,7 @@ However, it can map to the 1000GP graph with the full GBWT in $\sim$80 gigabytes
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{aim2_fig3.pdf}
-    \caption[Runtime and memory usage]{\textbf{Runtime and memory usage} (A to D) Total runtime [(A) and (B)] and peak memory use [(C) and (D)] for mapping $\sim$600 million NovaSeq 6000 reads using 16 threads. Reads were mapped [(A) and (C)] to the 1000GP derived graph or (for linear mappers) the GRCH38 assembly and [(B) and (D)] to the HGSVC graph or GRCh38 reference, respectively. For HISAT2*, results are shown for the subset 1000GP graph. “Giraffe full” refers to mapping using the full GBWT of all haplotypes. “Giraffe sampled” refers to mapping using the 64-haplotype sampled GBWT.}
+    \caption[Short read runtime and memory usage]{\textbf{Runtime and memory usage} (A to D) Total runtime [(A) and (B)] and peak memory use [(C) and (D)] for mapping $\sim$600 million NovaSeq 6000 reads using 16 threads. Reads were mapped [(A) and (C)] to the 1000GP derived graph or (for linear mappers) the GRCH38 assembly and [(B) and (D)] to the HGSVC graph or GRCh38 reference, respectively. For HISAT2*, results are shown for the subset 1000GP graph. “Giraffe full” refers to mapping using the full GBWT of all haplotypes. “Giraffe sampled” refers to mapping using the 64-haplotype sampled GBWT.}
     \label{fig:aim2_fig3}
 \end{figure}
 
@@ -1341,7 +1347,7 @@ Giraffe and VG-MAP both show less bias toward the reference allele than a linear
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{aim2_fig4.pdf}
-    \caption[Evaluating Giraffe for genotyping]{\textbf{Evaluating Giraffe for genotyping.} (A) The fraction of alternate alleles in reads detected for heterozygous variants in NA19239. Reads were mapped to the 1000GP graph with Giraffe and VG-MAP and to GRCh38 with BWA-MEM, and the fraction of reads supporting reference or alternate alleles was found for each indel length. (B) Assessing true-positive and false-positive genotypes made using the Dragen genotyper with mappings from Giraffe and other mappers. The line labeled Dragen represents the mapper included with the Dragen system itself. (C) Comparing Giraffe with VG-MAP for typing large insertions and deletions. “Presence” (lighter bars) evaluates the detection of SVs without regard to genotype; “genotype” (darker bars) requires the SV to be detected and its genotype to agree with the truth genotype. The y axis shows the F1 score. For the HGSVC benchmark, we define high-confidence regions as regions not overlapping simple repeats and segmental duplications. For the GIAB benchmark, we use the set high-confidence regions provided by GIAB.}
+    \caption[Evaluating Giraffe for genotyping with short reads]{\textbf{Evaluating Giraffe for genotyping.} (A) The fraction of alternate alleles in reads detected for heterozygous variants in NA19239. Reads were mapped to the 1000GP graph with Giraffe and VG-MAP and to GRCh38 with BWA-MEM, and the fraction of reads supporting reference or alternate alleles was found for each indel length. (B) Assessing true-positive and false-positive genotypes made using the Dragen genotyper with mappings from Giraffe and other mappers. The line labeled Dragen represents the mapper included with the Dragen system itself. (C) Comparing Giraffe with VG-MAP for typing large insertions and deletions. “Presence” (lighter bars) evaluates the detection of SVs without regard to genotype; “genotype” (darker bars) requires the SV to be detected and its genotype to agree with the truth genotype. The y axis shows the F1 score. For the HGSVC benchmark, we define high-confidence regions as regions not overlapping simple repeats and segmental duplications. For the GIAB benchmark, we use the set high-confidence regions provided by GIAB.}
     \label{fig:aim2_fig4}
 \end{figure}
 
@@ -1622,19 +1628,19 @@ We used permutation to compute enrichment of SV-eQTLs in gene regions, gene fami
 We acknowledge the studies and participants who provided biological samples and data for the TOPMed project.
 The views expressed in this manuscript are those of the authors and do not necessarily represent the views of the National Heart, Lung, and Blood Institute (NHLBI); the National Institutes of Health (NIH); or the US Department of Health and Human Services.
 \subsection{Funding}
-Research reported in this publication was supported by the NIH under award numbers U41HG010972, R01HG010485, U01HG010961, OT3HL142481, OT2OD026682, U01HL137183, and 2U41HG007234.
+Research reported in this publication was supported by the NIH under award numbers U41HG010972, R01HG010485, U01HG010961, OT3HL142481, OT2OD026682, \\ U01HL137183, and 2U41HG007234.
 Research reported in this publication was supported by the NHLBI BioData Catalyst Fellows Program of the NIH through the University of North Carolina at Chapel Hill, under award number OT3HL147154. J.A.S. was supported by the Carlsberg Foundation.
 Computational resources for the project were made available by the NIH and by Amazon Web Services, without full compensation at market value.
 The high-coverage sequencing data for the 1000 Genomes Project were generated at the New York Genome Center with funds provided by National Human Genome Research Institute (NHGRI) grant 3UM1HG008901-03S1 and can be found on Terra.
 MESA and the MESA SHARe projects are conducted and supported by the NHLBI in collaboration with MESA investigators.
-Support for MESA is provided by contracts 75N92020D00001, HHSN268201500003I, N01-HC-95159, 75N92020D00005, N01-HC-95160, 75N92020D00002, N01-HC-95161, 75N92020D00003, N01-HC-95162, 75N92020D00006, N01-HC-95163, 75N92020D00004, N01-HC-95164, 75N92020D00007, N01-HC-95165, N01-HC-95166, N01-HC-95167, N01-HC-95168, N01-HC-95169, UL1-TR-000040, UL1-TR-001079, and UL1-TR-001420.
+Support for MESA is provided by contracts 75N92020D00001, HHSN268201500003I, N01-HC-95159, 75N92020D00005, N01-HC-95160, 75N92020D00002, N01-HC-95161,\\ 75N92020D00003, N01-HC-95162, 75N92020D00006, N01-HC-95163, 75N92020D00004, N01-HC-95164, 75N92020D00007, N01-HC-95165, N01-HC-95166, N01-HC-95167, N01-HC-95168, N01-HC-95169, UL1-TR-000040, UL1-TR-001079, and UL1-TR-001420.
 Funding for SHARe genotyping was provided by NHLBI contract N02-HL-64278.
 Genotyping was performed at Affymetrix (Santa Clara, CA, USA) and the Broad Institute of Harvard and MIT (Boston, MA, USA) using the Affymetrix Genome-Wide Human SNP Array 6.0.
 This work was also supported in part by the National Center for Advancing Translational Sciences, CTSI grant UL1TR001881, and the National Institute of Diabetes and Digestive and Kidney Disease Diabetes Research Center (DRC) grant DK063491 to the Southern California Diabetes Endocrinology Research Center.
 Whole-genome sequencing (WGS) for the TOPMed program was supported by the NHLBI.
 WGS for “NHLBI TOPMed: Multi-Ethnic Study of Atherosclerosis (MESA)” (phs001416) was performed at the Broad Institute of MIT and Harvard (3U54HG003067-13S1 and HHSN268201500014C).
 Core support, including centralized genomic read mapping and genotype calling, along with variant quality metrics and filtering were provided by the TOPMed Informatics Research Center (3R01HL-117626-02S1; contract HHSN268201800002I).
-Core support, including phenotype harmonization, data management, sample-identity quality control, and general program coordination, was provided by the TOPMed Data Coordinating Center (R01HL-120393; U01HL-120393; contract HHSN268201800001I).
+Core support, including phenotype harmonization, data management, sample-identity quality control, and general program coordination, was provided by the TOPMed Data Coordinating Center (R01HL-120393; U01HL-120393; contract \\ HHSN268201800001I).
 
 \subsection{Author contributions}
 Project design: D.H., E.G., B.P. Giraffe implementation: J.S., X.C., A.M.N., J.M.E., B.P. SV analysis: J.M., G.H. Short-variant analysis: C.M., P.-C.C., A.C. The vg implementation: J.S., J.M., X.C., A.M.N., J.M.E., C.M., J.A.S., G.H., D.H., E.G., B.P. Manuscript writing: J.S., J.M., X.C., A.M.N., J.M.E., C.M., J.A.S., G.H., B.P. Data production: N.G., S.G., T.W.B., A.R., K.D.T., S.S.R., J.I.R.
@@ -1667,6 +1673,250 @@ Data in dbGaP can be downloaded by controlled access with an approved applicatio
 \label{chapter:lr-giraffe}
 \section{Preface}
 This section contains the text of my pre-print "".
+Adam Novak and I are co-first authors.
+I implemented the zip code tree, optimized Giraffe for structural variant calling, produced results and figures, and contributed to the overall implementation and optimization of Giraffe.
+Adam Novak implemented the chaining algorithm, optimized Giraffe for small variant calling, implemented the original testing harness, and contributed to the overall implementation and optimization of Giraffe.
+\section{Abstract}
+
+We previously introduced Giraffe, a short-read-to-pangenome graph mapper. 
+Giraffe was fast and accurate for short reads, but struggled to map long reads.
+Long reads present a unique challenge to pangenome mapping algorithms due to their length and error profile, which allow them to take more topologically complex paths through the pangenome graph and increase the possible search space for the algorithm.
+We present updates to Giraffe that allow it to quickly and accurately map long reads to pangenome graphs.
+Giraffe is the most accurate long read mapper that we tested and is comparable in speed to standard linear mappers.
+We also show that Giraffe improves small variant calling and structural variant genotyping compared to other commonly used graph and linear mappers.    
+
+
+\section{Introduction}
+
+Pangenomes are emerging as a popular and effective alternative to the standard single linear reference genome that are capable of representing the genetic diversity present in a population \cite{hprc_2022,miga_need_pangenome_2021}.
+There have been several recent efforts to establish population-specific \citep{chinese_pangenome_2023,arab_pangenome_2024,pacific_pangenome_2024} and global \citep{hprc_pangenome_2023} human reference pangenomes.
+Pangenomes are commonly represented as variation graphs, where nodes represent nucleotide sequences, edges represent adjacencies between sequences, and paths through the graph represent the original haplotype sequences of the pangenome \cite{garrison_vg_2018}. 
+These graph structures are an efficient representation of pangenomes, but the complex topology of graphs makes them more difficult to work with than linear reference genomes, especially as the graphs grow in sequence content and genetic diversity.
+In particular, mapping sequencing reads to a graph reference requires specialized data structures and algorithms in order to function efficiently.
+
+Read mapping is the first step of many common pipelines and the quality of downstream analyses depends heavily on the quality of read alignments.
+Read mappers that align to a linear reference commonly use a seed-and-extend strategy for mapping \cite{li_bwa_mem_2013,minimap2_2021,langmead_bowtie2_2012}.
+Short seed alignments are found using an index of the reference and then partitioned into clusters or chains of seeds that may arise from the same alignment to the reference.
+Seeds are then extended into the full base-level alignment using dynamic programming.
+
+Existing graph mappers use versions of these basic components that have been adapted to a graph context.
+Early graph alignment algorithms were designed to align to partial order alignment (POA) graphs that represent multiple sequence alignments \cite{lee_poa_2002}.
+These POA aligners extended standard dynamic programming algorithms to align to acyclic graphs \cite{lee_poa_2002,grasso_poa_2004}.
+The original VG-MAP algorithm extended the POA algorithm to cyclic graphs by ``unrolling'' the graph to remove cycles, then applying POA \cite{garrison_vg_2018}.
+GraphAligner, currently the only practical graph mapper for long reads, extends the linear \textit{Shift-And} algorithm for exact string matching \citep{baeza-yates_shiftand_1992} and Meyers' bitvector alignment algorithm \citep{myers_bitvector_1999} to align to cyclic graphs \cite{rautiainen_bit-parallel_2019}.
+
+
+
+The original short read Giraffe relied on the reference haplotype sequences to map to the graph \cite{sr_giraffe_2021}.
+Seeding was done with a minimizer index of the haplotypes, and clustering was done using a distance index to find minimum distances.
+Seeds within promising clusters were gaplessly extended along the haplotypes, then the remainder of the alignment was found with dynamic programming against the graph.
+Due to the fast gapless extension step, in which the entire alignment was usually found, Giraffe was very fast for short reads \cite{sr_giraffe_2021}.
+However, Giraffe was designed for short reads and quickly overwhelmed our computational resources when applied to long reads.
+
+Long reads are another rapidly growing technology with great potential to improve genomic analyses.
+Currently, High Fidelity (HiFi) reads from Pacific Biosciences have lengths between 10 and 25~kbp and accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
+The most recent R10 chemistry from Oxford Nanopore Technologies achieves read lengths on the order of 10-100~kbp, with ultra-long reads achieving lengths up to 882~kbp \cite{nanopore_ultralong_2018}, and accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
+%TODO The nanopore website says it gets  99.75\% (Q26) accuracy with the Dorado base caller but I can't find a citation for that. 
+Because of their increased length, these technologies are useful for resolving complex and large structural variants and for identifying long-range linkages between alleles.
+Both HiFi and R10 sequencing technologies have gained widespread use in large-scale genomics projects \citep{kolmogorov_card_2023, lr_all_of_us_2024} due to this improved resolution, as well as their low cost and high throughput.
+
+Despite the growing popularity of both pangenomes and long reads, there are currently few tools for mapping long reads to pangenomes.
+The length and error profile of the reads makes every stage of mapping algorithms more difficult.
+Gapped alignment is a particularly challenging problem with long reads; even in a linear context, long reads can produce dynamic programming matrices that are unmanageably large.
+The problem becomes even larger in a graph context as aligners must additionally navigate potentially large and complex graph topologies.
+A common strategy to address this problem is to find chains of co-linear seeds, then do smaller alignment problems between seeds \cite{minimap2_2021,li_minigraph_2020,panaligner_2024,ma_graphchainer_2023}.
+Chaining requires an ordering and a distance metric between seeds, both of which are ambiguous and more expensive to compute in a graph.
+Chaining is particularly difficult in graphs that contain cycles, as a node may occur before or after itself or any other node in the cycle \cite{chandra_gap-sensitive_chaining_2023,ma_graphchainer_2023,makinen_dag_chaining_2019}.
+Existing graph chaining algorithms use distance calculations based on linear approximations of the graph.
+Some algorithms \cite{chandra_gap-sensitive_chaining_2023,ma_graphchainer_2023} are based on an algorithm from \citet{makinen_dag_chaining_2019} that uses a minimum path cover of the graph to determine reachability and distance.
+Minigraph enumerates shortest-length walks between graph positions \cite{li_minigraph_2020} and GraphAligner estimates linear distances based on chains in the snarl decomposition \cite{rautiainen_graphaligner_2020}.
+As a result of these different heuristics for overcoming the challenges of long read-to-pangenome mapping, different mappers have different advantages and limitations.
+
+GraphAligner can map to arbitrary graphs but it is slow, particularly as the complexity of the graph increases \cite{rautiainen_graphaligner_2020}.
+Minigraph \cite{li_minigraph_2020}, which was originally designed to map assemblies to graphs containing only structural variants (SVs), struggles to map to graphs containing small insertions or deletions (indels) or single nucleotide variants (SNVs).
+PanAligner \citep{panaligner_2024} and GraphChainer \citep{ma_graphchainer_2023} each use their own graph chaining algorithm with components from Minigraph and GraphAligner respectively.
+PanAligner has the same limitations as Minigraph and was an order of magnitude slower than GraphAligner in our tests.
+GraphChainer can only map to graphs without cycles.
+There remains a need for a fast and generalizable long read mapper for pangenome graphs.
+
+We present an updated version of Giraffe capable of mapping both long and short reads.
+Giraffe addresses the challenges of complex graph topology using a novel data structure for finding distances between seeds in the graph that are supported by the read.
+Using this data structure, the new Giraffe algorithm finds co-linear chains of seeds that provide the backbone of an alignment.
+Base-level alignment can be done in smaller chunks between seeds in the chain using alignment algorithms that limit the problem to alignment to linear haplotypes or to smaller bands of the alignment matrix.
+Compared to current state-of-the-art long read graph and linear mappers, Giraffe is the most accurate and still competitive in speed.
+
+\section{Methods}
+
+\subsection{Variation graphs and indexes}
+
+Giraffe is implemented as part of the \texttt{vg} toolkit, which uses a \emph{variation graph} model for representing pangenomes \cite{garrison_vg_2018}.
+A variation graph is a bidirected graph in which nodes are labeled with nucleotide sequences, and edges represent adjacencies between these sequences.
+Nodes in a variation graph have two sides, which are arbitrarily designated as \emph{left} and \emph{right}.
+Edges connect pairs of node sides.
+Valid walks through the graph must enter and exit opposite sides of a node, so each node visit along the walk has an orientation.
+A forward (i.e. left to right) traversal of a node represents the forward sequence of the nucleotides, whereas a backwards traversal represents its reverse complement.
+Walks through the graph can therefore be used to represent longer sequences, found by concatenating the sequences of the nodes.
+% Benedict: important to mention that valid sequences are a restricted kind of walk in which you enter and exit opposite sides of each node
+
+Variation graphs store paths through the graph, which usually correspond to a small number of reference sequences.
+In addition to the reference sequences, Giraffe also uses a larger panel of haplotype sequences stored in a GBWT index \cite{siren_indexes_2020}.
+Giraffe uses the GBZ \citep{siren_gbz_2022} format to represent the graph and haplotypes.
+The GBZ is composed of a GBWT for storing haplotypes and a GBWT graph that stores the node sequences of the sequence graph. 
+The GBZ thus represents the subgraph of the sequence graph whose edges are supported by the haplotypes in the pangenome.
+
+Giraffe uses a distance index \citep{chang_distance_2020} to find minimum distances between positions in the graph.
+The distance index is based on the snarl decomposition of the graph \cite{paten_superbubbles_2018}.
+Conceptually, a snarl represents a site of variation in the graph where paths can diverge to represent different alleles.
+More formally, a snarl is a subgraph defined by two boundary node sides that are \emph{separable} and \emph{minimal}.
+Two nodes sides are separable if cutting their nodes makes the subgraph between them unreachable from the rest of the graph.
+The two boundary node sides are minimal if no other node side within the subgraph is separable with either of the boundaries. 
+Snarls often occur consecutively, with boundaries on opposite sides of shared nodes between them.
+A run of consecutive snarls and nodes is called a chain.
+Chains can also be nested within snarls to represent nested variations, such as a SNP that occurs within an insertion.
+The decomposition of the graph into nested snarls and chains is described by a snarl tree (Figure \ref{fig:algorithm_overview} A). 
+
+\subsection{Giraffe algorithm overview}
+
+The long read Giraffe algorithm follows the common seed-chain-extend framework \citep{sahlin_survey_2023} for mapping algorithms (Figure \ref{fig:algorithm_overview}).
+As in the original short read algorithm, long read Giraffe uses a minimizer index of the haplotypes of the GBWT to find seed alignments (Figure \ref{fig:algorithm_overview} B).
+For long reads, we use weighted minimizers that prioritize those with fewer occurrences in the graph and added a filter to skip minimizers with too many occurrences (Section \ref{sec:sup-seeding}). 
+
+The seeds are then chained together (Figure \ref{fig:algorithm_overview}D, Section \ref{sec:sup-chaining}).
+A chain is an ordered set of seeds that are co-linear in the read and the reference graph.
+In a graph context, this means that each seed must be reachable from the previous seed.
+Giraffe tries to find optimal chains that maximize the coverage in the read and minimize the expected cost of the gap (the difference between the distance between the seeds in the read and the graph) that will be taken between consecutive seeds. 
+We use a gap cost based on that of Minimap2 \cite{minimap2_2021}.
+To efficiently calculate reachability and distance in a graph, we use a novel data structure called a \emph{zip code tree} that represents distances among a set of seeds (Figure \ref{fig:algorithm_overview} C).
+The zip code tree approximates a placement of seeds in an unrolled, acyclic view of the reference graph, providing a partial ordering of seeds that can be used to find distances for chaining (Figure \ref{fig:ziptree-methods}, Section \ref{sec:sup-ziptrees}).
+
+Finally, a chain of seeds is extended into an alignment between the read and the graph.
+Base-level alignment is done between consecutive seeds in the chain and out from the first and last seeds (Figure \ref{fig:algorithm_overview}E, Section \ref{sec:sup-aligning}).
+We use a fast wave-front algorithm \citep{marco-sola_fast_wfa_2021,eizenga_wfa_2022,marco-sola_wfa_2023} for aligning substrings of the read to the haplotype sequences in the graph, both for between-seed alignment and anchored tail alignment.  
+If this algorithm fails to find an alignment or is predicted to use too much memory, we align to the graph itself using a banded global aligner for aligning between seeds and a SIMD-accelerated X-drop aligner (called Dozeu) for aligning tails.
+These algorithms limit the size of the dynamic programming band to constrain the amount of time and memory used.
+
+\begin{figure}[htp]
+    \centering
+    \includegraphics[width=\columnwidth]{lr_giraffe_algorithm_overview.pdf}
+    \caption[Overview of the long read Giraffe algorithm]{\textbf{Overview of the long read Giraffe algorithm.} (A) The inputs to the algorithm: the query read and the reference variation graph with its corresponding snarl tree. Rectangles in the snarl tree represent chains and ovals represent snarls. Chains on the snarl tree are colored according to their node children. Nodes are not shown on the snarl tree.
+    (B) Seeds are found using a minimizer index. Arrows on the read and reference graph represent seed alignments. (C) A zip code tree is constructed to represent the connectivity between seeds on the graph using snarl tree relationships. Nodes in the zip code tree represent either a seed on the graph or the boundary of a snarl or chain containing a seed. Edges connect adjacent seeds and boundaries and are labeled with minimum distances from the variation graph. Distances between seeds in the graph can be calculated in a traversal of the zip code tree. (D) Co-linear chaining is done by dynamic programming over the seeds to maximize the coverage over the read and minimize the gap cost of consecutive seeds. The cost of a gap between seeds is found using read distances from the read and graph distances found from a traversal of the zip code tree in (C). (E) Base-level alignment is done between adjacent seeds in a chain, and out from the first and last seeds to produce the full-length alignment. }
+    \label{fig:algorithm_overview}
+\end{figure}
+
+\section{Results}
+
+\subsection{Experiment setup: graphs, reads, and mappers}
+
+We compared Giraffe to a variety of linear and graph mappers on CHM13 and various CHM13-based graphs.
+We used the Human Pangenome Reference Consortium (HPRC) version 1.1 CHM13-based graphs.
+We used the HPRC graph constructed with just Minigraph (HPRC-minigraph), the graph constructed with the Minigraph-Cactus pipeline (HPRC), and the allele frequency filtered graph generated from the Minigraph-Cactus graph (HPRC-filtered)\cite{hprc_pangenome_2023}.
+The HPRC-minigraph graph was the simplest graph containing only large structural variants, and the HPRC graph was the most complex.
+We also used a graph containing only CHM13.
+
+In a previous study, we found that short read Giraffe performed better using a haplotype sampling method to simplify the graphs before mapping \cite{siren_personalized_2024}.
+After testing different sampling methods (Tables \ref{tab:sup-hifi-real}-\ref{tab:sv_r10}) we selected a pipeline sampling 16 haplotypes from the HPRC graph for our main comparisons.
+To demonstrate Giraffe's performance on graphs with a variety of topologies, we present results using the CHM13 graph, the frequency filtered HPRC graph, the HPRC graph, and the HPRC graph with haplotype sampling with 16 haplotypes.
+
+We mapped real datasets of Illumina, Hifi, and R10 reads and sets of 1 million reads simulated to match the error profiles of the real datasets (Section \ref{subsec:sup-reads}).
+
+We compared Giraffe to Minimap2 \cite{minimap2_2021}, Winnowmap \cite{winnowmap2_2022}, GraphAligner \cite{rautiainen_bit-parallel_2019,rautiainen_graphaligner_2020}, and Minigraph \citep{li_minigraph_2020} for mapping HiFi and R10 reads and to BWA-MEM for mapping Illumina reads.
+Minimap2 was run with the \texttt{map-hifi} setting for HiFi reads, the \texttt{lr:hqae} setting for R10 reads, and the \texttt{sr} setting for Illumina reads.
+We also tested other settings but found that these had the best balance of speed and accuracy (Tables \ref{tab:sup-hifi-sim},\ref{tab:sup-r10-sim},\ref{tab:sup-hifi-real},\ref{tab:sup-r10-real}).
+
+\subsection{Mapping evaluation}
+
+We used our simulated read datasets to evaluate mapper performance on HiFi, R10, and Illumina reads.
+Giraffe with the frequency filtered HPRC graph had the highest true positive rate of any of the mappers tested for all three sequencing technologies (Figure \ref{fig:mapping_accuracy} A and B, Figures \ref{fig:roc-illumina}-\ref{fig:qq_hifi_r10}, Tables \ref{tab:sup-illumina-sim}-\ref{tab:sup-r10-sim}).
+As expected, Giraffe performed poorly when mapping directly against the HPRC graph, but mapping accuracy improved greatly when using the haplotype sampling pipeline (Figure \ref{fig:mapping_accuracy} A and B).
+Giraffe generally had better mapping quality calibration than other mappers (Figure \ref{fig:qq_hifi_r10}) and the fewest incorrectly mapped reads with a mapping quality (MAPQ) of 60 (Figure \ref{fig:mapping_accuracy} C and D).
+We also evaluated the base-level alignments by comparing the total number of softclipped, hardclipped, and unmapped bases that each mapper produced for real read sets, finding that Giraffe left fewer bases unmapped than competing mappers (Figure \ref{fig:mapping_accuracy} E and F).
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=.75\columnwidth]{lr_mapping_accuracy.pdf}
+    \caption[Long read mapping accuracy]{\textbf{Mapping accuracy results}. 
+    (A and B) ROC plots for one million reads simulated to resemble HiFi (A) and R10 (B), zoomed in to the top of the curves. 
+    The results are stratified by mapping quality; the size of each point represents the log-scaled number of reads with the given mapping quality. 
+    See Figure \ref{fig:roc_hifi_r10} for the full ROC plots. 
+    (C and D) Bar plots of the count of incorrect or unmapped simulated reads for HiFi (C) and R10 (D). 
+    This count only includes reads that were annotated with a reference position to determine correctness. 
+    (E and F) Bar plots of the percent of bases that were softclipped, hardclipped, or unmapped in real HiFi (C) and R10 (D) reads.
+    Linear mappers (Minimap2, Winnowmap, Giraffe) align to CHM13 or the linear CHM13 graph, and graph mappers (Giraffe, GraphAligner, Minigraph) align to the HPRC-filtered graph (Giraffe and GraphAligner), HPRC-minigraph graph (Minigraph), the HPRC graph (Giraffe), or the HPRC graph using haplotype sampling with 16 haplotypes (Giraffe sampled).}
+    \label{fig:mapping_accuracy}
+\end{figure}
+
+
+To assess speed and memory use, we mapped real read sets for each sequencing technology (Section \ref{subsec:sup-reads}).
+Giraffe's speed and memory use varied with the complexity of the reference graph it aligned to, with the simplest CHM13 graph being the fastest and lowest memory and the most complex HPRC graph being the slowest with the biggest memory footprint (Figure \ref{fig:runtime_memory}).
+
+\begin{figure}[htb]
+    \centering
+    \begin{threeparttable}
+    \includegraphics[width=0.75\columnwidth]{lr_runtime_memory.pdf}
+    \begin{tablenotes}
+        \item [*] Graphaligner exceeded the time limit of our servers when run on 64 threads so it was re-run with 124 threads. All others were run with 64 threads.
+    \end{tablenotes}
+    \end{threeparttable}
+    \caption[Long read runtime and memory use]{\textbf{Runtime and memory use}. Runtime (A and B) and memory use (C and D) of each mapper on real PacBio HiFi (A and C) and Oxford Nanopore R10 (B and D) reads. Runtimes show the time for loading and building indexes, including the time for haplotype sampling for Giraffe, (light colors) overlayed on the total time including index loading and haplotype sampling (dark colors). Index loading and building time is reported by each mapper. GraphAligner does not log the time used for index loading and building so only the total time is included.}
+    \label{fig:runtime_memory}
+\end{figure}
+
+\subsection{Small variant calling with DeepVariant}
+
+To more robustly assess the quality of Giraffe's long read alignments, we compared the performance of DeepVariant \citep{deep_variant_2018} using reads mapped with Giraffe and Minimap2.
+%the Garvan Institute (for HG001) and 
+PacBio and R10 reads from the HPRC (for HG002)  were mapped to the HPRC-filtered graph and HPRC graph with haplotype sampling using Giraffe, then surjected onto CHM13. 
+Reads were mapped to CHM13 using Minimap2 with the \texttt{map-hifi} preset for HiFi reads and the \texttt{lr:hqae} preset for R10 reads.
+%Variant calling was done with DeepVariant on the ?? model trained on Giraffe-mapped reads. 
+Variants calling was done for both mappers using the \texttt{PACBIO} model of DeepVariant for HiFi reads, the \texttt{ONT\_R104} model for R10 reads, and the WGS model for Illumina reads. 
+Calling accuracy was evaluated using hap.py version 0.3.15 \citep{happy_2020} against the Genome in a Bottle (GIAB) 4.2.1 truth set \cite{giab_benchmark_2019, giab_benchmarking_4.2.1_2022}.
+
+
+%Giraffe performed best with a haplotype sampled graph with 16 haplotypes (Tables \ref{tab:dv_snp_hifi}, \ref{tab:dv_snp_r10}, \ref{tab:dv_indel_hifi}, \ref{tab:dv_indel_r10}), so this condition was used for further comparisons.
+Giraffe generally performed better than Minimap2 with DeepVariant, except for indel calls with HiFi reads (Figure \ref{fig:dv_calling}).
+Giraffe performance was slightly improved using the haplotype sampling pipeline.
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\columnwidth]{lr_dv_calls.pdf}
+    \caption[Long read small variant calling]{\textbf{Small variant calling}. SNPs (A and B) and indels (C and D) were called using DeepVariant with HiFi (A and C) and R10 (B and D) reads. Giraffe was used to map reads to the HPRC-filtered graph directly and to the HPRC graph with the haplotype sampling pipeline with 16 haplotypes (Giraffe sampled).}
+    \label{fig:dv_calling}
+\end{figure}
+
+\subsection{Structural variant genotyping with \texttt{vg call}}
+We compared the performance of Giraffe and GraphAligner on structural variant genotyping with \texttt{vg call} using a pipeline based on \citet{hickey_vgsv_2020} (Section \ref{sec:sup-svs}).
+Since \texttt{vg call} only genotypes variants found in the graph, we used the HPRC graph, which represents the largest number of variants of the graphs we used.
+Giraffe was used to map to the HPRC graph without haplotype sampling and with haplotype sampling with 16 haplotypes.
+We also compared against the linear structural variant caller Sniffles2 \cite{sedlazeck_sniffles_2018,smolka_sniffles2_2024} using read alignments from Minimap2.
+
+Despite being restricted to only the variants present in the graph, \texttt{vg call} with Giraffe using the haplotype sampling pipeline had an F1 score close to that of Sniffles2 with Minimap2 (Figure~\ref{fig:sv_calling}, Tables \ref{tab:sv_hifi}, \ref{tab:sv_r10}).
+Sniffles2 has very high precision but lower recall than the other methods.
+Conversely, Graphaligner with \texttt{vg call} had high recall but low precision.
+Giraffe with \texttt{vg call} was more balanced between recall and precision, particularly when using haplotype sampling.
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\columnwidth]{lr_sv_calls.pdf}
+    \caption[Long read structural variant calling and genotyping]{\textbf{Structural variant calling and genotyping} SV genotyping with Giraffe on the HPRC graph, Giraffe with a sampled graph with 16 haplotypes, and Graphaligner on the HPRC graph with \texttt{vg call}, compared to structural variant calling with Minimap2 and Sniffles2 for (A) HiFi and (B) R10 reads.}
+    \label{fig:sv_calling}
+\end{figure}
+
+\FloatBarrier
+
+\section{Discussion}
+
+As the field of pangenomics continues to expand, there is a growing need for efficient tools for working with increasingly large and complex pangenome graphs.
+The latest version of Giraffe is now capable of mapping both short and long reads to graphs of varying complexity.
+Giraffe is an order of magnitude faster than GraphAligner, the current state-of-the-art long read-to-pangenome mapper, and outperforms both GraphAligner and Minimap2 when applied to small variant calling and structural variant genotyping.
+
+We demonstrate Giraffe's performance on human graphs containing cycles and both large and small variants, but it is still untested on the more complex graphs constructed with the PanGenome Graph Builder (PGGB) \citep{pggb_2024} and on more genetically diverse species.
+PGGB's reference-free approach to graph building provides an unbiased view of the homology within and among genomes.
+However, due to the complex topology of the PGGB graphs, we have not been able to construct indexes for Giraffe and to our knowledge there are no tools capable of mapping reads to these graphs.
+There remains a need for indexes and algorithms that can handle the large cycles and deeply-nested variants present in PGGB graphs.
+
+The construction of the graph also has a profound effect on the downstream alignments and calling results.
+When graph alignments are projected back onto the linear reference, the base-level alignment of reads will often follow the alignment used to construct the graph.
+A pathological ``spelling'' of the graph's alignment (for example, one providing multiple paths that spell the same sequence) may negatively affect downstream results, even if the read was mapped to the correct location and represents the correct sequence.
 
 
 \chapter{Discussion}
@@ -1679,7 +1929,7 @@ Pangenomes are a promising alternative to standard linear genomes that can bette
 
 The first human reference pangenomes are just beginning to be produced and released to the public for general use.
 However, due to their novelty and the technical challenges of working with a larger and more complex data structure, methods for working with pangenomes are less mature than analogous methods for linear genomes.
-In this dissertation, I presented tools for incdexing pangenome graphs and for mapping long and short sequencing reads to them.
+In this dissertation, I presented tools for indexing pangenome graphs and for mapping long and short sequencing reads to them.
 These mappers are among the first practical tools capable of mapping to pangenome graphs at large scales, a crucial step for many genomics pipelines.
 
 Although we have shown Giraffe to be efficient for the first draft of the HPRC graphs, there is still work to be done to ensure that it works with increasingly complicated graphs.
@@ -1694,9 +1944,9 @@ This has been an area of recent exploration in the lab.
 Zia Truong, a rotation student whom I co-mentored with Adam Novak, explored using landmark-based distances for netgraphs.
 Her algorithm finds a set of landmark nodes that are expected to be included in most paths through the snarl, then stores the distance from each node to each landmark.
 Distances between nodes can be estimated by finding the distance from each node to a common landmark.
-The memory cost of the index is $O(NL)$ where $L$ is the number of landmarks, and the runtime for calculating distance is $O(L)$.
+The memory cost of the index is $O(NL)$ where $N$ is the number of node sides and $L$ is the number of landmarks, and the runtime for calculating distance is $O(L)$.    
 Another project led by Jouni Sirén has been to estimate distances using the haplotype sequences in the graph.
-A haplotype-based distance has the advantage that it uses distances from real sequences, rather than using the graph topology which may produce biologically unrealistic distances.
+In addition to potentially improving upon the memory use of the snarl-based distance index, haplotype-based distance has the advantage that it uses distances from real sequences, rather than using the graph topology which may produce biologically unrealistic distances.
 
 Efficiently indexing a graph is one of many problems that arise as pangenomes grow in size and complexity; analyses also tend to become slower and at times less accurate as the reference pangenome grows \cite{Pritt2018}.
 Pangenomes cannot grow indefinitely and no single pangenome will be able to represent all variants of interest for every study.
@@ -1711,7 +1961,7 @@ I propose a strategy for adding a small number of chromosomal rearrangements to 
 Rather than changing the graph itself and re-indexing, the additional variants would only be considered during mapping.
 The variants would be represented in the zip code tree as edges that connect disparate chains in the zip code tree with no distance.
 Although the zip code tree structure is based on the snarl decomposition, it is not necessary for the snarl decomposition represented in the zip code tree to be valid in order to find distances using traversals of the zip code tree, and the zip code tree will still be valid after adding these extra edges.
-Chaining can be done as usual using the extra edges to consider mappings that span chromosomal rearrangements and alignment can be done on the chain on each side of the rearrangement edge separately.
+Chaining can be done as usual using the extra edges to consider mappings that span chromosomal rearrangements, and alignment can be done on the chain on each side of the rearrangement edge separately.
 
 An approach like this could be used for mapping reads derived from cancer tumors containing translocations.
 Long reads aligned to a pangenome with split-read mapping enabled could be used to identify putative chromosomal rearrangements.
@@ -1725,10 +1975,9 @@ Using these rearrangements as added edges in the proposed algorithm, shorter rea
 \section{Preface}
 This section contains the supplement of short read Giraffe paper in Chapter \ref{chapter:sr-giraffe}) \cite{sr_giraffe_2021}. 
 
-\section{Supplementary materials and methods}
-\subsection{Giraffe Algorithm}
+\section{Giraffe Algorithm}
 \label{subsec:aim2:giraffe-methods}
-\subsubsection{Definitions}
+\subsection{Definitions}
 
 We work in the \vocab{sequence graph} model, as defined in the vg toolkit \cite{garrison_vg_2018}.
 In a sequence graph, each node $v$ is labeled by a nucleotide sequence $\nodelabel{v}$.
@@ -1755,7 +2004,7 @@ We skip many details and special cases.
 
 
 
-\subsubsection{Graph representation}
+\subsection{Graph representation}
 
 Our graph representation is based on a bidirectional GBWT index \cite{siren_indexes_2020}.
 The GBWT is a data structure, based on the FM-index \cite{Ferragina2005a}, that can efficiently compress and store a large number of similar paths (haplotypes) in a graph.
@@ -1787,7 +2036,7 @@ As seed extension, dynamic programming, and pair rescue repeatedly access the ed
 We use an application-specific per-thread cache in Giraffe, where eviction consists of discarding the entire cache after each stage of processing for each cluster of aligner seed hits. The cache stores all records we have accessed during the current stage for the current cluster.
 
 
-\subsubsection{Downsampling the haplotypes}
+\subsection{Downsampling the haplotypes}
 \label{subsec:aim2:downsampling}
 
 Mapping to a GBWT with too many haplotypes can be slow in regions with a high density of variations, and can be inaccurate due to rare variants creating false positive mappings.
@@ -1815,7 +2064,7 @@ Otherwise, we use $w(X, v) = 1$ and try to sample all length-$k$ subpaths as equ
 
 When we supplement input haplotypes with path covers for components of the graph without them (such as decoy sequences), we call the resulting GBWT a \vocab{full} GBWT.
 
-\subsubsection{Downsampling evaluation}
+\subsection{Downsampling evaluation}
 \label{subsec:aim2:downsamplingeval}
 
 To evaluate the effect of haplotype downsampling on read mapping, we generated GBWT indexes containing different numbers of haplotypes.
@@ -1828,7 +2077,7 @@ In contrast to the 1000GP graph, the full HGSVC GBWT index contains just 6 haplo
 Similar results were seen for both experiments in paired end mapping mode (Figure~\ref{fig:aim2_supplement_haplotype_sampling}C-D). Consequently, we selected the 64-haplotype GBWT for use in the 1000GP graph mapping experiments, and the full GBWT for use in the HGSVC graph mapping experiments.
 
 
-\subsubsection{Minimizer seeds}
+\subsection{Minimizer seeds}
 \label{subsec:aim2:minimizers}
 Giraffe maps reads using the common seed-and-extend approach.
 We use a minimizer index \cite{Roberts2004} for finding seeds.
@@ -1851,7 +2100,7 @@ We try to select enough minimizers so that the sum of minimizer scores for the s
 To do this, we first select all minimizers that have a number of hits at or below the \param{soft hit cap} $c_h$ (default 10~hits).
 Then, if we have not yet achieved the score fraction, we select progressively less-informative minimizers one by one. We stop when we reach the score fraction, run out of minimizers, or the next minimizer has more than $C_h$ hits.
 
-\subsubsection{Minimum distance clustering}
+\subsection{Minimum distance clustering}
 \label{subsec:aim2:clustering}
 In order to avoid redundant work, we cluster the seeds into sets that should correspond to the same mapping.
 Two seeds are assigned to the same cluster if the minimum distance between them is sufficiently small. It must be no larger than the \param{distance limit}. The distance limit is $200$~bp by default or, for longer reads, $|R| + 50~\mathrm{bp}$, where $|R|$ is the read length.
@@ -1874,7 +2123,7 @@ After clustering, we score the clusters by two criteria and pick the highest-sco
 The primary criterion is \vocab{read coverage}: the fraction of the read covered by the seeds.
 The secondary criterion, for breaking ties, is \vocab{cluster score}: the sum of minimizer scores for the minimizers present in the cluster.
 
-\subsubsection{Gapless haplotype-consistent seed extension}
+\subsection{Gapless haplotype-consistent seed extension}
 \label{subsec:aim2:gapless-extension}
 We need to turn seeds into \vocab{extensions}: gapless, haplotype-consistent partial alignments that may be longer than a minimizer and may contain some mismatches. We define a \param{mismatch bound} (default $d = 4$) that limits the number of mismatches in various parts of the extension.
 
@@ -1906,7 +2155,7 @@ In that case, we sort all the full-length alignments we have found in descending
 Then we greedily select all alignments that do not overlap with any of the already selected alignments, where we consider two alignments \vocab{overlapping} if the fraction of (read, reference) base mapping pairs in common is greater than the \param{overlap threshold} (default 0.8).
 If there are no full-length alignments with at most $d$ mismatches, on the other hand, we trim the partial extensions to maximize the alignment score and return the whole set of distinct extensions.
 
-\subsubsection{From extension sets to alignments}
+\subsection{From extension sets to alignments}
 \label{sec:aim2:extensions-to-alignments}
 
 We transform at least two, but no more than 8 (the \param{alignment bound}) of the highest-scoring extension sets into alignments, and ignore those with scores further than the \param{extension set score threshold} (default 20~points) below that of the best set.
@@ -1932,7 +2181,7 @@ We then align the tail to the tree using the dozeu library \url{https://github.c
 
 After collecting up to two alignments from each extension set, we select the highest-scoring alignment as the \vocab{primary} for the read, while all others are \vocab{secondaries}.
 
-\subsubsection{Paired-end mapping}
+\subsection{Paired-end mapping}
 
 Paired-end mapping runs start with fragment length estimation, if a fragment length distribution has not been specified.
 We map the reads in single-ended mode using a single thread until we have 1000~uniquely mapping read pairs.
@@ -1962,7 +2211,7 @@ As a slower but more accurate alternative to dozeu, we also support using the GS
 While dozeu must extend a seed, GSSW always finds the best alignment in the subgraph.
 
 
-\subsubsection{Fragment length estimation}
+\subsection{Fragment length estimation}
 \label{subsec:aim2:fragment-length}
 
 We use a method of moments approach to estimate the fragment length distribution
@@ -1980,7 +2229,7 @@ $$
 In the above, $\bar{x}$ and $s^{2}$ are the maximum likelihood estimates of the mean and variance among the retained $N$ measurements, and $\alpha = \Phi^{-1}((1 - \gamma) / 2)$ is the left truncation point on a standardized normal distribution.
 
 
-\subsubsection{Mapping quality estimation}
+\subsection{Mapping quality estimation}
 
 Mapping uncertainty is conventionally summarized as a \vocab{mapping quality}: the Phred-scaled \cite{ewing1998base} posterior probability of a mapping error. To compute mapping qualities, we take advantage of the interpretation of an alignment score as the log-likelihood of a Viterbi path through a pair hidden Markov model \cite{durbin1998biological}. With this model, the posterior probability of the maximum likelihood alignment $\hat A$ of a query sequence $Q$ to the reference $R$ can be expressed as
 
@@ -1993,14 +2242,14 @@ Mapping uncertainty is conventionally summarized as a \vocab{mapping quality}: t
 
 
 
-\subsubsection{Mapping quality caps}
+\subsection{Mapping quality caps}
 
 We impose several \vocab{caps} on the mapping quality derived from the formula above, each of which models a source of error due to Giraffe's heuristics.
 All mapping qualities are capped at 60 to account for some miscalibration and approximation in the mapping quality model.
 Another cap is computed based on the probability that all the minimizers we explored were actually created by base errors.
 Finally, we employ additional mapping quality caps for paired-end mapping to account for uncertain pairing and error introduced by hard caps in the rescue algorithm.
 
-\subsubsection{Minimizer error mapping quality cap}
+\subsection{Minimizer error mapping quality cap}
 
 The Giraffe algorithm can only find a correct mapping if the read contains instances of minimizers that exactly match minimizers in the true placement in the graph, which then form a cluster, which is then extended to produce an alignment. 
 Consequently, the probability that all the minimizer instances in extended clusters were actually created by errors in the read is an upper bound on the mapping quality.
@@ -2033,12 +2282,16 @@ We number these regions as $r$ running $\{0 \ldots R\}$, and define their 0-base
 We define the following events to structure our probability model:
 
 \begin{align*}
-    \BreakRegion{r} &= \text{all agglomerations in region } r \text{ are disrupted by errors in the region} \nonumber \\
-    \BreakRegionByColumn{r}{j} &= \text{all agglomerations in region } r \text{ are disrupted by an error at column } j \nonumber\\
-    \ErrorBreaksAgg{i}{j} &= \text{agglomeration } i \text{ would be disrupted if there were an error at column } j \nonumber \\
-    \BaseError{j} &= \text{there is an error at column } j \nonumber \\
-    \BeatHash{h} &= \text{a sequence has a hash more minimal than the hash } h \nonumber \\
-    \AnyBeatsHash{n}{h} &= \text{any of } n \text{ sequences has a hash more minimal than the hash } h \nonumber
+    \BreakRegion{r} = &\text{all agglomerations in region } r \text{ are disrupted by errors} \\
+                    & \text{in the region} \nonumber \\
+    \BreakRegionByColumn{r}{j} = & \text{all agglomerations in region } r \text{ are disrupted by an error}\\
+                                & \text{at column } j \nonumber\\
+    \ErrorBreaksAgg{i}{j} = & \text{agglomeration } i \text{ would be disrupted if there were an} \\
+                            & \text{error at column } j \nonumber \\
+    \BaseError{j} =& \text{there is an error at column } j \nonumber \\
+    \BeatHash{h} =& \text{a sequence has a hash more minimal than the hash } h \nonumber \\
+    \AnyBeatsHash{n}{h} =& \text{any of } n \text{ sequences has a hash more minimal than the} \\
+                          & \text{hash } h \nonumber
 \end{align*}
 
 \begin{samepage}
@@ -2052,9 +2305,9 @@ We implement the following recurrence relation on the dynamic programming table 
 
 \newcommand{\candidates}[2]{\mathrm{candidates}({#1},\ {#2})}
 
-\begin{samepage}
 In addition to the minimizer and region information, we take the read quality string $q$ as input, which defines $\Prob{\BaseError{j}}$. Also, we approximate the output of $\agghash{i}$ as a uniform random integer in $\{0,1,\ldots,2^{64}-1\}$. We can then evaluate the recurrence to fill the dynamic programming table using the following relationships:
 
+\begin{landscape}
 \nopagebreak
 \begin{align*}
     \Prob{\BreakRegion{r}} &= 1 - \prod_{j = \rleft{r}}^{\rright{r}}\left( 1 - \Prob{\BreakRegionByColumn{r}{j}}\right) \nonumber \\
@@ -2069,8 +2322,7 @@ In addition to the minimizer and region information, we take the read quality st
     \Prob{\AnyBeatsHash{n}{h}} &= 1 - (1 - \Prob{\BeatHash{h}})^{n - 1} \nonumber \\
     \Prob{\BeatHash{h}} &= \frac{h}{2^{64}} \nonumber
 \end{align*}
-\end{samepage}
-
+\end{landscape}
 
 The final result is the bottom cell in the dynamic programming table, at $c_{I+1}$: the probability of the highest-probability case in which all agglomerations in the region are disrupted. This probability is converted from the internal log10-probability representation used for computation into a Phred score.
 
@@ -2078,7 +2330,7 @@ The Phred score is then transformed by an empirically-developed heuristic to pro
 
 
 
-\subsubsection{Paired read mapping quality caps}
+\subsection{Paired read mapping quality caps}
 
 We apply two different caps for paired reads based on the outcome of the pair rescue routine.
 If we didn't find the best pair of alignments with rescue, we cap the mapping quality of each individual alignment to account for uncertain pairing.
@@ -2093,12 +2345,12 @@ For the primary alignment pair, we estimate the number of equivalent pairs that 
 This estimate is the total number of unpaired alignments divided by the number of alignments that were actually rescued.
 When calculating the mapping quality of the primary alignment pair, we compute it as if the estimated number of pairs had been found.
 
-\subsection{Mapping evaluation}
+\section{Mapping evaluation}
 
 We ran each of the mappers on a variety of different graphs and read sets to evaluate their accuracy (Figure \ref{fig:aim2_fig2} and Figures~\ref{fig:aim2_supplement_haplotype_sampling}, \ref{fig:aim2_supplement_novaseq_rocs}, \ref{fig:aim2_supplement_hiseqxten_rocs}, and \ref{fig:aim2_supplement_hiseq2500_rocs}), speed (Figure~\ref{fig:aim2_supplement_speed}), and time and memory consumption (Figure \ref{fig:aim2_fig3}).
 
 
-\subsubsection{Graph construction}
+\subsection{Graph construction}
 \label{subsec:aim2:graphconstruction}
 
 Human graphs were constructed using the \href{https://github.com/vgteam/toil-vg}{toil-vg tool}, versions \toilvgcommit{71f484ce519bb7eff2941a650638e98b4713b852}{71f484c} through \toilvgcommit{cfe15995a8da67257af1b9aca25fa1a686a839c4}{cfe1599}, as well as version \toilvgcommit{b319a1b22df6dac585b7f95bc1a603577452d443}{b319a1b}. 
@@ -2139,19 +2391,19 @@ To allow more direct comparison of Giraffe to linear mappers, we created \vocab{
 For the yeast experiments, a five-strain yeast multiple sequence alignment previously constructed \cite{hickey_vgsv_2020} was imported as a graph with \texttt{hal2vg} v2.1\cite{hickey_vgsv_2020}, with ancestral genomes (internal nodes in the alignment tree) excluded.
 
 
-\subsubsection{Sample selection}
+\subsection{Sample selection}
 
 For human evaluation, we decided to use real and simulated reads from NA19239 and NA19240. These two people are parent and child from a well-studied trio pedigree, sometimes described as ``the Yoruba trio'', recruited from among people claiming four Yoruba grandparents in Ibadan, Nigeria \cite{international2005haplotype,abyzov2011cnvnator}.
 After obtaining informed consent and collecting blood, the original collecting investigators gave donors ``an equivalent of $\sim$US \$8.00 and multivitamins worth $\sim$US \$4.00 to compensate them for their time and travel''\cite{international2004integrating}.
 Because NA19239 had haplotypes available on the 1000 Genomes variants, and NA19240 had haplotypes available on the HGSVC variants (no sample has both), and real reads from a variety of Illumina instruments were publicly available for one or the other, these two samples were chosen to avoid unduly confounding graph choice and sample genome.
 
 
-\subsubsection{Real reads}
+\subsection{Real reads}
 
 For speed evaluation on yeast data, real reads for each strain were used, from accessions SRR4074256, SRR4074257, SRR4074394, SRR4074384, SRR4074413, SRR4074358, and SRR4074383, shuffled and subset to 500~thousand~pairs as with the human data.
 
 
-\subsubsection{Read simulation}
+\subsection{Read simulation}
 \label{subsec:aim2:readsim}
 
 To train vg's read simulator for generating human reads, the truncated 500~thousand~pair real read sets were used to train the simulator to match the read length and quality string characteristics of each of the three different Illumina instruments.
@@ -2183,7 +2435,7 @@ Simulation was restricted to the paths in the graph belonging to DBVPG6044.
 Exactly 1~million reads (500,000~pairs) were simulated for the DBVPG6044 strain; no truncation was performed.
 
 
-\subsubsection{Read mapping}
+\subsection{Read mapping}
 \label{subsec:aim2:readmapping}
 For our read mapping experiments on human data, we used vg release~\vgcommit{6b7d2eeb618bb85c65438016a9eeccecfa0f6c82}{1.27.1} to run Giraffe and VG-MAP.
 For mapping to yeast, we used commit \vgcommit{1d9385e1ca55689cd3ad251b6b2c23319d37be52}{1d9385e}.
@@ -2201,7 +2453,7 @@ As a positive control, we mapped reads to our positive control sample graphs usi
 Giraffe was run in a permissive parameterization (\texttt{-{}-hit-cap 100 -{}-hard-hit-cap 5000 -{}-score-fraction 1.0 -{}-max-extensions 10000 -{}-max-alignments 1000 -{}-cluster-score 0 -{}-cluster-coverage 0 -{}-extension-score 0 -{}-extension-set 0}), to attempt to exhaustively explore all possible alignments.
 
 
-\subsubsection{Evaluating simulated read mapping}
+\subsection{Evaluating simulated read mapping}
 
 We used the path position annotations that were found during simulation to determine the correctness of read mappings.
 After mapping, each read was annotated again with the nearest reference position in the graph.
@@ -2212,7 +2464,7 @@ Several tools allowed split read mapping and produced both primary and supplemen
 In these cases, we counted a read as correctly mapped if any of its alignments were correct.
 
 
-\subsubsection{Speed, runtime, and memory evaluation}
+\subsection{Speed, runtime, and memory evaluation}
 \label{subsec:aim2:srgiraffe_speed}
 
 For our speed, runtime, and memory evaluations we used an AWS EC2 i3.8xlarge node with 32~vCPUs and 244~GB of memory.
@@ -2230,7 +2482,7 @@ Speed was measured as reads per second per thread based on the time each tool re
 We did not find the speed of GraphAligner because it logs mapping time per read, and dumping and aggregating the measurements without affecting the mapping speed would not have been feasible.
 
 
-\subsection{Evaluation of reference allele bias}
+\section{Evaluation of reference allele bias}
 \label{subsec:aim2:srgiraffe_allelebias}
 We produced an allele balance plot (Figure \ref{fig:aim2_fig4}A) to assess the mapping bias of Giraffe, VG-MAP, and BWA-MEM.
 We mapped 600 million real paired-end NovaSeq 6000 reads for NA19239 to our 1000GP graph or GRCh38 using each of the mappers.
@@ -2239,7 +2491,7 @@ Replicating a previous approach \cite{crysnanto_bovine_2020}, we used \texttt{bc
 This strategy was chosen to restrict analysis to sites that we are confident are heterozygous in NA19239 and are supported by the read set used.
 \texttt{mpileup} and \texttt{call} were run on each chromosome in parallel using GNU Parallel \cite{Tange2011a}.
 
-\subsection{Genotyping and evaluating short variants with Dragen}
+\section{Genotyping and evaluating short variants with Dragen}
 \label{subsec:aim2:dragen}
 
 We mapped $\sim$830~million~paired-end, 150-bp-long reads (Precision FDA Challenge V2 Illumina $\sim$35x~coverage) from the HG002 sample to the 1000GP graph.
@@ -2259,21 +2511,21 @@ We used RTG's \texttt{vcfeval} \cite{cleary2015comparing} and Illuminas \texttt{
 All pipelines used the computational resources of the NIH HPC Biowulf cluster (\url{http://hpc.nih.gov}).
 
 
-\subsubsection{Graph construction} \label{subsec:aim2:graph_construction}
+\subsection{Graph construction} \label{subsec:aim2:graph_construction}
 For the variant calling experiments, graph references, and their indexes for running vg mappers, were constructed using different versions of vg ranging from \texttt{1.20.0} to \texttt{1.31.0}, orchestrated by \texttt{toil-vg~construct}.
 
 The graph references for GRCh38-based experiments were constructed using vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:v1.31.0}, using the cannonical \texttt{hs38d1} FASTA reference file as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/linear_references/GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_GCA_000786075.2_hs38d1_genomic.fna} and the 1000 Genomes Project Phase 3 phased VCFs that were lifted over from old GRCh37-based joint-called datasets as sourced from \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/genome_references/graph_references/1000gp_data/ALL.chr*_GRCh38.genotypes.20170504.rename.vcf.gz}.
 \vocab{Primary} graphs and indexes were constructed using just the linear reference FASTA with vg version \texttt{v1.26.0-180-gdc119fa04} as packaged in container \texttt{quay.io/vgteam/vg:ci-2284-dc119fa046aa7131a1a8e026be36da2d79bc2f22}.
 \vocab{1000GP} graphs and indexes were constructing using both the FASTA and the VCFs after filtering out variants belonging to segmental duplication regions of greater than 10 kilobases in length as defined in the bed file \url{https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/genome-stratifications/v2.0/GRCh38/SegmentalDuplications/GRCh38_segdups_gt10kb.bed.gz} with vg version \texttt{v1.31.0} as packaged in container \texttt{quay.io/vgteam/vg:ci-2890-655a9622c3d60e87f14b88d943fbd8554214a975}.
 
-\subsubsection{Read sets}
+\subsection{Read sets}
 Two different read sets were used to evaluate performance
 One was the 150~bp paired-end FASTQ set from sample HG002 as obtained from the FDA Precision Challenge dataset.
 These reads are available as paired FASTQs at \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002.NovaSeq.pcr-free.35x.R1.fastq.gz} and \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002.NovaSeq.pcr-free.35x.R2.fastq.gz}.
 The other read set consisted of 250~bp paired-end FASTQ reads from sample HG002, obtained from the GIAB NovoAligned BAM at \url{ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/NIST_Illumina_2x250~bps/novoalign_bams/HG002.hs37d5.2x250.bam}.
 These reads in paired FASTQ format are available at \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002_read_pair_1.fq.gz} and \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/test_input_reads/HG002_read_pair_2.fq.gz}.
 
-\subsubsection{Read mapping}
+\subsection{Read mapping}
 The HISAT2 mapping runs were done using version~\texttt{2.1.0}.
 Only default settings, with the addition of the \texttt{-{}-no-spliced-alignment} flag, were used during HISAT2 execution.
 
@@ -2286,7 +2538,7 @@ GRCh38-based experiment run details are given in Supplementary Table~\ref{tab:vg
 All runs used the \texttt{toil-vg~map} workflow for the alignment procedure and ABRA2\cite{mose2019improved} for indel realignment after alignment.
 GATK's Picard tool~\cite{Picard2019toolkit} was used to reorder aligned BAM files for contig consistency which is required by the Dragen variant calling algorithm.
 
-\subsubsection{DeepVariant calling}
+\subsection{DeepVariant calling}
 \label{subsec:aim2:deepvariant_calling}
 
 All pipelines for the DeepVariant experiment evaluation used BWA-MEM version~\texttt{0.7.17-r1188} against the \texttt{hs38d1} human genome reference or VG Giraffe against the same 1000GP graph as described in \ref{subsec:aim2:graph_construction}.
@@ -2300,7 +2552,7 @@ We used DeepVariant v1.1.0 production model for the BWA-MEM experiments and a cu
 The custom model data can be found here \url{https://storage.googleapis.com/cmarkell-vg-wdl-dev/giraffe_manuscript_data/deepvariant_models/model.ckpt-25600*}.
 
 
-\subsection{Genotyping and evaluating structural variants}
+\section{Genotyping and evaluating structural variants}
 \label{subsec:aim2:svgenotyping}
 
 We replicated the evaluation performed in Hickey et al.\cite{hickey_vgsv_2020} using two SV graphs made from the HGSVC\cite{chaisson_sv_2019} and GIAB v0.6\cite{zook_robust_2020} SV catalogs, respectively.
@@ -2316,7 +2568,7 @@ The scripts to build the pangenomes, genotype the SVs and evaluate the genotypin
 
 (see section \ref{sec:aim2:code-data}).
 
-\subsection{Combining long-read catalogs for an SV pangenome}
+\section{Combining long-read catalogs for an SV pangenome}
 \label{subsec:svpangenome}
 
 We combined variants from the three SV catalogs used previously in Hickey et al.\cite{hickey_vgsv_2020}: HGSVC \cite{chaisson_sv_2019}, GIAB\cite{zook_robust_2020}, and SVPOP \cite{audano_hgsvc}.
@@ -2349,7 +2601,7 @@ For each chunk, we clustered SVs using a less stringent criterion as above: dele
 The 18,286 clusters of SVs identified contained an average of 3.24 SVs.
 A graph was built for the chunk using one variant per SV cluster.
 One by one, the other variants were then added by aligning them to the graph and augmenting the graph.
-We used \texttt{vg~mpmap} \cite{sibbesen2021haplotype} to align large sequences representing the SV variation flanked by 5~kbp of sequence context.
+We used \texttt{vg~mpmap} \cite{sibbesen_haplotype-aware_2023} to align large sequences representing the SV variation flanked by 5~kbp of sequence context.
 The alignment was added to the graph using \texttt{vg~augment}.
 The chunked graphs was merged using \texttt{vg~concat}.
 
@@ -2358,9 +2610,9 @@ We also added the \texttt{hs38d1} decoy sequences (accession GCA\_000786075.2).
 
 The scripts used to build this pangenomes are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
-\subsection{Population scale analysis of SVs}
+\section{Population scale analysis of SVs}
 
-\subsubsection{Whole-genome sequencing datasets}
+\subsection{Whole-genome sequencing datasets}
 
 The MESA whole-genome sequencing dataset was obtained from NHLBI’s TOPMed program (\url{www.nhlbiwgs.org}), freeze 5b.
 Paired-end 150bp reads had been sequenced on Illumina HiSeq X Ten instruments and achieved a mean depth of at least 30x.
@@ -2373,7 +2625,7 @@ All cell lines had been obtained from the Coriell Institute for Medical Research
 Of note, the reads were downsampled to 20x in both datasets and mapped with Giraffe fast mode to reduce the computing cost.
 
 
-\subsubsection{Pangenome genotyping workflow}
+\subsection{Pangenome genotyping workflow}
 
 A genotyping pipeline was implemented in WDL and ran using the BioData Catalyst ecosystem\cite{bdc2020} providing access to the TOPMed and 1000 Genomes Project datasets.
 The WDL pipeline was deposited on Dockstore\cite{vgsv_dockstore} and ran on Terra.
@@ -2385,7 +2637,7 @@ Around 71\% of the time is spent mapping reads, 18\% genotyping the variants, an
 
 
 
-\subsubsection{Diverse sample selection from the MESA cohort}
+\subsection{Diverse sample selection from the MESA cohort}
 \label{subsec:aim2:mesaselection}
 
 The MESA cohort is a medical research study involving white, African American, Hispanic/Latino, and Chinese adults from 6 U.S. communities \cite{bild2002multi}.
@@ -2397,7 +2649,7 @@ New individuals were then selected, one by one, to maximize their distance to al
 
 
 
-\subsubsection{Combining SV genotypes across samples}
+\subsection{Combining SV genotypes across samples}
 \label{subsec:aim2:svcombining}
 
 SVs were merged using bcftools version 1.9 \cite{li_samtools_2011}.
@@ -2412,7 +2664,7 @@ Finally, the VCF files were combined using \texttt{bcftools merge} using the \ve
 The corresponding WDL workflow has been deposited on Dockstore\cite{svmerge_dockstore}.
 
 
-\subsubsection{Clustering SV alleles into SV sites}
+\subsection{Clustering SV alleles into SV sites}
 \label{subsec:aim2:svclustering}
 
 Deletions were matched if their reciprocal overlap was at least 80\%.
@@ -2424,7 +2676,7 @@ If not, the SV site contained alleles with significant differences, usually due 
 For most analysis at the SV site level, we used the most frequent allele's information, such as boundaries or size.
 The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
-\subsubsection{Allele frequency patterns across populations}
+\subsection{Allele frequency patterns across populations}
 \label{subsec:aim2:sv-pop-freq}
 
 
@@ -2445,7 +2697,7 @@ Again, we used the null dataset to illustrate the enrichment in SVs whose freque
 We highlight SVs with a frequency differing by more than 10\% from the median frequency, a threshold at which only a few SVs are expected to show population patterns based on the permuted dataset.
 The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
-\subsubsection{Comparison with existing large-scale SV catalogs}
+\subsection{Comparison with existing large-scale SV catalogs}
 
 We compared the variants genotyped in this study with three SV catalogs that screened large populations:
 
@@ -2462,7 +2714,7 @@ We matched deletions with at least 30\% reciprocal overlap and insertions locate
 Annotated simple repeats were also used to extend the range used to match SVs.
 The corresponding scripts are documented in the repository (see Section \ref{sec:aim2:code-data}).
 
-\subsubsection{Fine-tuning structural variants with frequencies}
+\subsection{Fine-tuning structural variants with frequencies}
 \label{subsec:aim2:svfinetuning}
 
 
@@ -2475,7 +2727,7 @@ Out of the 22 of those SV sites that were found in GIAB, 3 (13.6\%) matched exac
 We show that it is significantly more than expected using permutation.
 We permuted the frequency estimates 10,000 times and showed that, on average, only 2.9\% of SV sites would match GIAB exactly by chance (p-value $<$ 0.0001).
 
-\subsubsection{Annotation of the SVs}
+\subsection{Annotation of the SVs}
 
 The RepeatMasker and SimpleRepeat annotation downloaded from the UCSC Genome Browser FTP server.
 We considered a SV to overlap simple repeats if at least 50\% of its region overlapped with the SimpleRepeat track or repeats from the {\it Simple\_repeat} class in the RepeatMasker annotation.
@@ -2489,7 +2741,7 @@ As before, a SV was preferentially annotated using the following order: coding, 
 
 
 
-\subsubsection{Expression Quantitative Trait Locus discovery}
+\subsection{Expression Quantitative Trait Locus discovery}
 \label{subsec:aim2:eqtldiscovery}
 
 We used gene expression provided by the GEUVADIS consortium\cite{geuvadis_2013}.
@@ -2534,7 +2786,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 
 \newpage
 
-\subsection{Supplementary figures}
+\section{Supplementary figures}
 
 \begin{figure}[H]
     \centering
@@ -2826,7 +3078,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=.75\linewidth]{aim2_supplement_speed.pdf}
+    \includegraphics[width=.7\linewidth]{aim2_supplement_speed.pdf}
     \caption[Mapping speed on human data]{\textbf{Mapping speed on human data.} Each mapper was run on a dataset of 1 million real NovaSeq 6000 (A,B), HiSeq X Ten (C,D), or HiSeq 2500 (E,F) reads on a AWS EC2 i3.8xlarge node with 32 vCPUs and 244GB of memory. The speed of mapping in reads per second per thread was determined using the total time spend mapping as reported by each tool. Each tool except Minimap2 was run on 16 threads; Minimap2 was run on 2 threads because it did not use all 16 threads.}
     \label{fig:aim2_supplement_speed}
 \end{figure}
@@ -2839,7 +3091,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{fig:aim2_supplement_regions}
 \end{figure}
 
-\subsection{Supplementary tables}
+\section{Supplementary tables}
 
 
 \newcommand{\mapindexes}[1]{\indexurl{#1.xg} & \indexurl{#1.gcsa} & \indexurl{#1.gcsa.lcp} & & & &}
@@ -3197,7 +3449,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:vcfeval_high_conf_2x150_hg002_grch38}
 \end{table}
 
-
+\begin{landscape}
 \begin{table}[H]
     \centering
     \begin{tabular}{|l|c|r|r|r|l|l|l|}
@@ -3226,6 +3478,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \caption[Genotyping evaluation with Hap.py in HG002 using 150bp paired-end reads against the grch38-based graph reference]{Hap.py performance of linear and graph-based pipelines against grch38-based references using 150bp paired-end reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
 \label{tab:happy_high_conf_2x150_hg002_grch38}
 \end{table}
+\end{landscape}
 
 \begin{table}[H]
     \centering
@@ -3245,6 +3498,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:vcfeval_high_conf_2x250_hg002_grch38}
 \end{table}
 
+\begin{landscape}
 \begin{table}[H]
     \centering
     \begin{tabular}{|l|c|r|r|r|l|l|l|}
@@ -3273,6 +3527,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \caption[Genotyping evaluation with Hap.py in HG002 using 250bp paired reads against the grch38-based graph reference]{Hap.py performance of linear and graph-based pipelines against grch38-based references using 250bp paired reads with respect to HG002 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
 \label{tab:happy_high_conf_2x250_hg002_grch38}
 \end{table}
+\end{landscape}
 
 \begin{table}[H]
     \centering
@@ -3311,7 +3566,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \label{tab:vcfeval_high_conf_1000GP_excluded_2x150_hg002_grch38}
 \end{table}
 
-
+\begin{landscape}
 \begin{table}[H]
     \centering
     \begin{tabular}{|l|r|r|r|l|l|l|}
@@ -3354,6 +3609,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \caption[Genotyping evaluation between DeepVariant calls of bwamem and giraffe 1000GP alignments against grch38-based references with Hap.py in HG003 using 35x 150bp paired-end reads]{Hap.py performance between DeepVariant and Dragen variant callers on grch38-based linear and giraffe 1000GP mappers using 150bp paired-end reads with respect to HG003 GIAB v4.2.1 truth variant call sets in high confidence regions. Best values in each column are highlighted in bold text.}
 \label{tab:deepvariant_happy_high_conf_2x150_50x_hg003_grch38}
 \end{table}
+\end{landscape}
 
 
 \begin{table}[H]
@@ -3472,7 +3728,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{tab:svwdl-task}
 \end{table}
 
-
+\begin{landscape}
 %\todo{Tables below are not cited in main text}
 \begin{table}[htb]
   \centering
@@ -3492,6 +3748,633 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
   \label{tab:vgruns_grch38}
   \label{tab:last}
 \end{table}
+\end{landscape}
+
+
+\chapter{Supplementary materials for long read Giraffe}
+\label{sec:appendix_lr_giraffe}
+\section{Preface}
+This section contains the supplement of long read Giraffe preprint in Chapter \ref{chapter:lr-giraffe}).
+
+\section{Seeding}
+\label{sec:sup-seeding}
+
+Seeding is done using a minimizer index of the haplotypes in the GBWT.
+We used weighted minimizers with a k-value of 31 and a window length of 50 for aligning long reads.
+Minimizer weighting prioritizes minimizers with fewer hits in the reference similar to \citet{jain_winnowmap_2020}.
+For short reads, we use unweighted minimizers with a k-value of 29 and window length of 11.
+
+Because long reads produce a large number of minimizers, each of which may have many occurrences in the graph, we filter the seeds to pare them down to a workable number.
+As in the original Giraffe algorithm, we use a \emph{hard-hit-cap}, \emph{soft-hit-cap}, and \emph{score-fraction} to limit the number of occurrences a seed can have in the graph.
+The total number of minimizers used is capped at the maximum of \emph{max-min} and the read length divided by \emph{num-bp-per-min}.
+We have also added a sliding window approach to down-sample the seeds.
+In this approach, we pass a sliding window across the read and for each window, keep only the seed with the fewest number of hits in the graph.
+The length of the sliding window is the minimum of the \emph{downsample-window-length} and the length of the read divided by the \emph{downsample-window-count}
+
+
+\section{Zip Code Trees}
+\label{sec:sup-ziptrees}
+
+To support graph distance queries for chaining, we introduce a new data structure called a \emph{zip code tree} that represents graph distances among a set of seeds.
+Zip code trees are organized using the snarl decomposition of the graph.
+Each node in the zip code tree represents the position of a seed in the graph or the boundary of a snarl or chain containing a seed (Figure \ref{fig:algorithm_overview}C).
+Edges occur between zip code tree nodes that are adjacent or siblings in the snarl tree; edges are labeled with graph minimum distances between the structures they represent.
+The distances between seeds can be found by walking through the zip code tree (Figure \ref{fig:algorithm_overview}D).
+
+Zip code trees are stored as a single vector of nodes and edges.
+Nodes and edges therefore have a fixed orientation in the zip code tree, which may not match that of the original graph.
+Edges always connect the local right side of a node to the local left side of the downstream node.
+This keeps structures that are close on the graph nearby in the zip code tree data structure, making distance calculations fast for the short distances needed for chaining.
+However, this also imposes the restriction that zip code trees are directed acyclic graphs (DAGs) and cannot represent the full connectivity of arbitrary variation graphs.
+When constructing zip code trees for graphs that are not already DAGs, we use the order and orientation of the seeds in the read to represent the graph as a DAG that best represents a likely path of the read (Figures  \ref{fig:ziptree-duplication} and \ref{fig:ziptree-inversion}).
+
+Zip code trees are constructed from the set of seeds in a read using the snarl tree relationships.
+Separate trees are found for seeds that are unreachable or that are farther than a given distance limit from other trees.
+Similar to a cluster of seeds, each disconnected zip code tree represents a distinct region of the graph that is a potential placement of the read.
+Chaining is done separately for each disconnected zip code tree.
+
+
+\subsection{Zip code tree structure}
+
+The zip code tree represents the connectivity among seeds in the graph using snarl tree relationships.
+In the zip code tree, there is a node for each seed position and for the bounds of each snarl and chain containing a seed (Figure \ref{fig:ziptree-methods}A).
+Each seed is associated with a \emph{zip code}, a small data structure that stores information for calculating distance.
+Using these zip codes, we can quickly sort the seeds into a linear ordering based on their location in the snarl tree and find distances to build the zip code tree.
+
+Snarls and chains in the zip code tree are flanked by nodes representing their start and end bounds.
+Chains in the zip code tree are comprised of their child snarls and seeds that occur on node children of the chain (Figure \ref{fig:ziptree-methods}B).
+For chains, there is an edge from the start bound of the chain to the first child of the chain, an edge between each consecutive child, and an edge from the last child of the chain to the end bound of the chain.
+Edges involving snarls terminate at a bound of the snarl.
+
+The representation of a snarl in a zip code tree depends on its topology.
+We classify snarls as \emph{regular}, \emph{irregular}, or \emph{cyclic}.
+A snarl is regular if all of its children have only two edges: an edge from one side of the node to the start or end bound, and an edge from the opposite side of the node to the other bound.
+The only other edge allowed in a regular snarl is between the two bounds.
+A non-regular snarl can be classified as cyclic if there exists a path from any node back to itself on either side.
+Note that this is definition allows snarls that are not actually cyclic.
+All non-regular, non-cyclic snarls are classified as irregular.
+In Figure \ref{fig:ziptree-methods}A, the orange snarl is a regular snarl and the green snarl is an irregular snarl.
+The two snarls in Figures \ref{fig:ziptree-duplication} and \ref{fig:ziptree-inversion} are both classified as cyclic snarls.
+
+For regular and irregular snarls (but not cyclic snarls) in the zip code tree, each child can only traversed in one direction in a start-to-end traversal of the snarl.
+That is, there exists a path from the start boundary of the snarl to one side of the child and a path from the end boundary of the node to the other side of the child, but no path from the end boundary node to the first side of the child or from the start boundary node to the second side of the snarl.
+We will arbitrarily refer to the side of the child reachable with the start boundary node as the \emph{left} side and the side of the child reachable with the end boundary as the \emph{right} side. 
+This may be different from the orientation assumed in the distance index.
+Additionally, since these snarls are DAGs, there exists a topological ordering of snarl children.
+For regular and irregular snarls, the zip code tree contains an edge from the start bound of the snarl to the left side of every child, and an edge from the end bound of the snarl to the right side of every child.
+For irregular snarls, there is also an edge from the right side of every child to the left side of every other child succeeding it in the topological order (Fig\ref{fig:ziptree-methods} C).
+
+Cyclic snarls are not DAGs and may not have a topological order or a single possible orientation of children.
+Because paths through cyclic snarls may traverse the snarl child multiple times and in multiple directions, we must be able to represent the same chain multiple times in the zip code tree.
+However, since a zip code tree is inherently acyclic, we cannot visit the same chain more than once in a traversal of the zip code tree.
+We want to be able to represent each chain enough times to represent all paths through the snarl that are possible in an alignment between the read and graph.
+We use the seeds' positions in the read to estimate the copy number and orientation of each child chain.
+
+Seeds in the snarl are split up into \emph{runs} of seeds that are on the same child chain in the same orientation on the read and within a given distance limit of each other in both the read and chain.
+Each run of seeds is considered to be a separate child of the snarl, even though there may be multiple runs on the same child chain.
+Rather than sorting the runs by topological order, as we do for non-cyclic snarls, runs are sorted according to the seeds' positions in the read.
+This order is treated as a topological order for an irregular snarl, and edges are added accordingly (Figures \ref{fig:ziptree-duplication} and \ref{fig:ziptree-inversion}).
+
+Some child chains of cyclic snarls may be traversed in either direction in a start-to-end traversal of the snarl, but a zip code tree can only represent a single orientation of the chain.
+The orientations of runs in the zip code tree are determined by the order of the seeds in the read (Figure \ref{fig:ziptree-inversion}).
+First, we find the Spearman correlation between the coordinates of the positions in the read and in the snarl's parent chain, to determine if the read should traverse the snarl forwards or backwards.
+Next, we find the same correlation for each of the runs.
+If there is a strong enough correlation, we orient the run so that the read can traverse the run and the snarl in the same direction.
+If there isn't a strong correlation, we keep a copy of the run in each direction so it can be traversed in either orientation.
+
+Using this method, there may be multiple instances of a child of a snarl represented as separate runs of seeds, and there may be up to two copies of each seed, one in each orientation.
+This strategy tends to split the chains into more runs than are necessary to represent cyclic paths, but it ensures that all probable paths through the snarl are found.
+In the worst case, it could also cause an exponential expansion of seeds in deeply nested, cyclic snarls for which we cannot find a confident orientation.
+However, in practice, this has not happened.
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{zip_tree_construction.pdf}
+    \caption[Zip code trees]{\textbf{Zip code trees.} (A) A sequencing read, variation graph, snarl tree, and zip code tree from Figure \ref{fig:algorithm_overview}. Arrows on the variation graph and read represent seed alignments. Rectangular nodes in the snarl tree represent chains and round nodes represent snarls. Chains are colored by the nodes in the chain they represent on the graph. For simplicity, the snarl tree does not represent nodes, which are children of chains. Nodes in the zip code tree represent either seeds (arrows) or the start or end bounds of snarls and chains. The bounds are colored and shaped like the snarl tree nodes they represent. (B) The representation of the top-level chain (grey) in the variation graph, snarl tree, and zip code tree. The chain has five children: two snarls and three nodes, one of which has a seed on it. The zip code tree representation of the chain contains the start and end of the chain, all snarls that contain seeds, and all seeds on node children of the chain. (C) The representation of a snarl in the graph, snarl tree, and zip code tree. The light green snarl has two children: the blue chain and the green chain. In the zip code tree, the two chains are sorted according to a topological order of the snarl subgraph. Edges occur from the right side of each child of the snarl to the left side of every child later in the topological order.}
+    \label{fig:ziptree-methods}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{zipcode_snarl_duplication.pdf}
+    \caption[Duplications in zip code trees]{\textbf{Duplications in zip code trees.} Seeds in the chain are split into runs of seeds based on the distances between the seeds, each of which represents a separate potential traversal of the duplicated chain. Each run becomes a separate child of the snarl.}
+    \label{fig:ziptree-duplication}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{zipcode_snarl_inversion.pdf}
+    \caption[Inversions in zip code trees]{\textbf{Inversions in zip code trees.} Seeds in the chain are split into runs based on the distances between them and their orientations in the read. The orientation of a run is determined by finding the expected orientation of the read through the snarl, based on context in the snarl's parent chain. Seeds that are oriented backwards in the zip code tree relative to the forward orientation of the node they are on are indicated with a white arrow.}
+    \label{fig:ziptree-inversion}
+\end{figure}
+
+\subsection{Zip codes}
+When constructing zip code trees, we rely on the zip codes associated with each seed to quickly find the placement of the seed in the snarl tree and to calculate distances among seeds and snarl tree boundaries.
+The original Giraffe algorithm calculated distances using a minimum distance index based on the structure of the snarl decomposition (\cite{paten_superbubbles_2018}.
+Walking up the snarl tree, the minimum distance from each position to the bounds of each ancestor snarl or chain is found.
+At each common ancestor of the two positions, the distance between the children (or child) of the common ancestor containing the two positions is found and added to the relevant distances to bounds of the child to find the minimum distance between the positions in this common ancestor.
+This step must be done for every common ancestor, not just the lowest common ancestor, because the minimum distance path may take edges outside of the lowest common ancestor.
+
+Zip codes store a minimal amount of information for each node to calculate minimum distances to any other node in the graph.
+The basic structure of a zip code is a vector of \emph{codes}, with one code per snarl tree node (node or snarl or chain) that is an ancestor of the node, starting from the root structure and going down to the node.
+Each code contains an identifier for the snarl tree node and distance information to either find distances directly or to query the distance index.
+Identifiers are only unique for structures with the same ancestors, i.e., two chains that share a parent snarl will always have different identifiers, but two chains in different snarls may have the same identifier.
+In this way, the series of identifiers of a zip code, starting from the root and proceeding down to the node, is sufficient for uniquely identifying the node and for finding the common ancestors of two nodes.
+
+ 
+\subsection{Zip code tree construction parameters}
+Zip code trees are only guaranteed to store distances up to a given distance limit.
+The distance limit is the length of the read times the \emph{zipcode-tree-scale}.
+If all seeds in a chain or a segment of a chain are farther than the distance limit away from anything else in the chain or containing snarl, then the chain or chain segment is separated out into a separate zip code tree.
+This helps reduce the size of zip code trees.
+
+We filter zip code trees based on their score and coverage.
+The score of a zip code tree is the sum of the scores of the minimizers that it contains.
+Similarly, the coverage of a zip code tree is the fraction of the read that is covered by the minimizers in the tree.
+A zip code tree is filtered out if its score is more than \emph{zipcode-tree-score-threshold} worse than the best-scoring zip code tree, or if its coverage is more than \emph{zipcode-tree-coverage-threshold} less than the zip code tree with the best coverage.
+We keep at least \emph{min-to-fragment} and at most \emph{max-to-fragment} zip code trees.
+
+
+\section{Chaining}
+\label{sec:sup-chaining}
+
+The general problem of chaining starts with a set of \emph{anchors} as input.
+An anchor is defined by an interval on the read and a corresponding interval on the reference.
+A chain is an ordered subset of anchors that are co-linear in the read and reference.
+Chaining algorithms generally attempt to find an optimal chain that maximizes coverage over the read and minimizes the cost of gaps between consecutive anchors.
+An optimal solution to the chaining problem can be found in a simple dynamic programming recurrence over the anchors.
+%For a list of anchors $A=[a_1, a_2, ...,a_n]$ the optimal score for a chain ending at anchor $a_i$ is:
+%\begin{equation}
+%    score(a_i) = \max\begin{cases}
+%                \max_{0<j<i} \{score(a_j) + matching_bases(aj,a_i) - gap\_cost(a_j, a_i)\}\\
+%                anchor\_weight(a_i)
+%                \end{cases}
+%\end{equation}
+
+
+\subsection{Chaining in Giraffe}
+
+Giraffe uses a scoring scheme for chaining based on that of Minimap2 \cite{minimap2_2021}.
+The overall score of a chain is the sum of the scores of the anchors and the scores of the gaps between consecutive anchors.
+The score of an anchor is its alignment score, scaled by a user-defined factor, plus a user-defined bonus score (Section \ref{sec:chaining_params}).
+The cost of the gap between two consecutive anchors is found from the average length of an anchor in the chain and the difference between the distances between the anchors in the graph, as determined by the zip code tree, and the read.
+The gap cost is defined as:
+\begin{equation}
+gap\_cost = 0.01*anchor\_length*dist + 0.5*log_2(dist)
+\end{equation}
+Giraffe also has the option to consider the matches that would be taken in the gap between two consecutive anchors.
+The number of matches, which is the minimum of the distances between the anchors in the read and the graph, is scaled by a user-defined factor specifying the number of points per potential match in the gap (Section \ref{sec:chaining_params}).
+The overall score of a gap is therefore:
+\begin{equation}
+    gap\_score = matches * scale\_factor - gap\_cost
+\end{equation}
+
+
+Giraffe performs two rounds of chaining to get the final chains of seeds.
+In the first round, we use seeds as anchors and produce chains of seeds which we call \emph{fragments}.
+In the second round, we use the resulting fragments as anchors and perform the same chaining procedure, this time with a more permissive lookback distance.
+We found that two rounds of chaining reduced the time and memory use of chaining while still producing useful chains.
+
+
+
+\subsection{Fragment and chaining parameters}
+\label{sec:chaining_params}
+
+When doing fragmenting, we use a look-back distance that is the maximum of the \emph{fragment-max-lookback-bases} and the read length times the \emph{fragment-max-lookback-bases-per-base}.
+We also limit the indel length for fragmenting to be the maximum of the \emph{fragment-max-indel-bases} and the read length times the \emph{fragment-max-indel-bases-per-base}.
+Giraffe will make at most \emph{max-fragments} fragments total.
+The fragments are scored based on the gap costs between consecutive pairs of seeds.
+We scale the gap score by a factor of \emph{fragment-gap-scale}.
+We add \emph{fragment-points-per-possible-match} to the score for non-indel connecting bases.
+We add \emph{item-bonus} to the score for each seed included in the fragment and the score of each seed is scaled by a factor of \emph{item-scale}.
+We discard fragments if their score is not good enough relative to the score of the best-scoring fragment.
+We set the score limit to be the best score times the \emph{fragment-score-fraction}, as long as this value is between the \emph{fragment-min-score} and the \emph{fragment-max-min-score}.
+If this value is greater than \emph{fragment-max-min-score} or less than \emph{fragment-min-score}, it is set to the bounding value.
+A fragment is also discarded if the zip code tree that it came from was less than \emph{fragment-set-score-threshold} away from the score of the best tree.
+We will always keep at least \emph{min-chaining-problems} and at most \emph{max-chaining-problems} fragments.
+
+We use similar parameters for doing chaining over the fragments.
+The lookback distance for chaining is the maximum of the \emph{max-lookback-bases} and the read length times the \emph{max-lookback-bases-per-base}.
+The maximum indel length is the maximum of the \emph{max-indel-bases} and the read length times the \emph{max-indel-bases-per-base}.
+The gap score is scaled by a factor of \emph{gap-scale}.
+We add \emph{item-bonus} to the score for each fragment included in the fragment and the score of each fragment is scaled by a factor of \emph{item-scale}.
+We add \emph{points-per-possible-match} for each non-indel connecting base in the chain.
+A chain is only kept if its score is within \emph{chain-score-threshold} of the score of the best-scoring chain.
+The score of a chain must also be higher than the minimum of the \emph{max-min-chain-score} and the length of the read times the \emph{min-chain-score-per-base}.
+Regardless of score, at least \emph{min-chains} are kept.
+We keep up to \emph{max-chains-per-tree} chains that originated from the same zip code tree.
+
+\section{Aligning} 
+\label{sec:sup-aligning}
+
+To turn a chain of seeds into an alignment, Giraffe performs two types of base-level alignment: alignment between consecutive pairs of seeds in a chain and pinned tail alignment anchored on the first or last seed in a chain.
+For both types of alignment, we first try to use a wave front algorithm (WFA) aligner \citep{marco-sola_fast_wfa_2021,marco-sola_wfa_2023} to align to the haplotypes in the GBWT.
+If the wfa extender is unsuccessful for a between-seed alignment, we use a banded global aligner to align against the graph itself.
+If the problem is too big for the banded global aligner, then we treat the first seed in the pair as the end of the chain and do pinned tail alignment from this seed.
+For tail alignment that is too long for the WFA aligner or the WFA aligner fails to find an alignment, we use Dozeu, a SIMD-accelerated X-drop aligner.
+%a graph striped Smith Waterman (GSSW) X-drop aligner \cite{zhao_gssw_2013}.
+
+The final alignment is strongly influenced by the chain used to find it.
+For example, if the chain contains a seed in an insertion node, then the final alignment is forced to take that insertion, even if a more optimal alignment could be found without the seed.
+This case is common in repetitive regions where identical seeds are found near each other in the reference graph.
+To avoid forcing the alignment to include a repetitive seed, we flag seeds as being in repetitive regions of the read and allow the aligner to skip repetitive seeds in a chain.
+
+Seeds are flagged as being in a repetitive region using a Hidden Markov Model (HMM).
+The seeds are first ordered according to their position in the read. 
+Each seed will be labeled as having a hidden state of "unique" or "repetitive" based on the number of occurrences of the seed's minimizer in the graph.
+The probability of switching between the states of $0.1$ and the probability of emitting an occurrence count of $1$ with a hidden state of "repetitive" (or an occurrence count greater than 1 with a hidden state of "unique") is $0.1$.
+The HMM is initialized with a $0.05$ probability of being repetitive.
+
+The repetitive flag is not taken into account for chaining the seeds or for scoring the chains.
+When aligning between seeds in the chain, a repetitive seed may be skipped if doing so does not introduce a gap between seeds that is too large.
+
+\subsection{Alignment parameters}
+
+To avoid using too many resources during alignment, we set limits on the sizes of problems that each aligner can attempt.
+When aligning either tails and between-seed connections with the WFA aligner, we limit the number of mismatches or equivalent-scoring gaps based on the length of the read.
+The number of mismatches is capped at the smaller of \emph{wfa-max-max-mismatches} and the \emph{wfa-max-mismatches} plus the read length times the \emph{wfa-max-mismatches-per-base}.
+Similarly band distance of WFA alignment is capped at the smaller of \emph{wfa-max-distance} and the \emph{wfa-distance} plus the read length times the \emph{wfa-distance-per-base}.
+
+When aligning between seeds in a chain, we will only connect seeds across a maximum distance of \emph{max-chain-connection} with WFA.
+If the length of the gap between seeds in the read is greater than max-chain-connection but less than \emph{max-middle-dp-length}, then we align it with the banded global aligner.
+If it is longer than max-middle-dp-length, then we make it a tail alignment and attempt to align it using Dozeu.
+When skipping repetitive seeds in a chain, seeds may only be skipped if the gap introduced will be less than \emph{max-skipped-bases}.
+
+When aligning tails, we only attempt alignment if the aligner will use fewer than \emph{max-dp-cells} cells in the dynamic programming matrix.
+If the length of the tail is less than \emph{max-tail-length}, then we will attempt to use the WFA extender.
+If the tail is longer than the \emph{max-tail-length} but shorter than \emph{max-tail-dp-length}, then we do the alignment with Dozeu.
+For tails that are longer than max-tail-dp-length, we make a softclip.
+When aligning a tail, we allow at most \emph{max-tail-gap} gap bases.
+
+
+
+
+\section{Evaluation methods}
+
+\subsection{Graphs}
+For the linear mappers, we mapped to the CHM13 reference genome \cite{nurk_complete_2022}.
+We also used Giraffe to map to a linear graph containing only CHM13.
+
+The HPRC graphs used in this paper were retrieved from \url{https://github.com/human-pangenomics/hpp_pangenome_resources}.
+The "HPRC-filtered" graph used in the paper can be found as "AF-filtered VG indexes".
+This is the version 1.1 allele frequency filtered HPRC CHM13-based graph constructed with Minigraph-Cactus.
+This graph removes nodes and edges that are supported by fewer than $10\%$ of haplotypes in the graph. 
+The "HPRC" graph used in this paper can be found as "Graph": the version 1.1 clipped, non-frequency filtered chm13-based Minigraph-Cactus graph.
+
+\subsection{Reads}
+\label{subsec:sup-reads}
+We used real reads from HG002 \citep{giab_data_2016} sequenced with PacBio HiFi (HiFi), Nanopre R10, and Illumina NovaSeq to perform variant calling and assess the speed, memory use, and number of softclipped bases of each mapping tool. 
+
+HiFi reads for HG001 were retrieved from PacBio's public example sequencing data repository at \raggedright{\url{https://downloads.pacbcloud.com/public/revio/2024Q4/WGS/HG001/m84036_241119_193656_s2.hifi_reads.bam}}, but no documentation for the dataset appeared to be available.
+HiFi reads for HG002 were provided by Aaron Wenger at PacBio to the Telomere-to-Telomere Consortium for the ``Q100'' benchmark project described at \url{https://github.com/marbl/HG002} (and more specifically \url{https://github.com/marbl/HG002/blob/main/Sequencing_data.md#hifi-data}), and were retrieved from \url{https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=T2T/HG002/assemblies/polishing/HG002/v1.0/mapping/hifi_revio_pbmay24/}. 
+
+R10 reads for HG001 were obtained from the Garvan Institute Long Read Sequencing Benchmark Data collection (\url{https://github.com/GenTechGp/gtgseq}), and were retrieved from \url{https://gtgseq.s3.amazonaws.com/ont-r10-dna/NA12878/analyses/basecalls/guppy642hac/PGXXHX230142_guppy642hac.fastq.gz}.
+R10 reads for HG002 were produced for the HG002 T2T project \citep{rautiainen_verkko_2023} and obtained from the ``UL'' files in \url{https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=submissions/5b73fa0e-658a-4248-b2b8-cd16155bc157--UCSC_GIAB_R1041_nanopore/HG002_R1041_UL/Guppy6/}.
+
+Illumina NovaSeq reads for HG001 and HG002 were retrieved from Google's gold-standard benchmarking dataset collection \citep{baid_extensive_2020} at \url{gs://brain-genomics-public/research/sequencing/fastq/novaseq/wgs_pcr_free/40x/}
+
+Sets of one million reads were simulated with PBSIM2 \citep{ono_pbsim2_2020} from the HG002 sample, which was not included in any of the reference graphs, for each sequencing technology (see \ref{subsec:sup-reads}).
+Long reads were simulated using a graph built with Minigraph-Cactus using the HG002 assembly, GRCh38, and CHM13 as input.
+The HG002 assembly was extracted from the graph, then PBSIM2 was used to simulate reads.
+PBSIM2 was run with parameters \texttt{--depth 4 --accuracy-min 0.00 --length-min 10000 --difference-ratio 6:50:54} for long reads, and \texttt{--depth 1 --accuracy-min 0.00 --length-min 250 --length-max 250 --difference-ratio 7:1:1} for illumina reads.
+The command also used \texttt{--hmm\_model} using our real read sets for each sequencing technology.
+The simulated reads were then converted to bam format and projected onto the HG002 graph with \texttt{vg inject}.
+The reads were then annotated with the reference positions that they overlapped in the graph with \texttt{vg annotate}.
+
+\subsection{Mapping experiments}
+We compared Giraffe to the linear mappers Minimap2 version 2.28-r1209 \cite{minimap2_2021}, Winnowmap version 2.03 \citep{winnowmap2_2022} and bwa-mem version 0.7.18-r1243 \cite{li_bwa_mem_2013}, as well as the graph mappers GraphAligner version 1.0.19 \cite{rautiainen_graphaligner_2020}, and Minigraph version 0.21-r606 \cite{li_minigraph_2020}.
+%, and PanAligner version v1.0 \cite{panaligner_2024}.
+We ran Minimap2 with presets \texttt{lr:hqae} for R10 reads, \texttt{map-hifi} for HiFi reads, and \texttt{sr} for Illumina reads.
+We also tested the presets \texttt{map-ont} for R10 reads and \texttt{map-pb} and \texttt{lr:hqae} for HiFi reads, but we found that \texttt{map-hifi} was both faster and more accurate than the other presets (Tables \ref{tab:sup-hifi-sim} and \ref{tab:sup-hifi-real}), and \texttt{lr:hqae} was more than twice as fast and only slightly less accurate (Tables \ref{tab:sup-r10-sim} and \ref{tab:sup-r10-real}).
+
+Mapping correctness on simulated reads was determined using the reference annotations that were added when simulating the reads (Section \ref{subsec:sup-reads}).
+For linear mappers, the reads were mapped onto the linear reference genome and then projected onto the HPRC-filtered graph using \texttt{vg inject}.
+Read-to-graph alignments were annotated with reference positions using \texttt{vg annotate -m --search-limit=-1}.
+Correctness was found using \texttt{vg gamcompare --range 200}.
+This means that if an annotation on the read was within 200~bp of any reference annotation on the simulated read, then the read was counted as being correctly mapped.
+
+
+All analyses were run using Snakemake on a Slurm cluster.
+For accurately finding the runtime and memory use of each mapper, we ran these jobs with the \texttt{--exclusive} flag to ensure that they were run on a node with no other running jobs.
+These jobs were run on a machine with some specs that I need to find.
+All mappers were run with 64 threads.
+Graphaligner exceeded the time limit of our servers (5 days) in all conditions except when aligning R10 reads to the HPRC-minigraph graph, so it was re-run using 128 threads. 
+We were unable to finish running Graphaligner on the HPRC graph with the whole HiFi or R10 read sets, so this was done in chunks for the SV calling experiments and runtimes comparable to the other mappers are not available.
+
+%\subsection{DeepVariant training}
+%We trained a DeepVariant model for HiFi and R10 reads mapped using Giraffe.
+%We mapped sequencing reads from HG002, HG002, HG004, and NA12878 to the HPRC-filtered graph using Giraffe, then projected the reads onto GRCh38 with \texttt{vg surject}.
+
+\subsection{Structural variant calling and genotyping}
+\label{sec:sup-svs}
+Structural variant genotyping was run using a pipeline similar to that of \citet{hickey_vgsv_2020}.
+The coverage of the read alignments on the graph was computed using  \texttt{vg pack} with options \texttt{--min-mapq 5 --with-edits}
+Variants were called from the resulting read coverage file using options \texttt{--all-snarls --gbz --min-length 30}
+We then used \texttt{vcfbub} with options \texttt{-l 0 -a 100000} and \texttt{vcfwave} with options \texttt{-I 1000} to decompose nested variants \cite{garrison_vcflib_2022}.
+
+For structural variant calling against a liner genome, we used Sniffles version 2.5.3 \cite{sedlazeck_sniffles_2018,smolka_sniffles2_2024}.
+Sniffles was run with tandem repeat annotations from Pacific Biosciences \url{https://github.com/PacificBiosciences/pbsv/blob/master/annotations/human_chm13v2.0_maskedY_rCRS.trf.bed}.
+
+We ran these structural variant calling and genotyping pipelines on the same HG002 reads as used for small variant calling.
+We compared our structural variant calling and genotyping results to the Genome in a Bottle Consortium's \texttt{CHM13v2.0\_HG2-T2TQ100-V1.1} truth set.
+The truth VCF and BED files were accessed from \url{https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.018-20240716/}.
+
+We then used Truvari version 4.3.1 to benchmark the structural variant calls from \texttt{vg call} and Sniffles.
+Benchmarking was done using \texttt{truvari bench} with options \texttt{--pick ac --passonly -r 2000 -C 5000}, and \texttt{truvari refine} with options \texttt{--recount --use-region-coords --use-original-vcfs --align mafft/can}.
+Benchmarking was restricted to regions specified by the \texttt{svvar} BED file provided by GIAB.
+
+\section{Supplemental Tables}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|}
+    \hline
+    Reference          & Mapper                 & Correct         & Mapq60          & \# Wrong  \\
+                       &                        & (\%)            & (\%)            & Mapq60   \\
+    \hline
+    CHM13              & BWA-MEM                & 91.478          & 87.337         & 200 \\
+                       & Giraffe                & 92.128          & 90.451         & 530 \\
+                       & Minimap2               & 91.347          & 86.711         & 542 \\
+    HPRC-filtered      & Giraffe                & 92.048          & 90.088         & 342 \\
+    HPRC               & Giraffe sampled 16     & 91.995          & 89.945         & 304 \\
+                       & Giraffe sampled 2d     & 92.141          & 90.294         & 383 \\
+    \hline
+    \end{tabular}
+    \caption[Illumina mapping accuracy]{\textbf{Illumina mapping accuracy}. Mapping correctness and mapping quality statistics for 1 million simulated Illumina reads.}
+    \label{tab:sup-illumina-sim}
+\end{table}
+
+\begin{landscape}
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|}
+    \hline
+    Reference          & Mapper                 & Correct          & Mapq60          & \# Wrong            & Unmapped   \\
+                       &                        & (\%)             & (\%)            & Mapq60              & bases(\%) \\
+    \hline
+    CHM13              & Giraffe                & 92.553           & 90.553          & 264                  & 0.23185   \\
+                       & Minimap2-lr:hqae       & 92.578           & 93.668          & 2087                 & 0.33594  \\
+                       & Minimap2-map-hifi      & 92.604           & 93.062          & 1643                 & 0.24337    \\
+                       & Minimap2-map-pb        & 92.598           & 93.278          & 1681                 & 0.18934   \\
+                       & Winnowmap              & 92.577           & 96.983          & 5101                 & 0.24347     \\
+    HPRC-minigraph     & Graphaligner           & 92.343           & 99.333          & 8717                 & 0.22375     \\
+                       & Minigraph              & 91.585           & 90.795          & 7183                 & 3.97770     \\
+    HPRC-filtered      & Giraffe                & 92.703           & 90.891          & 156                  & 0.18407    \\
+                       & Graphaligner           & 92.637           & 99.181           & 5551                & 0.26325    \\
+    %HPRC-filtered      & Graphaligner-fast      & 92.646           & 99.061          & 5390                & 0.89964     \\
+    HPRC               & Giraffe                & 92.504           & 90.236          & 57                   & 0.14299  \\
+                       & Giraffe sampled16      & 92.650           & 90.791          & 113                  & 0.15220      \\
+                       & Giraffe sampled2d      & 92.655           & 90.949          & 173                  & 0.16563      \\
+    \hline
+    \end{tabular}
+    \caption[HiFi mapping accuracy]{\textbf{HiFi mapping accuracy}. Simulated HiFi read correctness, mapping quality, and percent of bases softclipped, hardclipped or unaligned in real HiFi reads.}
+    \label{tab:sup-hifi-sim}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|}
+    \hline
+    Reference          & Mapper                 & Correct          & Mapq60             & \# Wrong            & Unmapped   \\
+                       &                        & (\%)             & (\%)               & Mapq60              & bases(\%) \\
+    \hline
+    CHM13              & Giraffe                & 92.596      & 94.359      & 2412      & 1.47495  \\
+                       & Minimap2-lr:hqae       & 92.634      & 93.701      & 2379      & 2.83920   \\
+                       & Minimap2-map-ont       & 92.667      & 93.070      & 1854      & 2.27384   \\
+                       & Winnowmap              & 92.645      & 95.481      & 3395      & 2.86996   \\
+    HPRC-minigraph     & Graphaligner           & 92.279      & 98.989      & 9316      & 4.67055  \\
+                       & Minigraph              & 91.237      & 91.054      & 10975     & 5.34057   \\
+    HPRC-filtered      & Giraffe                & 92.738      & 94.125      & 1537      & 1.47336  \\
+                       & Graphaligner           & 92.576      & 98.829      & 6125      & 4.80770 \\
+    HPRC               & Giraffe                & 92.504      & 93.694      & 1798      & 1.55518 \\
+                       & Giraffe sampled 16     & 92.675      & 94.056      & 1640      & 1.45798  \\
+                       & Giraffe sampled 2d     & 92.716      & 94.249      & 1661      & 1.43484  \\
+    \hline
+    \end{tabular}
+    \caption[R10 mapping accuracy]{\textbf{R10 mapping accuracy}. Simulated R10 read correctness, mapping quality, and percent of bases softclipped, hardclipped or unaligned in real R10 reads.}
+    \label{tab:sup-r10-sim}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|}
+    \hline
+    Graph	        & Mapper               & Runtime (min)	 & Index time (min)	        & Memory(GB)	\\
+                    &                      &                 & (+ Sampling (min))       &    \\
+    \hline
+    CHM13           & BWA-MEM              & 239.10          & N/A                      & 18.21 \\
+                    & Giraffe              & 80.25           & 1.17                     & 45.15 \\
+                    & Minimap2             & 97.50           & 0.27                     & 13.39 \\
+    HPRC-filtered   & Giraffe,             & 134.18          & 1.59                     & 55.47 \\
+    HPRC            & Giraffe sampled 16   & 143.22          & 1.52 + 6.28              & 54.61 \\
+                    & Giraffe sampled 2d   & 111.05          & 1.76 + 6.28              & 52.17 \\
+    \hline
+    \end{tabular}
+    \caption[Illumina real mapping statistics]{\textbf{Mapping statistics for real Illumina reads}. Real Illumina read set was mapped to various linear and graph references. Giraffe was run against the graphs directly, or using a haplotype sampling pipeline sampling 16 haplotypes or 2 haplotypes in diploid mode. The time for haplotype sampling is reported separately from the time for index loading and building. BWA-MEM does not report the time used for indexing. Runtime includes the time for indexing and haplotype sampling. }
+    \label{tab:sup-illumina-real}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{threeparttable}
+    \begin{tabular}{|l|l|r|r|r|r|r|}
+
+    \hline
+    Graph	             & Mapper	                     & Runtime (min)	& Index time (min)	        & Memory(GB)	\\
+                         &                               &                  & (+ Sampling (min))       &    \\
+    \hline
+    CHM13	             & Giraffe	                     & 146.5	         & 0.939	        & 41.20	 \\
+                         & Minimap2-lr:hqae	            & 191.7	            & 0.077            & 29.65	\\
+                         & Minimap2-map-hifi	            & 87.4	            & 0.233	           & 40.11	\\
+                         & Minimap2-map-pb	            & 117.5	            & 0.104	           & 31.68	\\
+                         & Winnowmap	                    & 862.3	            & 2.679	           & 82.28	\\
+    HPRC-minigraph       & Graphaligner\tnote{*}                 & 6,413.1	         & N/A              & 38.20	 \\
+                         & Minigraph	                    & 201.95	        & 2.254	           & 32.95	\\
+    HPRC-filtered	     & Giraffe	                     & 140.35	         & 2.390	        & 80.22	 \\
+                         & Graphaligner\tnote{*}                 & 7,481.7	        & N/A	           & 75.59	\\ 
+    HPRC                 & Giraffe	                     & 497.8	         & 13.450	        & 288.54 \\
+                         & Giraffe sampled 16	        & 306.5	            & 1.961 + 23.85    & 205.21	\\
+                         & Giraffe sampled 2d	        & 209.5	            & 1.753 + 25.37    & 155.89	\\
+    
+    \hline
+    \end{tabular}
+    \begin{tablenotes}
+        \item [*] Graphaligner was run with 128 threads. All other mappers used 64 threads.
+    \end{tablenotes}
+    \end{threeparttable}
+    \caption[HiFi real read stats]{\textbf{Mapping statistics for real HiFi reads}. Real HiFi read set was mapped to various linear and graph references. Minimap2 was run with three different settings: \texttt{lr:hqae}, \texttt{map-hifi}, and \texttt{map-pb}. Giraffe was run against the graphs directly, or using a haplotype sampling pipeline sampling 16 haplotypes or 2 haplotypes in diploid mode. The time for haplotype sampling is reported separately from the time for index loading and building. Graphaligner does not report the time used for indexing. Runtime includes the time for indexing and haplotype sampling.}
+    \label{tab:sup-hifi-real}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{threeparttable}
+    \begin{tabular}{|l|l|r|r|r|r|r|}
+
+    \hline
+    Reference            & Mapper	                     & Runtime (min)	& Index time (min)	       & Memory(GB)	\\
+                         &                               &                  & (+ Sampling (min))       &    \\
+    \hline
+    CHM13                & Giraffe                       & 219.37           & 0.47                     & 196.42   \\
+                         & Minimap2-lr:hqae              & 173.02           & 0.08                     & 22.27   \\
+                         & Minimap2-map-ont              & 646.53           & 0.13                     & 31.72   \\
+                         & Winnowmap                     & 1,338.33         & 2.68                     & 47.77   \\
+    HPRC-minigraph       & Minigraph                     & 657.08           & 2.29                     & 39.08   \\
+                         & Graphaligner                 & 5,946.63         & N/A                      & 76.24   \\
+    HPRC-filtered        & Giraffe                       & 221.72           & 3.42                     & 232.10   \\
+                         & Graphaligner\tnote{*}                 & 2,756.90         & N/A                      & 180.82   \\
+    HPRC                 & Giraffe                       & 680.90           & 10.12                    & 511.77   \\
+                         & Giraffe sampled 16            & 272.65           & 2.27 + 28.98             & 423.38   \\
+                         & Giraffe sampled 2d            & 173.87           & 0.74 + 24.30             & 263.60   \\
+
+    
+    \hline
+    \end{tabular}
+    \begin{tablenotes}
+        \item [*] Graphaligner was run using 128 threads. All other mappers used 64 threads.
+    \end{tablenotes}
+    \end{threeparttable}
+    \caption[R10 real read stats]{\textbf{Mapping statistics for real R10 reads}. Real R10 read set was mapped to various linear and graph references. Minimap2 was run with three different settings: \texttt{lr:hqae}, and \texttt{map-ont}. Giraffe was run against the graphs directly, or using a haplotype sampling pipeline sampling 16 haplotypes or 2 haplotypes in diploid mode. The time for haplotype sampling is reported separately from the time for index loading and building. Graphaligner does not report the time used for indexing. Runtime includes the time for indexing and haplotype sampling.}
+    \label{tab:sup-r10-real}
+    
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|r|r|}
+        \hline
+        Reference         & Mapper               & TP          & FN          & FP         & Recall      & Precision   & F1 \\
+        \hline
+        CHM13             & Minimap2-lr:hqae     & 3366,440     & 20,636     & 14,927     & 0.99391     & 0.99557     & 0.99474 \\
+                          & Minimap2-map-hifi    & 3368,080     & 18,268     & 14,453     & 0.99461     & 0.99573     & 0.99517 \\
+                          & Minimap2-map-pb      & 3365,376     & 21,703     & 14,882     & 0.99359     & 0.99557     & 0.99458 \\
+        HPRC-filtered     & Giraffe              & 3363,785     & 23,230     & 9,157      & 0.99314     & 0.99728     & 0.99521 \\
+        HPRC              & Giraffe sampled16    & 3364,296     & 22,815     & 9,451      & 0.99326     & 0.99719     & 0.99523 \\
+                          & Giraffe sampled2d    & 3363,577     & 23,527     & 9,475      & 0.99305     & 0.99719     & 0.99512 \\
+        \hline
+    \end{tabular}
+    \caption[DeepVariant SNP HiFi results]{\textbf{DeepVariant SNP calling results with HiFi reads}}
+    \label{tab:dv_snp_hifi}
+\end{table}
+
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|r|r|}
+        \hline
+        Reference         & Mapper               & TP          & FN          & FP         & Recall      & Precision   & F1 \\
+        \hline
+        CHM13             & Minimap2-lr:hqae     & 3344,515     & 42,610     & 19,831     & 0.98742     & 0.99409     & 0.99074 \\
+                          & Minimap2-map-ont     & 3346,037     & 41,083     & 19,758     & 0.98787     & 0.99411     & 0.99098 \\
+        HPRC-filtered     & Giraffe              & 3348,287     & 38,749     & 17,888     & 0.98856     & 0.99468     & 0.99161 \\
+        HPRC              & Giraffe sampled16    & 3348,185     & 38,877     & 17,788     & 0.98852     & 0.99471     & 0.99161 \\
+                          & Giraffe sampled2d    & 3347,833     & 39,317     & 17,549     & 0.98839     & 0.99478     & 0.99158 \\
+        \hline
+    \end{tabular}
+    \caption[DeepVariant SNP R10 results]{\textbf{DeepVariant SNP calling results with R10 reads}}
+    \label{tab:dv_snp_r10}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|r|r|}
+        \hline
+        Reference         & Mapper               & TP          & FN         & FP         & Recall      & Precision   & F1 \\
+        \hline
+        CHM13             & Minimap2-lr:hqae     & 848,282     & 34,756     & 15,939     & 0.96064     & 0.98146     & 0.97094 \\
+                          & Minimap2-map-hifi    & 848,386     & 34,445     & 12,465     & 0.96098     & 0.98514     & 0.97291 \\
+                          & Minimap2-map-pb      & 847,548     & 35,490     & 17,489     & 0.95981     & 0.97993     & 0.96977 \\
+        HPRC-filtered     & Giraffe              & 843,992     & 39,039     & 14,111     & 0.95579     & 0.98323     & 0.96931 \\
+        HPRC              & Giraffe sampled16    & 844,586     & 38,463     & 13,773     & 0.95644     & 0.98364     & 0.96985 \\
+                          & Giraffe sampled2d    & 843,745     & 39,302     & 14,108     & 0.95549     & 0.98323     & 0.96916 \\
+        \hline
+    \end{tabular}
+    \caption[DeepVariant indel HiFi results]{\textbf{DeepVariant indel calling results with HiFi reads}}
+    \label{tab:dv_indel_hifi}
+\end{table}
+
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|r|r|r|r|r|r|}
+        \hline
+        Reference         & Mapper               & TP          & FN          & FP         & Recall      & Precision   & F1 \\
+        \hline
+        CHM13             & Minimap2-lr:hqae     & 557,483     & 325,576     & 95,027     & 0.63131     & 0.85628     & 0.72678 \\
+                          & Minimap2-map-ont     & 557,576     & 325,481     & 95,076     & 0.63142     & 0.85622     & 0.72683 \\
+        HPRC-filtered     & Giraffe              & 557,389     & 325,648     & 89,817     & 0.63122     & 0.86117     & 0.72848 \\
+        HPRC              & Giraffe sampled16    & 558,026     & 325,009     & 89,568     & 0.63194     & 0.86169     & 0.72914 \\
+                          & Giraffe sampled2d    & 557,079     & 325,980     & 89,399     & 0.63085     & 0.86169     & 0.72842 \\
+
+        \hline
+    \end{tabular}
+    \caption[DeepVariant indel R10 results]{\textbf{DeepVariant indel calling results with R10 reads}}
+    \label{tab:dv_indel_r10}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|l|r|r|r|r|r|r|}
+        \hline
+        Reference       & Caller        & Mapper                & TP           & FN          & FP       & recall       & precision       & F1 \\
+        \hline
+        CHM13           & Sniffles2     & Minimap2-lr:hqae      & 16,670       & 2,071       & 235      & 0.88949      & 0.98527       & 0.93493 \\
+                        &               & Minimap2-map-hifi     & 17,641       & 1,225       & 337      & 0.93507      & 0.98009       & 0.95705 \\
+                        &               & Minimap2-map-pb       & 17,514       & 1,489       & 399      & 0.92164      & 0.97634       & 0.94820 \\
+        HPRC            & vg call       & Giraffe              & 18,356       & 704         & 1,666    & 0.96306      & 0.91629       & 0.93910 \\
+                        &               & Giraffe sampled 16   & 18,561       & 831         & 1,004    & 0.95715      & 0.94794       & 0.95252 \\
+                        &               & Giraffe sampled 2d   & 16,945       & 1,666       & 788      & 0.91048      & 0.95440       & 0.93193 \\
+                        &               & Graphaligner         & 18,312       & 614         & 2,124    & 0.96756      & 0.89565       & 0.93022 \\
+        \hline
+    \end{tabular}
+    \caption[SV HiFi results]{\textbf{Structural variant calling/genotpying results with HiFi reads.} Structural variants were called using Sniffles2 with Minimap2 using various presets. Structural variants were genotyped on the HPRC graph using \texttt{vg call} using graph mappers Giraffe and Graphaligner. }
+    \label{tab:sv_hifi}
+\end{table}
+
+\begin{table}[htb]
+    \centering
+    \begin{tabular}{|l|l|l|r|r|r|r|r|r|}
+        \hline
+        Reference   & Caller /       & Mapper                & TP           & FN          & FP        & recall        & precision     & F1 \\
+                    & Genotyper   &                       &              &             &           &               &               & \\
+        \hline
+        CHM13       & Sniffles2     & Minimap2-lr:hqae      & 17,058       & 1,631       & 161       & 0.91273       & 0.99005       & 0.94982 \\
+                    &               & Minimap2-map-ont      & 17,223       & 1,461       & 699       & 0.92180       & 0.95856       & 0.93983 \\
+        HPRC        & vg call       & Giraffe               & 18,580       & 605         & 1,891     & 0.96847       & 0.90726       & 0.93687 \\
+                    &               & Giraffe sampled 16    & 18,651       & 753         & 1,223     & 0.96119       & 0.93758       & 0.94924 \\
+                    &               & Giraffe sampled 2d    & 16,675       & 2,026       & 903       & 0.89166       & 0.94693       & 0.91847 \\
+                    &               & Graphaligner          & 18,527       & 623         & 2,230     & 0.96747       & 0.89219       & 0.92830 \\ 
+        \hline
+    \end{tabular}
+    \caption[SV R10 results]{\textbf{Structural variant calling/genotpying results with R10 reads.} Structural variants were called using Sniffles2 with Minimap2 using various presets. Structural variants were genotyped on the HPRC graph using \texttt{vg call} using graph mappers Giraffe and Graphaligner.}
+    \label{tab:sv_r10}
+\end{table}
+\end{landscape}
+
+\section{Supplemental Figures}
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=0.8\linewidth]{lr_roc_illumina.pdf}
+    \caption[Illumina ROC]{ROC plot of 1 million simulated Illumina reads.}
+    \label{fig:roc-illumina}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{lr_rocs.pdf}
+    \caption[HiFi and R10 ROCs]{ROC plot of 1 million simulated HiFi (A) and R10 (B) reads.}
+    \label{fig:roc_hifi_r10}
+\end{figure}
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{lr_qq_plots.pdf}
+    \caption[HiFi and R10 QQ plot]{QQ plot for 1 million simulated HiFi (A) and R10 (B) reads.}
+    \label{fig:qq_hifi_r10}
+\end{figure}
+
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3506,7 +4389,8 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 % this makes the bibliography single spaced, with double spacing between entries
 \def\baselinestretch{1.0}\large\normalsize
 
-\bibliographystyle{plain}
+%\bibliographystyle{plain}
+\bibliographystyle{plainnat}
 \bibliography{xian_chang_thesis}
 
 \end{document}
