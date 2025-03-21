@@ -4063,7 +4063,6 @@ This means that if an annotation on the read was within 200~bp of any reference 
 
 All analyses were run using Snakemake on a Slurm cluster.
 For accurately finding the runtime and memory use of each mapper, we ran these jobs with the \texttt{--exclusive} flag to ensure that they were run on a node with no other running jobs.
-These jobs were run on a machine with some specs that I need to find.
 All mappers were run with 64 threads.
 Graphaligner exceeded the time limit of our servers (5 days) in all conditions except when aligning R10 reads to the HPRC-minigraph graph, so it was re-run using 128 threads. 
 We were unable to finish running Graphaligner on the HPRC graph with the whole HiFi or R10 read sets, so this was done in chunks for the SV calling experiments and runtimes comparable to the other mappers are not available.
