@@ -195,8 +195,9 @@ The current reference genome, GRCh38, has built on the initial assembly by closi
 However, there are still nearly 160 million base pairs of gaps in the GRCh38 assembly that remain unsequenced, as well as additional sequences that are erroneous, falsely duplicated, or artificially generated \cite{schneider_evaluation_2017,nurk_complete_2022}.
 Furthermore, $93\%$ of the sequence in GRCh38 is derived from just eleven individuals and about $70\%$ is derived from a single individual.
 
-Many of these problems are improved upon in the recent CHM13 assembly, the first complete sequence of a human genome \cite{nurk_complete_2022}.
-Unlike the GRCh38 assembly, CHM13 is the sequence of a single individual (a haploid hydatidiform mole) and includes the $8\%$ of the genome that remained unsequenced in GRCh38 \cite{nurk_complete_2022}.
+Many of these problems are improved upon in the recent CHM13 assembly, to date the most complete sequence of a human genome \cite{nurk_complete_2022}.
+Unlike the GRCh38 assembly, CHM13 is the sequence of a single individual (a haploid hydatidiform mole) and includes the $8\%$ of the genome that remained unsequenced in GRCh38, missing only rDNA arrays which were included as simulated sequences \cite{nurk_complete_2022}.
+\citet{taylor_beyond_2024} outlines many of the scientific advances made possible by this more complete reference sequence.
 Despite these recent improvements, both CHM13 and GRCh38 have the fundamental problem that they represent just one haploid sequence.
 Although the GRCh38 assembly contains some alternate loci, these are limited to 176 genomic regions \cite{schneider_evaluation_2017} and it is still essentially a linear genome.
 
@@ -221,7 +222,7 @@ There have been many proposals for how a reference can accomplish this.
 Rather than using a linear reference that is a mosaic of several individuals, such as GRCh38, the reference could be an ancestral genome that contains the most recent common ancestral allele at each locus, or a consensus genome that contains the most common allele at each locus \cite{ballouz_is_2019}.
 Another alternative is to use a national or ethnic genome to represent a specific population \cite{ballouz_is_2019,chinese_national_genome_2023,korean_national_genome_2016,vietnamese_national_genome_2015,danish_national_genome_2015,swedish_national_genome_2018,kowal_race_2019}.
 But while a population-specific reference may better capture variants that are frequent in that population, the benefit of such a reference will be minimal.
-Most human genetic variation occurs across populations, rather than within populations \cite{nih_understanding_2007}, meaning that even when using a population-specific reference, the majority of the genome will still be subject to the same reference bias as would stem from using any randomly selected reference genome. 
+Most human genetic variations occur across populations, rather than being specific to individual populations \cite{nih_understanding_2007}, meaning that even when using a population-specific reference, the majority of the genome will still be subject to the same reference bias as would stem from using any randomly selected reference genome. 
 %Furthermore, most human genetic variations are rare so no single reference scaffold will be able to represent all people equally. 
 
 \section{Towards a human reference pangenome}
@@ -253,7 +254,7 @@ The term "third-generation sequencing" is generally associated with long read, s
 Sequencing is performed on individual molecules of DNA, without a separate amplification step \cite{sequencing_review_2016}.
 Currently, the two predominant long read sequencing technologies are single-molecule real-time (SMRT) sequencing and nanopore sequencing \cite{lr_review_2023}.
 Pacific Biosciences' (PacBio) SMRT sequencing-based High Fidelity (HiFi) reads are between 10 and 25~kbp long with accuracy of up to 99.95\% \cite{pacbio_2019,lr_review_2023}.
-Nanopore sequencing machines from Oxford Nanopore Technologies can produce sequencing reads on the order of 10-100~kbp in length, and up to 882~kbp \cite{nanopore_ultralong_2018}, with accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
+Nanopore sequencing machines from Oxford Nanopore Technologies can produce sequencing reads on the order of 10-100~kbp in length, and up to 1~mbp \cite{nanopore_ultralong_2018}, with accuracy of over 99\% \cite{nanopore-fly-accuracy_2024, damaraju_long-read_2024}.
 
 Some sequencing technologies can also capture information from the genome beyond the nucleotide sequence.
 Nanopores are capable of detecting DNA base modifications such as methylation \cite{wang_nanopore_2021}. 
@@ -280,6 +281,7 @@ Advancements in sequencing technologies have driven improvements in the genome a
 Modern long read assembly algorithms are capable of resolving repetitive and complex regions of the genome and can produce higher quality and more contiguous assemblies than short read methods \cite{cheng_hifiasm_2021,rautiainen_verkko_2023,shafin_shasta_2020}.
 Haplotype phasing, the problem of distinguishing between the maternal and paternal haplotype, can be done using chromosome conformation capture reads, ultra-long nanopore reads, or sequencing data from the parents \cite{cheng_hifiasm_2021}.
 The cost of sequencing and assembling a high-quality phased human genome using these methods was recently estimated to be between ten and fifteen thousand dollars \cite{miga_envisioning_2023}.
+\citet{li_assembly_2024} outlines recent advances in the field of genome assembly.
 
 \subsection{Surveys of human genetic variation}
 
@@ -319,7 +321,8 @@ These population-specific efforts aim to improve understanding of genetic varian
 \end{figure}
 
 The sequence content of a human pangenome can easily reach hundreds of billions of base pairs and compact data structures are needed to efficiently represent all of the sequences and the relationships among them. 
-A popular method of representing pangenome is with sequence graphs (Figure \ref{fig:example_graph} A).
+\citet{eizenga_pangenome_2020} reviews several methods for representing pangenomes using graph structures.
+In this dissertation, I will build upon methods that use sequence graph and variation graph representations of pangenomes \cite{garrison_vg_2018} (Figure \ref{fig:example_graph} A).
 Nodes in a sequence graph are labeled with nucleotide sequences and longer sequences can be encoded as paths through the graph.
 Divergences in the graph represent variations in the sequences.
 
@@ -464,7 +467,7 @@ For a scheme to be effective for seeding alignments, it must sparsely sample the
 Minimizers are used by several mappers as a method for selecting $k$-mers.
 A minimizer scheme is defined by two parameters, $k$ and $w$, and a function $f$ that determines an ordering of the $k$-mers.
 Within a window of $w$ consecutive $k$-mers, the minimizer is the $k$-mer with the lowest value according to $f$.
-Commonly used ordering function include lexicographic order, random hash functions, and other functions optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
+Commonly used ordering functions include lexicographic order, random hash functions, and other functions optimized to improve the density of minimizers in the reference \cite{zheng_minimizers_2020,marcais_minimizers_2018}.
 A minimizer index stores the locations of minimizers from all windows in a sequence.
 If two sequences share a subsequence of length at least $w+k-1$, then they are guaranteed to share a minimizer.
 
@@ -486,7 +489,7 @@ Similarly, strobemers are used to find seeds across indels by linking multiple $
 
 \subsubsection{Text indexes}
 
-Text indexes provide two basic operations: counting occurrences of a substring within in a template string and locating their positions.
+Text indexes provide two basic operations: counting occurrences of a substring within a template string and locating their positions.
 Suffix tries, suffix trees, and suffix arrays are data structures that index all suffixes of a template string \cite{li_survey_2010}.
 Because any substring of a template string must be a prefix of one of its suffixes, these suffix indexes can be used to find exact matches in a simple linear search.
 Suffix trees and suffix arrays have memory costs linear in the size of the template and support locate queries in time linear in the length of the query.
@@ -528,7 +531,7 @@ Others groups seeds by chaining or clustering and evaluate groups of seeds toget
 Clustering techniques partition seeds into groups that are near each other on the reference or that are on the same diagonal line in the alignment matrix between the read and reference, in order to identify groups of seeds arising from the same alignment to the reference.
 
 Some mappers, particularly long read mappers, use a chaining step in addition to or instead of clustering \cite{sahlin_survey_2023}.
-The goal of chaining is to produce optimal sets of co-linear seeds, meaning that the seed occur in the same order in the read and the reference.
+The goal of chaining is to produce optimal sets of co-linear seeds, meaning that the seeds occur in the same order in the read and the reference.
 Chains provide more information than clusters and they are particularly useful for long reads because alignment can be done between consecutive seeds in the chain, instead of out from individual seeds.
 Chaining can be solved using a dynamic programming approach to optimize a chain scoring function.
 As a representative example used by many mappers, Minimap2 defines the score for a chain ending at the $i^{th}$ seed as follows \cite{minimap2_2021}:
@@ -1285,10 +1288,10 @@ These heuristics are configurable, and we present two presets: default Giraffe (
 
 \subsection{Pangenome references for evaluation}
 To evaluate Giraffe, we built two human genome reference graphs based on the GRCh38 reference assembly.
-One (the 1000GP graph) contained mostly small [<50 base pairs (bp)] variants from the 1000 Genomes Project \cite{1000gp_2015}.
+One (the 1000GP graph) contained mostly small [$<50$ base pairs (bp)] variants from the 1000 Genomes Project \cite{1000gp_2015}.
 The other (the HGSVC graph) contained entirely SVs ($\geq$50 bp) from the Human Genome Structural Variant Consortium \cite{chaisson_sv_2019}.
 The 1000GP graph contained data from 2503 individuals, with one (NA19239) held out for benchmarking.
-It was built from 76,749,431 SNVs; 3,177,111 small indels (<50 bp); and 181 larger SVs ($/geq$50 bp).
+It was built from 76,749,431 SNVs; 3,177,111 small indels ($<50$ bp); and 181 larger SVs ($\geq$50 bp).
 The HGSVC graph contained data from three individuals sequenced with long reads: HG00514, HG00733, and NA19240.
 The HGSVC graph contained 78,106 larger SVs ($\leq$50 bp). Both graphs are available for reuse (see Data and materials availability in the Acknowledgments).
 
@@ -1406,7 +1409,7 @@ The MESA cohort is a longitudinal cohort study consisting of 6814 participants a
 Participants were ascertained from six sites in the United States and identified themselves as “Spanish/Hispanic/Latino” (22$\%$ at baseline) and/or “African American or Black” (28$\%$), “Chinese” (12$\%$), and “Caucasian or White” (39$\%$) \cite{mesa_2008}. Two-thousand samples from the MESA cohort \cite{mesa_2008} were selected, using a criterion to maximize the sample diversity (Section \ref{subsec:aim2:mesaselection}).
 Using the graph described above and fast Giraffe, it took around 4 days to genotype 2000 samples from the MESA cohort.
 We used the same workflow to genotype the 3202 diverse samples from the high-coverage 1000GP dataset \cite{1000gp_nygc_2021} in around 6 days.
-On average, genotyping a sample took 194.4 central processing unit (CPU)–hours of compute and cost between $1.11 and $1.56 (Figure \ref{fig:sv-wdl-graph}D, Tables \ref{tab:svwdl-corehours} and \ref{tab:svwdl-task}).
+On average, genotyping a sample took 194.4 central processing unit (CPU)–hours of compute and cost between $1.11$ and $1.56$ (Figure \ref{fig:sv-wdl-graph}D, Tables \ref{tab:svwdl-corehours} and \ref{tab:svwdl-task}).
 The sequencing data were down-sampled in advance to $\sim$20× coverage to reduce compute costs.
 Benchmarking indicates that this down-sampling has a minimal impact on the genotyping accuracy (Figure \ref{fig:sveval-depth}).
 
@@ -1460,7 +1463,7 @@ The other alleles at these sites are either rare or erroneous.
 In either case, it is useful to identify the major alleles.
 In 7520 SV sites, only one allele was called in more than $1\%$ of the population, whereas other alleles from the original catalogs were not.
 Further, the major allele was at least three times more frequent than the second most frequent allele in 6175 of these sites (Figure \ref{fig:svsites_mesa}B).
-As a quality control, we verified that these alleles were more likely to match exactly with the alleles in the GIAB truth set \cite{zook_robust_2020}, which is the SV catalog with the highest base-level confidence [permutation p < 0.0001; Section \ref{subsec:aim2:svfinetuning}].
+As a quality control, we verified that these alleles were more likely to match exactly with the alleles in the GIAB truth set \cite{zook_robust_2020}, which is the SV catalog with the highest base-level confidence [permutation $p < 0.0001$; Section \ref{subsec:aim2:svfinetuning}].
 Our results thus help fine-tune the sequence resolution of these SVs.
 More generally, our results identify one major allele for 39,699 multiallelic SV sites.
 
@@ -1672,10 +1675,13 @@ Data in dbGaP can be downloaded by controlled access with an approved applicatio
 \chapter{Long read mapping}
 \label{chapter:lr-giraffe}
 \section{Preface}
-This section contains the text of my pre-print "".
-Adam Novak and I are co-first authors.
+This section contains the body of my manuscript "Short and long read mapping to pangenomes with vg Giraffe".
+The supplementary material for this manuscript can be found in the Appendix, Section \ref{sec:appendix_lr_giraffe}.
+I am first author of this paper along with Adam Novak and Jouni Sirén.
 I implemented the zip code tree, optimized Giraffe for structural variant calling, produced results and figures, and contributed to the overall implementation and optimization of Giraffe.
 Adam Novak implemented the chaining algorithm, optimized Giraffe for small variant calling, implemented the original testing harness, and contributed to the overall implementation and optimization of Giraffe.
+Jouni Sirén implemented the wave-front algorithm to align to haplotypes.
+
 \section{Abstract}
 
 We previously introduced Giraffe, a short-read-to-pangenome graph mapper. 
@@ -1773,24 +1779,24 @@ The two boundary node sides are minimal if no other node side within the subgrap
 Snarls often occur consecutively, with boundaries on opposite sides of shared nodes between them.
 A run of consecutive snarls and nodes is called a chain.
 Chains can also be nested within snarls to represent nested variations, such as a SNP that occurs within an insertion.
-The decomposition of the graph into nested snarls and chains is described by a snarl tree (Figure \ref{fig:algorithm_overview} A). 
+The decomposition of the graph into nested snarls and chains is described by a snarl tree (Figure \ref{fig:lr_algorithm_overview} A). 
 
 \subsection{Giraffe algorithm overview}
 
-The long read Giraffe algorithm follows the common seed-chain-extend framework \citep{sahlin_survey_2023} for mapping algorithms (Figure \ref{fig:algorithm_overview}).
-As in the original short read algorithm, long read Giraffe uses a minimizer index of the haplotypes of the GBWT to find seed alignments (Figure \ref{fig:algorithm_overview} B).
+The long read Giraffe algorithm follows the common seed-chain-extend framework \citep{sahlin_survey_2023} for mapping algorithms (Figure \ref{fig:lr_algorithm_overview}).
+As in the original short read algorithm, long read Giraffe uses a minimizer index of the haplotypes of the GBWT to find seed alignments (Figure \ref{fig:lr_algorithm_overview} B).
 For long reads, we use weighted minimizers that prioritize those with fewer occurrences in the graph and added a filter to skip minimizers with too many occurrences (Section \ref{sec:sup-seeding}). 
 
-The seeds are then chained together (Figure \ref{fig:algorithm_overview}D, Section \ref{sec:sup-chaining}).
+The seeds are then chained together (Figure \ref{fig:lr_algorithm_overview}D, Section \ref{sec:sup-chaining}).
 A chain is an ordered set of seeds that are co-linear in the read and the reference graph.
 In a graph context, this means that each seed must be reachable from the previous seed.
 Giraffe tries to find optimal chains that maximize the coverage in the read and minimize the expected cost of the gap (the difference between the distance between the seeds in the read and the graph) that will be taken between consecutive seeds. 
 We use a gap cost based on that of Minimap2 \cite{minimap2_2021}.
-To efficiently calculate reachability and distance in a graph, we use a novel data structure called a \emph{zip code tree} that represents distances among a set of seeds (Figure \ref{fig:algorithm_overview} C).
+To efficiently calculate reachability and distance in a graph, we use a novel data structure called a \emph{zip code tree} that represents distances among a set of seeds (Figure \ref{fig:lr_algorithm_overview} C).
 The zip code tree approximates a placement of seeds in an unrolled, acyclic view of the reference graph, providing a partial ordering of seeds that can be used to find distances for chaining (Figure \ref{fig:ziptree-methods}, Section \ref{sec:sup-ziptrees}).
 
 Finally, a chain of seeds is extended into an alignment between the read and the graph.
-Base-level alignment is done between consecutive seeds in the chain and out from the first and last seeds (Figure \ref{fig:algorithm_overview}E, Section \ref{sec:sup-aligning}).
+Base-level alignment is done between consecutive seeds in the chain and out from the first and last seeds (Figure \ref{fig:lr_algorithm_overview}E, Section \ref{sec:sup-aligning}).
 We use a fast wave-front algorithm \citep{marco-sola_fast_wfa_2021,eizenga_wfa_2022,marco-sola_wfa_2023} for aligning substrings of the read to the haplotype sequences in the graph, both for between-seed alignment and anchored tail alignment.  
 If this algorithm fails to find an alignment or is predicted to use too much memory, we align to the graph itself using a banded global aligner for aligning between seeds and a SIMD-accelerated X-drop aligner (called Dozeu) for aligning tails.
 These algorithms limit the size of the dynamic programming band to constrain the amount of time and memory used.
@@ -1800,7 +1806,7 @@ These algorithms limit the size of the dynamic programming band to constrain the
     \includegraphics[width=\columnwidth]{lr_giraffe_algorithm_overview.pdf}
     \caption[Overview of the long read Giraffe algorithm]{\textbf{Overview of the long read Giraffe algorithm.} (A) The inputs to the algorithm: the query read and the reference variation graph with its corresponding snarl tree. Rectangles in the snarl tree represent chains and ovals represent snarls. Chains on the snarl tree are colored according to their node children. Nodes are not shown on the snarl tree.
     (B) Seeds are found using a minimizer index. Arrows on the read and reference graph represent seed alignments. (C) A zip code tree is constructed to represent the connectivity between seeds on the graph using snarl tree relationships. Nodes in the zip code tree represent either a seed on the graph or the boundary of a snarl or chain containing a seed. Edges connect adjacent seeds and boundaries and are labeled with minimum distances from the variation graph. Distances between seeds in the graph can be calculated in a traversal of the zip code tree. (D) Co-linear chaining is done by dynamic programming over the seeds to maximize the coverage over the read and minimize the gap cost of consecutive seeds. The cost of a gap between seeds is found using read distances from the read and graph distances found from a traversal of the zip code tree in (C). (E) Base-level alignment is done between adjacent seeds in a chain, and out from the first and last seeds to produce the full-length alignment. }
-    \label{fig:algorithm_overview}
+    \label{fig:lr_algorithm_overview}
 \end{figure}
 
 \section{Results}
@@ -3754,7 +3760,7 @@ The p-values were corrected for multiple testing using the Benjamini-Hochberg me
 \chapter{Supplementary materials for long read Giraffe}
 \label{sec:appendix_lr_giraffe}
 \section{Preface}
-This section contains the supplement of long read Giraffe preprint in Chapter \ref{chapter:lr-giraffe}).
+This section contains the supplement of long read Giraffe manuscript in Chapter \ref{chapter:lr-giraffe}).
 
 \section{Seeding}
 \label{sec:sup-seeding}
@@ -3777,9 +3783,9 @@ The length of the sliding window is the minimum of the \emph{downsample-window-l
 
 To support graph distance queries for chaining, we introduce a new data structure called a \emph{zip code tree} that represents graph distances among a set of seeds.
 Zip code trees are organized using the snarl decomposition of the graph.
-Each node in the zip code tree represents the position of a seed in the graph or the boundary of a snarl or chain containing a seed (Figure \ref{fig:algorithm_overview}C).
+Each node in the zip code tree represents the position of a seed in the graph or the boundary of a snarl or chain containing a seed (Figure \ref{fig:lr_algorithm_overview}C).
 Edges occur between zip code tree nodes that are adjacent or siblings in the snarl tree; edges are labeled with graph minimum distances between the structures they represent.
-The distances between seeds can be found by walking through the zip code tree (Figure \ref{fig:algorithm_overview}D).
+The distances between seeds can be found by walking through the zip code tree (Figure \ref{fig:lr_algorithm_overview}D).
 
 Zip code trees are stored as a single vector of nodes and edges.
 Nodes and edges therefore have a fixed orientation in the zip code tree, which may not match that of the original graph.
@@ -3851,7 +3857,7 @@ However, in practice, this has not happened.
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{zip_tree_construction.pdf}
-    \caption[Zip code trees]{\textbf{Zip code trees.} (A) A sequencing read, variation graph, snarl tree, and zip code tree from Figure \ref{fig:algorithm_overview}. Arrows on the variation graph and read represent seed alignments. Rectangular nodes in the snarl tree represent chains and round nodes represent snarls. Chains are colored by the nodes in the chain they represent on the graph. For simplicity, the snarl tree does not represent nodes, which are children of chains. Nodes in the zip code tree represent either seeds (arrows) or the start or end bounds of snarls and chains. The bounds are colored and shaped like the snarl tree nodes they represent. (B) The representation of the top-level chain (grey) in the variation graph, snarl tree, and zip code tree. The chain has five children: two snarls and three nodes, one of which has a seed on it. The zip code tree representation of the chain contains the start and end of the chain, all snarls that contain seeds, and all seeds on node children of the chain. (C) The representation of a snarl in the graph, snarl tree, and zip code tree. The light green snarl has two children: the blue chain and the green chain. In the zip code tree, the two chains are sorted according to a topological order of the snarl subgraph. Edges occur from the right side of each child of the snarl to the left side of every child later in the topological order.}
+    \caption[Zip code trees]{\textbf{Zip code trees.} (A) A sequencing read, variation graph, snarl tree, and zip code tree from Figure \ref{fig:lr_algorithm_overview}. Arrows on the variation graph and read represent seed alignments. Rectangular nodes in the snarl tree represent chains and round nodes represent snarls. Chains are colored by the nodes in the chain they represent on the graph. For simplicity, the snarl tree does not represent nodes, which are children of chains. Nodes in the zip code tree represent either seeds (arrows) or the start or end bounds of snarls and chains. The bounds are colored and shaped like the snarl tree nodes they represent. (B) The representation of the top-level chain (grey) in the variation graph, snarl tree, and zip code tree. The chain has five children: two snarls and three nodes, one of which has a seed on it. The zip code tree representation of the chain contains the start and end of the chain, all snarls that contain seeds, and all seeds on node children of the chain. (C) The representation of a snarl in the graph, snarl tree, and zip code tree. The light green snarl has two children: the blue chain and the green chain. In the zip code tree, the two chains are sorted according to a topological order of the snarl subgraph. Edges occur from the right side of each child of the snarl to the left side of every child later in the topological order.}
     \label{fig:ziptree-methods}
 \end{figure}
 
